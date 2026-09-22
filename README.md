@@ -11,7 +11,7 @@
 
 ## 当前状态
 
-**阶段：项目初始化（骨架与文档已建立，尚未编写任何业务代码）**
+**阶段：M1 开发环境建立并验证完成（尚未编写任何业务代码）**
 
 | 环节 | 状态 |
 | --- | --- |
@@ -36,10 +36,11 @@
 | 数组运算、质心与基础统计 | NumPy |
 | 位移-时间曲线与结果绘图 | Matplotlib |
 
-这三个库记录在 `requirements.txt` 中，**当前尚未安装**，等开始写代码时再执行：
+这三个库记录在 `requirements.txt` 中，已安装在项目专用虚拟环境 `.venv` 中并验证通过（M1 完成）。
+如需重建环境，请使用虚拟环境内的 Python：
 
 ```bash
-pip install -r requirements.txt
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 ## 目录结构

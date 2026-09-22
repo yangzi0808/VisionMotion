@@ -1,0 +1,12 @@
+# VisionMotion 第一阶段依赖
+# 说明：本文件只列第一阶段明确需要的 Python 第三方库，版本号等第一次跑通后再固定。
+# 安装命令：pip install -r requirements.txt
+
+# 视频读取、图像预处理、阈值分割、轮廓检测
+opencv-python
+
+# 数组运算、质心计算与基础统计
+numpy
+
+# 位移-时间曲线与结果绘图
+matplotlib

@@ -1,0 +1,84 @@
+# ============================================================
+# VisionMotion .gitignore
+# 目标：不提交虚拟环境、Python 缓存、临时文件与大型实验视频。
+# ============================================================
+
+# ---------- Python 通用 ----------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ---------- 虚拟环境 ----------
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# ---------- 测试与检查工具缓存 ----------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+
+# ---------- 编辑器与操作系统 ----------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 临时文件与日志 ----------
+*.tmp
+*.temp
+*.log
+*.bak
+*.orig
+*~
+~$*
+tmp/
+temp/
+
+# ---------- 实验原始数据与中间数据（体积大或可重新生成，默认不提交）----------
+# 如需在 Git 中保留这些空目录，可在目录内新建 .gitkeep 文件，
+# 系统会保留 .gitkeep，忽略其余内容。
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ---------- results/ 不整体忽略 ----------
+# 最终实验结果、分析图与少量示例数据需要提交到 GitHub；
+# 其中可能出现的视频仍由下面的视频格式规则统一忽略。
+
+# ---------- 视频文件（任何位置都不提交，避免误传到 demo/ 等目录）----------
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.flv
+*.m4v
+*.mpg
+*.mpeg
+*.webm
+
+# ---------- 其他大文件 ----------
+*.zip
+*.7z
+*.rar
+
+# 提示：GitHub 对单个超过 100 MB 的文件会拒绝接收。
+# 原始视频请保存在本地 data/raw/ 中，只把处理结果与结论写入文档。

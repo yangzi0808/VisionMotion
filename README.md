@@ -166,3 +166,9 @@ pip install -r requirements.txt
 ## 15. License
 
 项目代码许可将在最终公开仓库建立时单独声明。第三方公开数据（ComPADRE / OSP Lab67 Video 1）的许可为 **CC BY-NC-SA 3.0**，详见 [`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md)。
+
+## 16. GitHub Repository
+
+本项目仓库地址：<https://github.com/yangzi0808/VisionMotion>
+
+（项目内容位于该仓库的 `master` 分支；仓库默认分支如需切换，请在 GitHub 仓库设置中手动将默认分支设为 `master`。）

@@ -6,7 +6,7 @@
 | --- | --- |
 | 姓名 | 待填写（本阶段不虚构姓名） |
 | 身份 | 深圳大学 光电信息科学与工程专业本科生 |
-| GitHub | 待创建 / 待填写 |
+| GitHub | <https://github.com/yangzi0808/VisionMotion> |
 
 ## 个人简介
 

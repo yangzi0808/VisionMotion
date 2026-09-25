@@ -537,7 +537,7 @@ def slide_10_summary(prs):
 
     add_textbox(slide, TITLE_LEFT, Inches(6.05), Inches(12.1), Inches(0.75), [
         ("项目报告：docs/M6.3_FINAL_REPORT.md　　数据来源说明：docs/ATTRIBUTION.md", 13, False, DARK),
-        ("GitHub repository: 待创建", 13, True, GRAY),
+        ("GitHub repository: https://github.com/yangzi0808/VisionMotion", 13, True, GRAY),
     ], space_after=4)
     add_footer(slide, 10)
 
@@ -600,7 +600,7 @@ def check_presentation(prs, output_path, image_checks):
         ("外部资料未说明 0.0515 kg 是否包含全部挂具/夹持件质量", "SHM 条件性声明（质量构成）"),
         ("具体物理归因未验证", "物理归因未验证"),
         ("本阶段没有有效动态 px/mm 标定", "px/mm 未完成表述"),
-        ("GitHub repository: 待创建", "GitHub 待创建"),
+        ("GitHub repository: https://github.com/yangzi0808/VisionMotion", "GitHub 仓库链接"),
         ("A：", "不确定度 A 单独列出"), ("B：", "不确定度 B 单独列出"), ("C：", "不确定度 C 单独列出"),
     ]:
         add(desc, token in all_text, "" if token in all_text else "缺失 %s" % token)

@@ -347,8 +347,15 @@ git log --oneline -1          # 预期：3e41ff9 docs: update license reference
 
 ---
 
-## 附录 C　录制前需要确认的事项（本次未修改任何文件）
+## 附录 C　录制前检查事项状态（截至 2026-09-26 已全部完成）
 
-1. **GitHub 页面落后本地 1 个提交**：远端 `origin/master` 为 `5a81b67`，本地 `master` 为 `3e41ff9 docs: update license reference`。该提交只改了 README 第 15 节的许可表述，**尚未推送**。若 S8 镜头会拍到 README 的 License 段落，建议先推送再录制（推送属于仓库写操作，本脚本不代为执行）。
-2. **`docs/ATTRIBUTION.md` 与 README/LICENSE 的许可表述不一致**：`docs/ATTRIBUTION.md` 末条仍写"本项目自身的代码许可尚未声明"，而 README §15 与根目录 `LICENSE` 已声明 MIT。若 S8 会展开 `docs/ATTRIBUTION.md`，建议先统一文案，避免同一镜头里出现两种说法。
-3. 本文档 `demo_video_script.md` 为新增文件，未提交、未纳入此前的发布 ZIP（`VisionMotion_v1.0.zip`）；如需随包分发请重新打包。
+| # | 检查事项 | 状态 | 证据 |
+| --- | --- | --- | --- |
+| 1 | README License 更新已推送到 GitHub | ✅ 已完成 | 推送记录 `5a81b67..3e41ff9  master -> master`；本地 `master` 与 `origin/master` 一致（ahead 0 / behind 0） |
+| 2 | `docs/ATTRIBUTION.md` 的许可文案已与 README / LICENSE 统一 | ✅ 已完成 | 末条已改为"本项目代码采用 MIT License，详见仓库根目录 `LICENSE` 文件。"，与 README §15、根目录 `LICENSE`（MIT）一致 |
+| 3 | 本录制脚本已归档到 `docs/` | ✅ 已完成 | `git mv demo_video_script.md docs/DEMO_VIDEO_SCRIPT.md`，正文内容未改动（移动前后 SHA-256 一致），随提交 `411d634` 发布 |
+
+- 涉及提交：`3e41ff9 docs: update license reference`、`411d634 docs: finalize demo documentation`，均已 push 到 `origin/master`。
+- 结论：录制时 S8 镜头可直接展示 GitHub 页面与 `docs/ATTRIBUTION.md`，无需额外准备或口径回避。
+
+> 备注（未完成事项）：发布 ZIP `VisionMotion_v1.0.zip` 仍为早期打包版本，不含本录制脚本；如需随包分发请重新打包。

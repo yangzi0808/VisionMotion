@@ -2,7 +2,7 @@
 
 > 目标成片：**2 分 30 秒**（可在 2:00–3:00 之间裁剪或扩展）
 > 适用场合：实验室本科项目展示 / 课程结题录像 / 项目主页演示
-> 事实基线：`master` @ `19b3239 docs: update demo script status`（2026-09-26）
+> 事实基线：`master` 分支（数值核对日期 2026-09-26；录制前以 `git log --oneline -1` 显示的最新提交为准）
 > 说明：本文档只描述录制流程，**不修改任何代码、数据与文档**；文中全部数值均取自仓库内现有文件（来源见附录 B）。
 
 ---
@@ -61,7 +61,7 @@
 
    ```powershell
    git status --short --untracked-files=no   # 预期：无输出（只检查已跟踪文件）
-   git log --oneline -1                      # 预期：19b3239 docs: update demo script status
+   git log --oneline -1                      # 预期：显示当前 HEAD 的最新提交信息
    ```
 
    > 说明：本录制脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。`--untracked-files=no`
@@ -178,7 +178,7 @@
 - **终端命令**：无（可先在终端执行 `git log --oneline -5` 作为"提交历史"补镜，再切浏览器）。
 - **需要展示的文件**：README.md、`docs/M6.3_FINAL_REPORT.md`、`docs/VisionMotion_Final_Presentation.pptx`、`docs/ATTRIBUTION.md`。
 - **旁白**：代码、文档与成果图都已发布在 GitHub，采用 MIT 许可。README 可复现完整流程，docs 下有最终报告、答辩 PPT 与数据来源说明。
-- **录制提示**：**录制前请确认 GitHub 页面状态**（当前 `master` 已与 `origin/master` 同步，HEAD 为 `19b3239`，详见附录 C）；浏览器提前打开好标签页，避免现场加载等待。
+- **录制提示**：**录制前请确认 GitHub 页面状态**（当前 `master` 已与 `origin/master` 同步，HEAD 与 `origin/master` 指向同一提交，详见附录 C）；浏览器提前打开好标签页，避免现场加载等待。
 
 ### S9 结论、局限与收尾｜2:14–2:30（16 s）
 
@@ -199,7 +199,7 @@ chcp 65001
 Clear-Host
 Set-Location 'C:\Users\杨千贤\Desktop\VisionMotion'
 git status --short --untracked-files=no   # 预期：无输出（已跟踪文件零改动）
-git log --oneline -1          # 预期：19b3239 docs: update demo script status
+git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 ```
 
 ### 5.2 正式演示命令与预期输出

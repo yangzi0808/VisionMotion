@@ -2,7 +2,7 @@
 
 > 目标成片：**2 分 30 秒**（可在 2:00–3:00 之间裁剪或扩展）
 > 适用场合：实验室本科项目展示 / 课程结题录像 / 项目主页演示
-> 事实基线：`master` @ `3e41ff9 docs: update license reference`（2026-09-26）
+> 事实基线：`master` @ `19b3239 docs: update demo script status`（2026-09-26）
 > 说明：本文档只描述录制流程，**不修改任何代码、数据与文档**；文中全部数值均取自仓库内现有文件（来源见附录 B）。
 
 ---
@@ -61,12 +61,11 @@
 
    ```powershell
    git status --short --untracked-files=no   # 预期：无输出（只检查已跟踪文件）
-   git log --oneline -1                      # 预期：3e41ff9 docs: update license reference
+   git log --oneline -1                      # 预期：19b3239 docs: update demo script status
    ```
 
-   > 说明：本录制脚本 `demo_video_script.md` 是**未跟踪的新文件**，直接执行 `git status --short` 会多出一行
-   > `?? demo_video_script.md`，属于正常现象，不代表仓库内容被改动。`--untracked-files=no` 只检查**已跟踪文件**，
-   > 输出为空才代表"仓库零改动"。若希望画面绝对干净，可在录制前先提交该脚本。
+   > 说明：本录制脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。`--untracked-files=no`
+   > 只检查**已跟踪文件**，输出为空即代表"仓库零改动"。
 
 6. 备份 `results/`（可选但推荐）：把整个 `results` 目录复制一份到仓库外，录制结束用于比对。
 7. 完整预演 3 次并计时，确认旁白不超时。
@@ -149,7 +148,7 @@
   - 真实耗时刻度：命令 1 约 **0.4–0.5 s**，命令 2 约 **2.9–3.1 s**，命令 3 约 0.3 s（本机多次实测）。剪辑时若担心冷场，可 2× 加速等待段并加字幕"实际耗时约 3 秒"。
   - 运行命令 1、2 会**重写** `results/` 中的同名成果文件；本机 2026-09-26 实测重写后 SHA-256 与仓库版本**逐字节一致**，已跟踪文件零改动，因此该镜头可以安全重复录制（哈希对照见附录 B）。
   - 命令 1 需要本机的 `data/raw/EXP-001-IMAGE-001.jpg`：它是自采素材，**不在 Git 仓库中**，发布 ZIP 也不包含。本机当前存在该文件；若换机器录制且没有该文件，请只演示命令 2 与命令 3（命令 2 只需要仓库内的封板轨迹 CSV）。
-  - 命令 3 写成 `git status --short --untracked-files=no`：本脚本自身是未跟踪文件，直接敲 `git status --short` 会多出 `?? demo_video_script.md` 一行，容易让观众误以为项目被改动。
+  - 命令 3 写成 `git status --short --untracked-files=no`：本脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程；该写法只检查已跟踪文件，空白输出即代表仓库零改动。
   - 中文输出若出现乱码，退出录制后重新 `chcp 65001` 再录。
 
 ### S6 测量结果与三方对照｜1:24–1:48（24 s）
@@ -179,7 +178,7 @@
 - **终端命令**：无（可先在终端执行 `git log --oneline -5` 作为"提交历史"补镜，再切浏览器）。
 - **需要展示的文件**：README.md、`docs/M6.3_FINAL_REPORT.md`、`docs/VisionMotion_Final_Presentation.pptx`、`docs/ATTRIBUTION.md`。
 - **旁白**：代码、文档与成果图都已发布在 GitHub，采用 MIT 许可。README 可复现完整流程，docs 下有最终报告、答辩 PPT 与数据来源说明。
-- **录制提示**：**录制前请确认 GitHub 页面状态**（当前远端仍停留在 `5a81b67`，本地领先 1 个提交，详见附录 C）；浏览器提前打开好标签页，避免现场加载等待。
+- **录制提示**：**录制前请确认 GitHub 页面状态**（当前 `master` 已与 `origin/master` 同步，HEAD 为 `19b3239`，详见附录 C）；浏览器提前打开好标签页，避免现场加载等待。
 
 ### S9 结论、局限与收尾｜2:14–2:30（16 s）
 
@@ -200,7 +199,7 @@ chcp 65001
 Clear-Host
 Set-Location 'C:\Users\杨千贤\Desktop\VisionMotion'
 git status --short --untracked-files=no   # 预期：无输出（已跟踪文件零改动）
-git log --oneline -1          # 预期：3e41ff9 docs: update license reference
+git log --oneline -1          # 预期：19b3239 docs: update demo script status
 ```
 
 ### 5.2 正式演示命令与预期输出
@@ -215,8 +214,8 @@ git log --oneline -1          # 预期：3e41ff9 docs: update license reference
 > **不在 Git 仓库中**（`git ls-files data/` 只有 `.gitkeep`），发布 ZIP 也不包含；本机当前存在该文件，可直接运行。
 > 若换机器录制，请先确认文件存在，否则跳过命令 1，只演示命令 2 与命令 3。
 >
-> 关于命令 3：本脚本 `demo_video_script.md` 是未跟踪文件，直接执行 `git status --short` 会输出
-> `?? demo_video_script.md`。加 `--untracked-files=no` 后，只有**已跟踪文件**被改动才会有输出，因此空白画面才真正表示"零改动"。
+> 关于命令 3：本脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。加 `--untracked-files=no` 后，
+> 只有**已跟踪文件**被改动才会有输出，因此空白画面才真正表示"零改动"。
 
 ### 5.3 可选补充命令
 
@@ -228,7 +227,7 @@ git log --oneline -1          # 预期：3e41ff9 docs: update license reference
 
 ### 5.4 演示脚本的可重复性说明
 
-命令 1、2、4 会重写 `results/` 中同名文件。本机实测（2026-09-26）重写后 SHA-256 与仓库版本**逐字节一致**（六个文件全部比对通过，见附录 B），故已跟踪文件保持干净；若仍不放心，可按第 2 节第 6 步先备份 `results/`。注意检查命令要写成 `git status --short --untracked-files=no`，否则未跟踪的 `demo_video_script.md` 会出现在输出里。
+命令 1、2、4 会重写 `results/` 中同名文件。本机实测（2026-09-26）重写后 SHA-256 与仓库版本**逐字节一致**（六个文件全部比对通过，见附录 B），故已跟踪文件保持干净；若仍不放心，可按第 2 节第 6 步先备份 `results/`。注意检查命令要写成 `git status --short --untracked-files=no`，只检查已跟踪文件；脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。
 
 ---
 

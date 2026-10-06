@@ -7,7 +7,7 @@ VisionMotion —— M4 / M5 位移规则测试（Phase 2B-2，TEST 08 ~ TEST 11�
 
 覆盖：gate 真值表与两套 gate 不混用 / s0 窗口与帧数下限 / ds 行格式与端到端产出 /
       畸形 / 截断 CSV 的防护（M3 check_csv_data 已做防御性最小修复，TEST 11A 必须通过）/
-      非法 detected 文本必须被拒绝（独立缺陷，TEST 11B 继续 strict xfail）。
+      非法 detected 文本必须被拒绝（TEST 11B：M4 / M5 两个读取器都已修复）。
 """
 
 import math
@@ -255,7 +255,7 @@ def test_malformed_csv_is_reported_not_raised(tmp_path):
 
     原 TEST 11 把“畸形 CSV 解析异常”和“非法 detected 文本被静默接受”两个彼此独立的缺陷
     绑在同一个测试里：缺陷 A 修好后会让整个测试意外通过，从而掩盖仍然存在的缺陷 B；
-    因此按任务要求拆分为 TEST 11A（本测试，必须通过）与 TEST 11B（独立缺陷，继续 strict xfail）。
+    因此按任务要求拆分为 TEST 11A（本测试，必须通过）与 TEST 11B（已修复，正常通过）。
     """
     header = "frame,time_s,x_px,y_px,area_px,detected"
 
@@ -300,23 +300,29 @@ def test_malformed_csv_is_reported_not_raised(tmp_path):
         m5.read_track_csv(bad_columns)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "已知独立缺陷（本阶段禁止修改 src/）：detected 列文本不是 True/False 时"
-        "（如 '1' / 'yes' / 'true' / 空字符串），read_track_csv 当前用 (record[5] == 'True') "
-        "静默解析为 False，而不是按 M3 / M4 / M5 的 CSV 规范明确报错。"
-    ),
-)
 def test_illegal_detected_values_are_rejected(tmp_path):
-    """TEST 11B —— illegal detected 文本必须被拒绝：独立缺陷，继续保持 strict xfail。"""
+    """TEST 11B —— illegal detected 文本必须被拒绝（M4 与 M5 两个读取器都要锁定）。
+
+    使用同一个最小合法 CSV 模板，只替换 detected 字段，从而证明出问题的确实只有
+    detected 格式，而不是其他字段。合法值 True / False 仍按原语义读取（不改变合法
+    输入）；非法文本必须明确抛 ValueError，而不是被静默解释成 False。
+    """
+    header = "frame,time_s,x_px,y_px,area_px,detected\n"
+    valid_template = header + "0,0.000000,1000.00,450.00,3000.0,%s\n"
+
+    # 合法值 True / False：两个读取器都必须按原语义读成布尔值（证明只增加严格性）
+    for valid_text, expected in (("True", True), ("False", False)):
+        legal = tmp_path / ("legal_%s.csv" % valid_text)
+        legal.write_text(valid_template % valid_text, encoding="utf-8")
+        for reader in (m4.read_track_csv, m5.read_track_csv):
+            rows = reader(legal)
+            assert len(rows) == 1
+            assert rows[0]["detected"] is expected
+
+    # 非法值：M4 与 M5 两个读取器都必须明确拒绝，绝不静默变成 False
     for illegal_text in ("1", "yes", "true", ""):
         illegal = tmp_path / ("illegal_%s.csv" % (illegal_text or "empty"))
-        illegal.write_text(
-            "frame,time_s,x_px,y_px,area_px,detected\n"
-            "0,0.000000,1000.00,450.00,3000.0,%s\n" % illegal_text,
-            encoding="utf-8",
-        )
+        illegal.write_text(valid_template % illegal_text, encoding="utf-8")
         with pytest.raises(ValueError):
             m4.read_track_csv(illegal)
         with pytest.raises(ValueError):

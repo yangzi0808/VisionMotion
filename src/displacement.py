@@ -216,6 +216,23 @@ def _float_or_none(text):
     return float(text)
 
 
+def _detected_or_raise(text, line_number):
+    """
+    严格解析 detected 字段：只接受 M3 规范写出的 "True" / "False"。
+
+    非法文本（"1" / "yes" / "true" / 空字符串 等）一律明确报错，
+    不再静默转成 False（只增加严格性，不改变合法输入的语义）。
+    """
+    if text == "True":
+        return True
+    if text == "False":
+        return False
+    raise ValueError(
+        "track CSV 第 %d 行 detected 字段非法（必须是 True / False）：%r"
+        % (line_number, text)
+    )
+
+
 def read_track_csv(track_csv_path):
     """
     读取 M3 生成的 track CSV（只读，不修改）。
@@ -246,7 +263,7 @@ def read_track_csv(track_csv_path):
                     "x_px": _float_or_none(record[2]),
                     "y_px": _float_or_none(record[3]),
                     "area_px": _float_or_none(record[4]),
-                    "detected": (record[5] == "True"),
+                    "detected": _detected_or_raise(record[5], line_number),
                 }
             )
 

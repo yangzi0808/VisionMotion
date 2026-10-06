@@ -179,6 +179,7 @@ def is_valid_frame(detected, x_px, y_px, area_px):
     valid = True 当且仅当：
         detected == True
         且 x_px / y_px / area_px 三个必要数值字段都存在（都不为 None）
+           且都是有限数值（不能是 NaN / inf / -inf）
         且 AREA_MIN_PX <= area_px <= AREA_MAX_PX
         且 Y_MIN_PX <= y_px <= Y_MAX_PX
 
@@ -186,6 +187,8 @@ def is_valid_frame(detected, x_px, y_px, area_px):
         - 绝不修改原始 detected，只在这里判断“这一帧能不能用”
         - detected=True 却缺少 x_px / y_px / area_px 中任何一个：属于数据缺失，
           直接判 invalid（不填 0、不插值）；detected=False 时允许这些字段为空
+        - detected=True 却给出非有限数值（NaN / inf / -inf）：同样判 invalid
+          （不可用于计算，绝不放行到下游 project_point()）
         - 阈值是本次 EXP-003 拍摄几何专属参数，不做任何自适应
     """
     if not detected:
@@ -193,6 +196,12 @@ def is_valid_frame(detected, x_px, y_px, area_px):
 
     # 检测成功却缺少坐标或面积，同样不能用（数据缺失，不填 0）
     if x_px is None or y_px is None or area_px is None:
+        return False
+
+    # detected=True 时 x / y / area 必须是可用于计算的有限数值。
+    # NaN / inf / -inf 会绕过上面的 None 守卫，而下面两个区间比较又都不涉及 x_px，
+    # 若不在这里拦截就会被错误放行成 valid=True，随后在 project_point() 抛异常。
+    if not (math.isfinite(x_px) and math.isfinite(y_px) and math.isfinite(area_px)):
         return False
 
     if not (AREA_MIN_PX <= area_px <= AREA_MAX_PX):

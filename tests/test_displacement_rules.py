@@ -8,7 +8,9 @@ VisionMotion —— M4 / M5 位移规则测试（Phase 2B-2，TEST 08 ~ TEST 11�
 覆盖：gate 真值表与两套 gate 不混用 / s0 窗口与帧数下限 / ds 行格式与端到端产出 /
       畸形 / 截断 CSV 的防护（M3 check_csv_data 已做防御性最小修复，TEST 11A 必须通过）/
       非法 detected 文本必须被拒绝（TEST 11B：M4 / M5 两个读取器都已修复）/
-      detected=True 但 x_px / y_px / area_px 缺任一必须判 invalid（TEST 17，M4 / M5 都锁定）。
+      detected=True 但 x_px / y_px / area_px 缺任一必须判 invalid（TEST 17，M4 / M5 都锁定）/
+      detected=True 但 x_px 为 NaN / inf / -inf 必须判 invalid（TEST 19 / TEST 20，
+      Phase 2B-5A：M4 / M5 都锁定，且不得误伤有限值 / detected=False + None）。
 """
 
 import math
@@ -378,6 +380,90 @@ def test_detected_true_with_missing_required_field_is_invalid(write_track_csv):
             expected_valid = detected and has_x and has_y and has_area
             assert rows[0]["valid"] is expected_valid, (tag, name)
             assert (rows[0]["s_px"] is not None) is expected_valid, (tag, name)
+
+
+# ============================================================
+# 非有限 x_px 的 gate 缺口（Phase 2B-5A，TEST 19 / TEST 20）
+# 保护对象：src/displacement.py、src/dynamic_displacement.py —— is_valid_frame()
+# 不变量：detected=True 时 x/y/area 必须是可用于计算的有限数值；
+#         任何不可用值（None / NaN / inf / -inf）都必须在 gate 层判 invalid。
+# ============================================================
+
+
+_NON_FINITE_VALUES = [float("nan"), float("inf"), float("-inf")]
+
+
+@pytest.mark.parametrize(
+    "module, valid_y_px, valid_area_px",
+    [(m4, 450.0, 3000.0), (m5, 220.0, 5000.0)],
+    ids=["M4", "M5"],
+)
+def test_detected_true_non_finite_x_px_is_invalid(module, valid_y_px, valid_area_px):
+    """TEST 19 —— detected=True 但 x_px 为 NaN / inf / -inf：必须判 invalid（M4 与 M5 都锁定）。
+
+    Phase 2B-5A 修复的缺口：gate 只在 x_px is None 时判 invalid，却从不校验 x_px 是否有限。
+    NaN / inf / -inf 会绕过 None 守卫，而且两个区间比较（area / y）都不涉及 x_px，
+    于是被错误放行成 valid=True，随后 project_point() 才抛 ValueError。
+
+    Case A / B / C（M4）+ Case D / E / F（M5）：x_px = NaN / inf / -inf 全部无效。
+    同时锁定“修复不误伤”：
+        - detected=True + 有限 x/y/area -> valid=True（合法输入行为不变）；
+        - detected=False + x/y/area 全 None -> valid=False（合法未检测语义不变，
+          NaN 与 None 绝不混为一谈）。
+    """
+    # Cases A–F：x_px = NaN / inf / -inf 全部必须 invalid
+    for bad_x in _NON_FINITE_VALUES:
+        assert (
+            module.is_valid_frame(True, bad_x, valid_y_px, valid_area_px) is False
+        ), bad_x
+
+    # 同一条不变量：detected=True 时 y_px / area_px 也必须是有限数值
+    # （这两项此前已因区间比较自然判 invalid，此处锁定不被回退）
+    assert module.is_valid_frame(True, 1000.0, float("nan"), valid_area_px) is False
+    assert module.is_valid_frame(True, 1000.0, float("inf"), valid_area_px) is False
+    assert module.is_valid_frame(True, 1000.0, valid_y_px, float("nan")) is False
+    assert module.is_valid_frame(True, 1000.0, valid_y_px, float("inf")) is False
+
+    # 不误伤：正常有限 x/y/area 仍必须 valid=True
+    assert module.is_valid_frame(True, 1000.0, valid_y_px, valid_area_px) is True
+
+    # 不误伤：detected=False + 全 None 仍属合法未检测（valid=False，但读取不报错）
+    assert module.is_valid_frame(False, None, None, None) is False
+
+
+def test_nan_x_px_is_not_sent_into_projection(write_track_csv):
+    """TEST 20 —— 真实链路 read_track_csv -> add_valid_flags -> add_projection：
+    x_px=NaN 的行必须被判 invalid，不会再因错误的 valid=True 进入投影并抛下游异常。
+
+    缺陷风险链条：x_px=NaN -> 原先 valid=True -> project_point() -> ValueError。
+    修复后：x_px=NaN -> valid=False -> 不进入投影有效路径（s_px 保持 None）。
+    """
+    nan = float("nan")
+    for name, module, valid_y, valid_area in (
+        ("M4", m4, 450.0, 3000.0),
+        ("M5", m5, 220.0, 5000.0),
+    ):
+        track_path = write_track_csv(
+            [
+                {
+                    "frame": 0,
+                    "time_s": 0.0,
+                    "x_px": nan,
+                    "y_px": valid_y,
+                    "area_px": valid_area,
+                    "detected": True,
+                }
+            ],
+            name="nonfinite_nan_%s.csv" % name,
+        )
+
+        rows = module.read_track_csv(track_path)
+        module.add_valid_flags(rows)
+        # 修复前：valid=True -> project_point((nan, y)) -> ValueError（测试在此报错）
+        module.add_projection(rows)
+
+        assert rows[0]["valid"] is False, name
+        assert rows[0]["s_px"] is None, name
 
 
 # ============================================================

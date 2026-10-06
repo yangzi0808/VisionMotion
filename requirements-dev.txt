@@ -1,0 +1,15 @@
+# VisionMotion v1.0 开发 / 测试依赖
+#
+# 安装命令（项目根目录，建议使用独立虚拟环境）：
+#     python -m pip install -r requirements-dev.txt
+#
+# 说明：
+#   - 运行期直接依赖全部来自 requirements.txt（-r 引入），这里不重复也不新增运行期依赖；
+#   - pytest 固定为 9.1.1：该版本是当前可用的稳定版，要求 Python >= 3.10，
+#     与本项目使用的 Python 3.14.1 环境兼容，并与项目"固定直接依赖版本"的策略一致；
+#   - 本项目第一版不引入 pandas / scipy / 覆盖率工具等额外设施。
+
+-r requirements.txt
+
+# 测试框架（仅开发 / 测试使用）
+pytest==9.1.1

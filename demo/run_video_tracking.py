@@ -54,6 +54,7 @@ def main():
         summary["processed_frames"],
         summary["width"],
         summary["height"],
+        summary["fps"],
     )
     print_check_results(checks, passed)
 

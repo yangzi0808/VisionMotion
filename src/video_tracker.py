@@ -49,6 +49,12 @@ OVERLAY_CODECS = ("mp4v", "avc1")
 # 回退方案最多保存的代表性 PNG 数量
 MAX_FALLBACK_PNGS = 5
 
+# time_s 与 frame / fps 时间轴一致性容差（秒）。
+# 依据：build_csv_row() 用 "%.6f" 写 time_s（6 位小数），单值最大舍入误差为 5e-7 s；
+# 取 1e-6 s 既容纳正常舍入误差与 float 解析误差，又远小于一帧间隔
+# （24 fps 时约 4.17e-2 s），能稳定抓住明显错误的 time_s。
+TIME_AXIS_TOLERANCE_S = 1e-6
+
 
 # ============================================================
 # 基础工具
@@ -634,11 +640,21 @@ def print_statistics(summary):
 # ============================================================
 
 
-def check_csv_data(csv_path, expected_rows, frame_width, frame_height):
+def check_csv_data(csv_path, expected_rows, frame_width, frame_height, fps=None):
     """
     CSV 数据完整性自检（只读，不创建任何额外测试文件）。
 
     返回 (checks, passed)，其中 checks 是 [(说明, 是否通过), ...] 的列表。
+
+    参数 fps（可选，默认 None）：视频实际 FPS，必须来自真实视频读取
+    （cv2.CAP_PROP_FPS，见 open_video / track_video），不得从待验证的 CSV 反推。
+    当前项目时间定义为 time_s = frame_index / fps（见 track_video 与 build_csv_row），
+    frame 从 0 开始。
+        - fps 给出（> 0）时：逐行核对 |time_s - frame / fps| <= 容差；
+        - fps 未给出（None 或 <= 0）时：没有外部锚点，无法判断整条时间轴是否被
+          统一缩放，因此该检查项明确判为“未通过（无法验证）”，绝不从 CSV 自身
+          估计 FPS 后放行。
+    该检查只判“时间轴是否一致”，只产生一项 check 结果，不改变其他检查。
     """
     checks = []
     csv_path = Path(csv_path)
@@ -723,7 +739,50 @@ def check_csv_data(csv_path, expected_rows, frame_width, frame_height):
     checks.append(("坐标全部落在 %d x %d 显示画面范围内" % (frame_width, frame_height),
                    len(out_of_range_rows) == 0))
 
-    # 5. np.genfromtxt 直接读取
+    # 5. time_s 与 frame / fps 时间轴一致
+    # 当前项目时间定义（见 track_video）：time_s = frame_index / fps，frame 从 0 开始。
+    # 只收集能解析 frame / time_s 的完整行；列畸形或 frame 非整数已由上面的检查判负，
+    # 这里跳过以免 IndexError / ValueError 外泄。
+    frame_axis = []
+    time_axis_parse_ok = True
+    for row in data_rows:
+        if len(row) != len(CSV_FIELDNAMES):
+            continue
+        try:
+            frame_number = int(row[0])
+        except ValueError:
+            continue
+        try:
+            time_value = float(row[1])
+        except ValueError:
+            # time_s 无法解析：无法证明与 frame / fps 一致 -> 该检查判负。
+            time_axis_parse_ok = False
+            continue
+        frame_axis.append((frame_number, time_value))
+
+    # time_s_expected = frame / fps，其中 fps 必须来自真实视频读取。
+    # 绝不能从待验证的 CSV 反推 fps：否则整条时间轴被统一缩放时（例如真实 24 fps，
+    # CSV 却按 30 fps 写入），CSV 自身仍然自洽，检查会漏判整条时间轴的整体缩放错误。
+    fps_usable = fps is not None and fps > 0
+    if fps_usable:
+        frame_period = 1.0 / fps
+        time_axis_ok = time_axis_parse_ok
+        if time_axis_ok:
+            for frame_number, time_value in frame_axis:
+                if not abs(time_value - frame_number * frame_period) <= TIME_AXIS_TOLERANCE_S:
+                    time_axis_ok = False
+                    break
+        time_axis_label = ("time_s 与 frame / fps 时间轴一致（fps=%.6f，容差 %.0e s）"
+                           % (fps, TIME_AXIS_TOLERANCE_S))
+    else:
+        # 没有真实视频 FPS 作为外部锚点：本项无法验证。按项目“全部 check 通过才算
+        # 通过”（passed = all(...)）的既有语义记为未通过，而不是默认放行。
+        time_axis_ok = False
+        time_axis_label = ("time_s 与 frame / fps 时间轴一致"
+                           "（无法验证：未提供真实视频 FPS 作为外部锚点）")
+    checks.append((time_axis_label, time_axis_ok))
+
+    # 6. np.genfromtxt 直接读取
     genfromtxt_ok = False
     genfromtxt_note = "读取失败"
     try:

@@ -12,6 +12,7 @@ VisionMotion —— M4 / M5 位移规则测试（Phase 2B-2，TEST 08 ~ TEST 11�
 """
 
 import math
+from pathlib import Path
 
 import pytest
 
@@ -377,3 +378,141 @@ def test_detected_true_with_missing_required_field_is_invalid(write_track_csv):
             expected_valid = detected and has_x and has_y and has_area
             assert rows[0]["valid"] is expected_valid, (tag, name)
             assert (rows[0]["s_px"] is not None) is expected_valid, (tag, name)
+
+
+# ============================================================
+# M3 时间轴一致性（Phase 2B-3D-R，TEST 18）
+# 保护对象：src/video_tracker.py —— check_csv_data() 的 time_s / frame / fps 一致性检查。
+# 当前项目时间定义：time_s = frame_index / fps（frame 从 0 开始）。
+# 关键设计：fps 必须来自真实视频读取（外部锚点），不得从待验证的 CSV 反推；
+# 否则整条时间轴被统一缩放（真实 24 fps 却按 30 fps 写入）时无法检出。
+# ============================================================
+
+
+def _minimal_m3_rows(count=6, fps=24.0, time_override=None):
+    """
+    构造最小合法 M3 track 行：frame 从 0 连续、time_s = frame / fps、
+    detected=True 且 x / y / area 均有效。time_override 用于“只改 time_s”。
+    """
+    rows = []
+    for index in range(count):
+        time_s = index / fps
+        if time_override and index in time_override:
+            time_s = time_override[index]
+        rows.append(
+            {
+                "frame": index,
+                "time_s": time_s,
+                "x_px": 1000.0 + index,
+                "y_px": 450.0,
+                "area_px": 3000.0,
+                "detected": True,
+            }
+        )
+    return rows
+
+
+def _time_axis_check(checks):
+    """从 checks 里取出唯一一项与时间轴一致性相关的检查结果。"""
+    matches = [ok for description, ok in checks if "时间轴一致" in description]
+    assert len(matches) == 1, checks
+    return matches[0]
+
+
+def test_m3_csv_time_axis_case_a_real_fps_matching_timeline_passes(write_track_csv):
+    """TEST 18A —— 真实 24 fps + 正确 time_s（frame / 24）必须通过。"""
+    rows = _minimal_m3_rows(count=6, fps=24.0)
+    path = write_track_csv(rows, name="axis_caseA_legal.csv")
+
+    checks, passed = check_csv_data(
+        path, expected_rows=len(rows), frame_width=1920, frame_height=1080, fps=24.0
+    )
+    assert passed is True
+    assert _time_axis_check(checks) is True
+
+
+def test_m3_csv_time_axis_case_b_wrong_fps_timeline_is_rejected(write_track_csv):
+    """TEST 18B（关键回归）—— 真实 24 fps，但 CSV 整条时间轴按 30 fps 写入，必须判未通过。
+
+    frame 1 写成 1/30 ≈ 0.033333，而真实应为 1/24 ≈ 0.041667。
+    这一条证明：校验真正锚定到外部视频 FPS，能抓住“整条时间轴被统一缩放”的错误，
+    而不是只看 CSV 自身是否自洽（CSV 按 30 fps 写入时其内部仍然自洽）。
+    """
+    rows = _minimal_m3_rows(count=6, fps=30.0)  # 错误：真实视频是 24 fps
+    path = write_track_csv(rows, name="axis_caseB_scaled.csv")
+
+    checks, passed = check_csv_data(
+        path, expected_rows=len(rows), frame_width=1920, frame_height=1080, fps=24.0
+    )
+    assert passed is False
+    assert _time_axis_check(checks) is False
+
+
+def test_m3_csv_time_axis_case_c_single_bad_time_is_rejected(write_track_csv):
+    """TEST 18C —— 单行 time_s 被明显改错（frame=3 应约 0.125，却写成 1.5）必须判未通过。"""
+    rows = _minimal_m3_rows(count=6, fps=24.0, time_override={3: 1.5})
+    path = write_track_csv(rows, name="axis_caseC_bad_time.csv")
+
+    checks, passed = check_csv_data(
+        path, expected_rows=len(rows), frame_width=1920, frame_height=1080, fps=24.0
+    )
+    assert passed is False
+    assert _time_axis_check(checks) is False
+
+
+def test_m3_csv_time_axis_case_d_correct_csv_wrong_qc_fps_is_rejected(write_track_csv):
+    """TEST 18D —— CSV 时间轴正确（frame / 24），但 QC 传入错误的 fps=30，必须判未通过。
+
+    用于确认：QC 真的依赖外部 FPS 锚点，而不是只要 CSV 自洽就放行。
+    """
+    rows = _minimal_m3_rows(count=6, fps=24.0)  # CSV 本身正确
+    path = write_track_csv(rows, name="axis_caseD_wrong_qc_fps.csv")
+
+    checks, passed = check_csv_data(
+        path, expected_rows=len(rows), frame_width=1920, frame_height=1080, fps=30.0
+    )
+    assert passed is False
+    assert _time_axis_check(checks) is False
+
+
+def test_m3_csv_time_axis_case_e_real_baseline_csv_passes():
+    """TEST 18E —— 当前正式 M3 CSV（1920x1080 / 24 fps）在 fps=24.0 下必须继续通过。
+
+    只读取 results/EXP-002-VIDEO-001_track.csv，不修改它，也不重新运行 demo。
+    """
+    csv_path = (
+        Path(__file__).resolve().parents[1]
+        / "results"
+        / "EXP-002-VIDEO-001_track.csv"
+    )
+    assert csv_path.exists(), csv_path
+
+    with open(csv_path, "r", encoding="utf-8", newline="") as csv_file:
+        data_row_count = sum(1 for _ in csv_file) - 1  # 去掉表头
+
+    checks, passed = check_csv_data(
+        csv_path,
+        expected_rows=data_row_count,
+        frame_width=1920,
+        frame_height=1080,
+        fps=24.0,
+    )
+    assert passed is True
+    assert _time_axis_check(checks) is True
+
+
+def test_m3_csv_time_axis_without_fps_is_unverifiable(write_track_csv):
+    """TEST 18F —— 未提供真实 fps（fps=None）时，时间轴检查必须明确判“无法验证”，不得放行。
+
+    核心原则：绝不能偷偷从 CSV 自身估计 FPS 后把时间轴检查判通过。
+    """
+    rows = _minimal_m3_rows(count=6, fps=24.0)  # CSV 本身完全合法
+    path = write_track_csv(rows, name="axis_no_fps.csv")
+
+    checks, passed = check_csv_data(
+        path, expected_rows=len(rows), frame_width=1920, frame_height=1080
+    )
+    assert passed is False
+    assert _time_axis_check(checks) is False
+    labels = [description for description, _ in checks if "时间轴一致" in description]
+    assert "无法验证" in labels[0]

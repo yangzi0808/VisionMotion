@@ -782,35 +782,43 @@ def check_csv_data(csv_path, expected_rows, frame_width, frame_height, fps=None)
                            "（无法验证：未提供真实视频 FPS 作为外部锚点）")
     checks.append((time_axis_label, time_axis_ok))
 
-    # 6. np.genfromtxt 直接读取
-    genfromtxt_ok = False
-    genfromtxt_note = "读取失败"
-    try:
-        data = np.genfromtxt(str(csv_path), delimiter=",", names=True)
-        genfromtxt_ok = True
-        names = list(data.dtype.names)
-        if names == CSV_FIELDNAMES:
-            nan_count = int(np.isnan(data["x_px"]).sum())
-            detected_values = data["detected"]
-            true_count = int(np.count_nonzero(detected_values))
-            miss_count = len(data_rows) - true_count
-            if nan_count == miss_count:
-                genfromtxt_note = ("成功，失败字段读取为 NaN（NaN 行数 %d，"
-                                   "与 detected=False 行数一致）" % nan_count)
-            else:
-                genfromtxt_ok = False
-                genfromtxt_note = ("读取成功，但 NaN 行数 %d 与丢失帧数 %d 不一致"
-                                   % (nan_count, miss_count))
-        else:
-            genfromtxt_ok = False
-            genfromtxt_note = "读取成功，但列名与预期不一致：%s" % names
-    except Exception as error:  # noqa: BLE001 - 自检要报告任何读取异常
-        genfromtxt_note = "读取失败：%s" % error
+    # 6. 失败字段语义（空测量值 <-> detected=False）一致性
+    # Phase 2B-5D 修复：本项原先调用 np.genfromtxt(delimiter=",", names=True) 直接读同一份
+    # CSV 再对账 NaN 行数，但该路径会把 "True"/"False" 列整列读成 float64 的 NaN，
+    # 而 np.count_nonzero(NaN) 恒为真，导致 true_count 恒等于数据行数、miss_count 恒为 0，
+    # 于是任何含 detected=False 行的合法 CSV 都会被误判为未通过（真实生产 QC 误判）。
+    # 现改为复用上面 csv.reader 已经解析好的 rows 做同一语义的对账：
+    # 失败行（detected=False）的 x/y/area 必须为空（读回来即 NaN），且"空 x_px 行数"
+    # 必须等于 detected=False 行数——即"文本视角（空串）"与"数值视角（NaN）"数出的
+    # 失败帧数一致。检查项数量与顺序保持不变，只替换这一项的实现方式。
+    empty_measure_rows = 0
+    miss_marked_rows = 0
+    field_semantics_ok = True
+    for row in data_rows:
+        # 畸形行（列数与表头不一致）已由上面的 frame 格式检查判负；
+        # 这里只需把本项一并判负，不再索引以免越界。
+        if len(row) != len(CSV_FIELDNAMES):
+            field_semantics_ok = False
+            continue
+        row_x_text, row_y_text, row_area_text = row[2], row[3], row[4]
+        row_detected_text = row[5]
+        if row_x_text == "":
+            empty_measure_rows += 1
+        if row_detected_text == "False":
+            miss_marked_rows += 1
+            if row_x_text != "" or row_y_text != "" or row_area_text != "":
+                # detected=False 却带测量值：与"失败行字段留空"的写入协议矛盾。
+                field_semantics_ok = False
+        elif row_detected_text == "True":
+            if row_x_text == "" or row_y_text == "" or row_area_text == "":
+                # detected=True 却缺测量值：成功行不得出现空值 / NaN。
+                field_semantics_ok = False
 
-    checks.append(("CSV 可被 np.genfromtxt(delimiter=',', names=True) 直接读取且失败字段为 NaN",
-                   genfromtxt_ok))
-    if not genfromtxt_ok:
-        print("  说明：%s" % genfromtxt_note)
+    field_semantics_ok = field_semantics_ok and (empty_measure_rows == miss_marked_rows)
+    checks.append(("CSV 空测量字段（NaN 语义）与 detected=False 行一一对应", field_semantics_ok))
+    if not field_semantics_ok:
+        print("  说明：空 x_px 行数 %d 与 detected=False 行数 %d 不一致（或空值分布不合法）"
+              % (empty_measure_rows, miss_marked_rows))
 
     passed = all(ok for _, ok in checks)
     return checks, passed

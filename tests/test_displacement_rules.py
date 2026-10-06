@@ -664,9 +664,9 @@ def test_m3_production_csv_writer_roundtrip(tmp_path):
     # ------------------------------------------------------------------
     # Case A：detected=True + 合法有限值
     #   build_csv_row() -> 临时 CSV -> M4 reader -> M5 reader -> check_csv_data(fps) -> passed
-    # 说明：Case A 只放 detected=True 行。M3 check_csv_data() 的 np.genfromtxt 子检查
-    #       对含 detected=False 的混合 CSV 目前无法判过（见文件末尾"其他发现"），
-    #       与本测试"锁定 writer/reader/QC 契约"的目标无关，故按规范用干净的 True CSV 验证 QC。
+    # 说明：Case A 只放 detected=True 行，用于锁定 writer / reader / QC 契约；
+    #       含 detected=False 的合法混合 CSV 的 QC 回归由 Phase 2B-5D 新增的
+    #       TEST 22（本文件末尾）单独锁定。
     # ------------------------------------------------------------------
     case_a_specs = [
         (0, 1000.0, 450.0, 3000.0),
@@ -697,18 +697,12 @@ def test_m3_production_csv_writer_roundtrip(tmp_path):
         assert read_rows[2]["x_px"] == 1002.0, name
 
 
-# ============================================================
-# 其他发现（Phase 2B-5C，仅记录，本阶段不修改生产源码）
 # ------------------------------------------------------------
-# 在把生产 build_csv_row() 的混合输出（同时含 detected=True / False 行）喂给
-# M3 check_csv_data() 时，其 np.genfromtxt(delimiter=",", names=True) 子检查会判为未通过：
-#     np.genfromtxt 无法把 "True" / "False" 列解析成布尔，而是整列读成 float64 的 NaN；
-#     np.count_nonzero(NaN) 恒为真，于是 true_count 恒等于数据行数、miss_count 恒为 0，
-#     而 x_px 的 NaN 数恰等于 detected=False 行数（>=1），两者永远不相等。
-# 结论：只要 CSV 里存在任何 detected=False 行，这一子检查就会失败；当前正式基线
-# results/EXP-002-VIDEO-001_track.csv 恰好 170 行全为 detected=True，所以从未暴露。
-# 属既有生产代码行为，按本阶段约束（禁止改动 src/*.py）只记录、不修复。
-# ============================================================
+# Phase 2B-5C 曾记录"含 detected=False 的合法混合 CSV 会被
+# np.genfromtxt(delimiter=",", names=True) 子检查误判"这一缺陷；
+# 该缺陷已在 Phase 2B-5D 修复（子检查不再调用 np.genfromtxt，
+# 改为复用 csv.reader 解析出的 rows 做等价对账），关键回归见本文件末尾 TEST 22。
+# ------------------------------------------------------------
         assert read_rows[2]["time_s"] == pytest.approx(2 / fps, abs=1e-6), name
 
     checks, passed = check_csv_data(
@@ -748,3 +742,54 @@ def test_m3_production_csv_writer_roundtrip(tmp_path):
         assert read_rows[1]["time_s"] == pytest.approx(1 / fps, abs=1e-6), name
         assert read_rows[2]["detected"] is True, name
         assert read_rows[2]["x_px"] == 1002.0, name
+
+
+# ============================================================
+# M3 QC 对合法混合 detected=True/False 生产 CSV 的回归（Phase 2B-5D，TEST 22）
+# 保护对象：src/video_tracker.py —— check_csv_data() 中"失败字段语义"这一子检查。
+# 缺陷：旧实现用 np.genfromtxt(delimiter=",", names=True) 直接读同一份 CSV，它把
+#       "True" / "False" 列整列读成 float64 的 NaN；np.count_nonzero(NaN) 恒为真，
+#       于是 true_count 恒等于数据行数、miss_count 恒为 0，只要 CSV 里存在任何
+#       detected=False 行（生产 writer 的合法产物），该子检查就误判为未通过。
+# 本测试用生产 build_csv_row() 生成真实混合 CSV，锁定"合法混合必须 passed=True"。
+# ============================================================
+
+
+def test_m3_check_csv_data_accepts_legal_mixed_true_false_csv(tmp_path):
+    """TEST 22（关键回归）—— build_csv_row() 生成的合法混合 True/False CSV 必须通过 M3 QC。
+
+    生产 build_csv_row() 合法地会写 detected=False + x/y/area 全空的失败行；
+    check_csv_data() 必须接受这种合法混合 CSV（passed=True），
+    而不是被旧 np.genfromtxt 子检查误判为未通过（本测试在修复前失败）。
+    """
+    fps = 24.0
+    frame_width, frame_height = 1920, 1080
+
+    # frame 0 / 2 检出（有限 x/y/area），frame 1 / 3 未检出（x/y/area 全空），
+    # 全部由生产 writer build_csv_row() 原样生成。
+    specs = [
+        (0, True, 1000.0, 450.0, 3000.0),
+        (1, False, None, None, None),
+        (2, True, 1002.0, 450.0, 3000.0),
+        (3, False, None, None, None),
+    ]
+    rows = [
+        build_csv_row(fi, fi / fps, _m3_writer_result(det, x, y, area))
+        for fi, det, x, y, area in specs
+    ]
+    path = _write_m3_writer_csv(Path(tmp_path) / "m3_writer_mixed_true_false.csv", rows)
+
+    checks, passed = check_csv_data(
+        path,
+        expected_rows=len(rows),
+        frame_width=frame_width,
+        frame_height=frame_height,
+        fps=fps,
+    )
+
+    assert passed is True, checks
+    assert _time_axis_check(checks) is True
+    # 修复只替换"失败字段语义"这一子检查的实现，不增删、不重排检查项。
+    assert len(checks) == 10
+    # 第 10 项（原 np.genfromtxt 子检查，现为等价语义）必须判过。
+    assert checks[-1][1] is True

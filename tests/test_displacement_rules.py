@@ -6,7 +6,8 @@ VisionMotion —— M4 / M5 位移规则测试（Phase 2B-2，TEST 08 ~ TEST 11�
     src/dynamic_displacement.py  （M5，EXP-004：gate 4500~6500 px² / y 200~250，s0 窗口 2.0 s / 60 帧）
 
 覆盖：gate 真值表与两套 gate 不混用 / s0 窗口与帧数下限 / ds 行格式与端到端产出 /
-      畸形 track CSV 与非法 detected 文本的防护（已知 bug 用 strict xfail 标记，本阶段不改 src/）。
+      畸形 / 截断 CSV 的防护（M3 check_csv_data 已做防御性最小修复，TEST 11A 必须通过）/
+      非法 detected 文本必须被拒绝（独立缺陷，TEST 11B 继续 strict xfail）。
 """
 
 import math
@@ -16,6 +17,7 @@ import pytest
 from src import displacement as m4
 from src import dynamic_displacement as m5
 from src.calibration import project_point
+from src.video_tracker import check_csv_data
 
 
 def _track_rows(xs, *, valid_y, valid_area, invalid_y, missed=(), invalid=()):
@@ -248,26 +250,38 @@ def test_ds_row_format_and_m4_pipeline_end_to_end(write_track_csv, tmp_path):
             assert ds_row[5] == ""
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "已知 bug（本阶段禁止修改 src/）：(1) detected=True 但 x_px 缺失的行按模块自述应判 invalid，"
-        "当前会进入投影流程；(2) detected 列文本不是 True/False 时当前被静默解析为 False，"
-        "按 M3 / M4 / M5 的 CSV 规范应先明确报错。"
-    ),
-)
-def test_malformed_track_csv_and_illegal_detected_are_rejected(tmp_path, write_track_csv):
-    """TEST 11 —— track CSV 防护：结构畸形必须明确报错；缺失 / 非法 detected 不得静默当 False。"""
-    good_row = {
-        "frame": 0,
-        "time_s": 0.0,
-        "x_px": 1000.0,
-        "y_px": 450.0,
-        "area_px": 3000.0,
-        "detected": True,
+def test_malformed_csv_is_reported_not_raised(tmp_path):
+    """TEST 11A —— M3 check_csv_data：畸形 / 截断 CSV 必须返回“未通过”，而不是抛 IndexError / ValueError。
+
+    原 TEST 11 把“畸形 CSV 解析异常”和“非法 detected 文本被静默接受”两个彼此独立的缺陷
+    绑在同一个测试里：缺陷 A 修好后会让整个测试意外通过，从而掩盖仍然存在的缺陷 B；
+    因此按任务要求拆分为 TEST 11A（本测试，必须通过）与 TEST 11B（独立缺陷，继续 strict xfail）。
+    """
+    header = "frame,time_s,x_px,y_px,area_px,detected"
+
+    malformed_cases = {
+        # ① 截断行（列数不足）：旧实现第二次遍历时 row[3] / row[5] 越界 -> IndexError
+        "truncated_row": header + "\n0,0.000000,1000.00\n",
+        # ② frame 不是整数：旧实现第二次遍历 int(row[0]) -> ValueError
+        "non_integer_frame": header + "\nabc,0.000000,1000.00,450.00,3000.0,True\n",
+        # ③ detected=True 但必需数值字段为空（必需字段不存在）
+        "missing_required_field": header + "\n0,0.000000,,450.00,3000.0,True\n",
+        # ④ 数值字段无法转 float
+        "non_numeric_measurement": header + "\n0,0.000000,oops,450.00,3000.0,True\n",
     }
 
-    # (a) 表头不符 / 列数不对：应明确抛 ValueError，而不是继续产出数据
+    for name, text in malformed_cases.items():
+        csv_path = tmp_path / ("malformed_%s.csv" % name)
+        csv_path.write_text(text, encoding="utf-8")
+        # 关键：必须“正常运行 + 返回失败结果”，绝不向外抛 IndexError / ValueError
+        checks, passed = check_csv_data(
+            csv_path, expected_rows=1, frame_width=640, frame_height=480
+        )
+        assert checks, name
+        assert passed is False, name
+
+    # 读者侧的结构畸形防护（原 TEST 11(a)，本身无缺陷、保持通过）：
+    # 表头不符 / 列数不对必须明确抛 ValueError，而不是继续产出数据
     bad_header = tmp_path / "bad_header.csv"
     bad_header.write_text(
         "frame,time,px,py,area,detected\n0,0.0,1.0,1.0,1.0,True\n", encoding="utf-8"
@@ -285,27 +299,17 @@ def test_malformed_track_csv_and_illegal_detected_are_rejected(tmp_path, write_t
     with pytest.raises(ValueError):
         m5.read_track_csv(bad_columns)
 
-    # (b) detected=True 但 x_px 为空：属于数据缺失，应判 invalid（不填 0、不进入投影）
-    missing_x_rows = [
-        good_row,
-        {
-            "frame": 1,
-            "time_s": 1 / 30,
-            "x_px": None,
-            "y_px": 450.0,
-            "area_px": 3000.0,
-            "detected": True,
-        },
-    ]
-    track_path = write_track_csv(missing_x_rows)
-    parsed = m4.read_track_csv(track_path)
-    m4.add_valid_flags(parsed)
-    assert parsed[1]["valid"] is False, (
-        "detected=True 但 x_px 缺失的行必须判为 invalid（数据缺失不能用）"
-    )
-    m4.add_projection(parsed)  # 不得因缺失 x 崩溃
 
-    # (c) detected 列只能写 True / False；'1' / 'yes' / 'true' / 空 这类文本必须报错
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "已知独立缺陷（本阶段禁止修改 src/）：detected 列文本不是 True/False 时"
+        "（如 '1' / 'yes' / 'true' / 空字符串），read_track_csv 当前用 (record[5] == 'True') "
+        "静默解析为 False，而不是按 M3 / M4 / M5 的 CSV 规范明确报错。"
+    ),
+)
+def test_illegal_detected_values_are_rejected(tmp_path):
+    """TEST 11B —— illegal detected 文本必须被拒绝：独立缺陷，继续保持 strict xfail。"""
     for illegal_text in ("1", "yes", "true", ""):
         illegal = tmp_path / ("illegal_%s.csv" % (illegal_text or "empty"))
         illegal.write_text(

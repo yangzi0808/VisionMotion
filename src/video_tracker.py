@@ -682,7 +682,16 @@ def check_csv_data(csv_path, expected_rows, frame_width, frame_height):
     zero_zero_rows = []
     out_of_range_rows = []
     for row in data_rows:
-        frame_number = int(row[0])
+        # 畸形行（列数与表头不一致）已由上面的 frame 格式检查判为“未通过”；
+        # 这里必须同样跳过，否则对 short row 直接索引会抛 IndexError，
+        # 让整个自检崩溃，而不是按既有设计返回失败结果。
+        if len(row) != len(CSV_FIELDNAMES):
+            continue
+        try:
+            frame_number = int(row[0])
+        except ValueError:
+            # frame 非整数同样已被 frame 格式检查判为“未通过”，跳过以免 ValueError 外泄。
+            continue
         x_text, y_text, area_text = row[2], row[3], row[4]
         detected_text = row[5]
 

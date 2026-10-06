@@ -222,7 +222,7 @@ git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 | # | 命令 | 实测耗时 | 说明 |
 | --- | --- | --- | --- |
 | 4 | `.venv\Scripts\python.exe demo\run_m53_plot.py` | 0.94 s | 只读 `results/EXP-004-DYNAMIC-001_ds.csv`（1766 行），生成 1800×900 `results/EXP-004-DYNAMIC-001_displacement.png`，并打印 CSV SHA-256 前后一致：`704D6C64…4163` |
-| 5 | `.venv\Scripts\python.exe demo\run_video_tracking.py` | 未实测 | 需要本地 `data/raw/EXP-002-VIDEO-001.mp4`（952 帧，15.83 s）；预计数十秒，请提前试跑后再决定是否入镜 |
+| 5 | `.venv\Scripts\python.exe demo\run_video_tracking.py` | 未实测 | 需要本地 `data/raw/EXP-002-VIDEO-001.mp4`（当前正式基线：1920 × 1080、24.0 FPS、170 帧、约 7.083 s）；产出 `results/EXP-002-VIDEO-001_track.csv`（170 数据行，frame 0–169，detected 170/170）与 `results/EXP-002-VIDEO-001_overlay.mp4`（960 × 540 / 24 FPS / 170 帧）；请提前试跑后再决定是否入镜 |
 | 6 | `.venv\Scripts\python.exe demo\pick_calibration_points.py` | 交互式 | 需鼠标点选 P1/P2 两个刻度点后按 Enter 确认，**不建议现场录制**，可改为播放预录屏 |
 
 ### 5.4 演示脚本的可重复性说明

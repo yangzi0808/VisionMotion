@@ -170,6 +170,20 @@ SHA256_SAMPLE_DIGEST = hashlib.sha256(SHA256_SAMPLE_BYTES).hexdigest()
 WRONG_SHA256 = "0" * 64
 
 
+# ============================================================
+# Phase 2B-5B：M6.2 轨迹 QC 必须显式拒绝非有限的 y0_px
+#
+# 缺陷：src/external_oscillation_tracker.py 的 check_trajectory_csv() 此前只检查
+# y0_px 是否有空值（None），而 load_trajectory_csv() 会把 "nan" / "inf" / "-inf"
+# 解析成非有限的 float（float() 本身不报错）。这类值既不是 None，又会让所有比较
+# （如突跳 |Δy0| > 30）恒为 False，于是 16 项检查全部通过、passed=True —— 属于
+# 真正的 QC 假通过（false positive）。
+#
+# 本阶段只修这一处：y0_px 是正式轨迹坐标，必须显式通过"有限性"闸门。
+# 这是 QC / data-integrity gate 问题，不是 parser 问题（CSV 仍应可被解析）。
+# ============================================================
+
+
 def _m62_all_other_checks_pass():
     """
     构造“除 SHA 外全部通过”的 M6.2 QC 输入（只喂 check_trajectory_csv，不写任何文件）：
@@ -198,6 +212,47 @@ def _m62_all_other_checks_pass():
 def _m62_sha_checks(checks):
     """取出 checks 里唯一一条 SHA-256 完整性判据（True / False）。"""
     return [ok for description, ok in checks if "SHA-256 完整性" in description]
+
+
+M62_FINITE_CHECK_KEY = "有限性"
+
+
+def _m62_finite_checks(checks):
+    """取出 checks 里唯一的 y0_px 有限性判据（True / False）。"""
+    return [ok for description, ok in checks if M62_FINITE_CHECK_KEY in description]
+
+
+@pytest.mark.parametrize(
+    "nonfinite_y0",
+    [float("nan"), float("inf"), float("-inf")],
+    ids=["nan", "inf", "-inf"],
+)
+def test_m62_nonfinite_y0_px_is_blocked_by_qc(nonfinite_y0):
+    """
+    TEST 18 —— QC 层：y0_px 为 NaN / inf / -inf 时，必须由有限性 gate 拉低 passed。
+
+    构造（复用 _m62_all_other_checks_pass）：其它字段与检查全部合法——160 帧、
+    frame 连续、detected 全 True、无空值、无突跳、无候选歧义、time_s = frame / fps、
+    SHA-256 正确——仅把每一行的 y0_px 整体设为同一个非有限值。
+
+    断言：有限性检查为 False；除该 gate 外其余检查仍全为 True（证明阻断确实来自
+    新增的有限性 gate，而不是"顺便"被别的检查判掉）；overall passed=False。
+    """
+    csv_data, run_rows, fps = _m62_all_other_checks_pass()
+    for row in csv_data["rows"]:
+        row["y0_px"] = nonfinite_y0
+
+    checks, passed = m62.check_trajectory_csv(
+        csv_data, run_rows, fps,
+        sha256_before=m62.EXTERNAL_VIDEO_SHA256,
+        sha256_after=m62.EXTERNAL_VIDEO_SHA256,
+        expected_sha256=m62.EXTERNAL_VIDEO_SHA256,
+    )
+
+    assert _m62_finite_checks(checks) == [False]
+    # 除有限性 gate 外的所有检查都仍然为 True：阻断确实来自新增 gate
+    assert all(ok for description, ok in checks if M62_FINITE_CHECK_KEY not in description)
+    assert passed is False
 
 
 def test_m62_video_sha256_ok_unit_with_small_temp_file(tmp_path):

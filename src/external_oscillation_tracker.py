@@ -41,6 +41,7 @@ VisionMotion —— M6.2-2C 外部公开视频正式振荡轨迹模块
 
 import csv
 import hashlib
+import math
 from pathlib import Path
 
 import cv2
@@ -530,6 +531,18 @@ def check_trajectory_csv(csv_data, run_rows, fps, start_frame=START_FRAME, end_f
         ("原始视频 SHA-256 完整性：运行前 = 预期基线 %s…、运行后 = 运行前（原始视频未被改动）"
          % str(expected_sha256).lower()[:12],
          sha256_ok)
+    )
+
+    # 17. y0_px 有限性（数据有效性 gate）
+    #     第 6 项只拦截空值（None），而 load_trajectory_csv() 会把 CSV 中的
+    #     "nan" / "inf" / "-inf" 正常解析成非有限的 float；这类值不是 None，
+    #     又会让突跳比较（|Δy0| > 30）恒为 False，于是在原有 16 项里静默通过。
+    #     y0_px 是正式轨迹坐标，一旦非有限即不能作为合法轨迹参与 QC。
+    nonfinite_y0 = [row["frame"] for row in rows
+                    if row["y0_px"] is not None and not math.isfinite(row["y0_px"])]
+    checks.append(
+        ("y0_px 有限性（NaN / ±inf 不合格）：非有限值数量 = %d" % len(nonfinite_y0),
+         len(nonfinite_y0) == 0)
     )
 
     passed = all(ok for _, ok in checks)

@@ -1,12 +1,16 @@
-# VisionMotion 第一阶段依赖
-# 说明：本文件只列第一阶段明确需要的 Python 第三方库，版本号等第一次跑通后再固定。
+# VisionMotion v1.0 direct dependencies
 # 安装命令：pip install -r requirements.txt
 
+## Core runtime
 # 视频读取、图像预处理、阈值分割、轮廓检测
-opencv-python
-
+opencv-python==5.0.0.93
 # 数组运算、质心计算与基础统计
-numpy
+numpy==2.5.3
 
+## Visualization / presentation
 # 位移-时间曲线与结果绘图
-matplotlib
+matplotlib==3.11.2
+# 图像处理与结果图片输出（PNG 掩膜 / 叠加图）
+Pillow==12.3.0
+# PPT 结果归档输出
+python-pptx==1.0.2

@@ -672,7 +672,7 @@ bbox
   - 第 97～98 行：`if moments["m00"] == 0: return None`；
   - 第 100～101 行：`cx = moments["m10"] / moments["m00"]`、`cy = moments["m01"] / moments["m00"]`；第 102 行：`return cx, cy`；
   - 第 105 行：`def detect_marker(image_bgr):`；第 129 行 `create_red_mask(...)`、第 131 行 `find_target_contour(...)`、第 135 行 `calculate_centroid(...)`、第 140 行 `cv2.contourArea(contour)`、第 141 行 `cv2.boundingRect(contour)`、第 143～151 行结果字典（失败时为第 132～133、136～137 行的 `{"success": False, "mask": mask}`）。
-- 调用方信息（用于说明接口，不属于本节新算法）：`demo\run_single_image_detection.py` 第 115 行 `result = detect_marker(image)`；`src\video_tracker.py` 第 365 行 `result = detect_marker(frame)`。
+- 调用方信息（用于说明接口，不属于本节新算法）：`demo\run_single_image_detection.py` 第 115 行 `result = detect_marker(image)`；`src\video_tracker.py::save_fallback_frames()` 第 371 行 `result = detect_marker(frame)`（2026-10-07 复核）。
 - 本笔记中的教学示例（50 点边界压缩示意、14×14 / 15×15 正方形算术、L 形质心示意、红色布假想场景等）均为课堂教学示例，**不是项目实际数据**；项目真实参数与代码一律以 `src\marker_detector.py` 的当前源码为准。
 - 行号说明：以上行号按 2026-09-29 当前源码核对；如果实际源码行号发生变化，以当前真实源码为准。
 - 本笔记未运行任何程序，未重新计算任何实验结果，未修改任何代码、数据或结果文件。

@@ -202,7 +202,7 @@
 | --- | --- | --- |
 | 检测模块（本节源码主角） | `src\marker_detector.py` | 红色 HSV 阈值常量与 `create_red_mask` / `find_target_contour` 的实现（本节引用第 22～27、48、51～52、55、73、110 行） |
 | M2 单图检测调用方 | `demo\run_single_image_detection.py` | 读取图片后调用 `detect_marker(image)`（第 115 行），走的就是本节的红色 Mask 流程 |
-| M3 视频逐帧检测调用方 | `src\video_tracker.py` | 逐帧调用 `detect_marker(frame)`（第 485 行；2026-09-29 复核，行号以当前源码为准），检测参数唯一来源写在文件头注释里（`src\marker_detector.py`） |
+| M3 视频逐帧检测调用方 | `src\video_tracker.py` | 逐帧调用 `detect_marker(frame)`（`track_video()` 第 491 行；2026-10-07 复核，行号以当前源码为准），检测参数唯一来源写在文件头注释里（`src\marker_detector.py`） |
 | 本节课笔记 | `docs\learning\L03_像素_颜色空间与Mask.md` | 22 节完整笔记（含自测题 20 道，均不附答案） |
 
 ### 本节课确认的源码事实
@@ -283,7 +283,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 | --- | --- | --- |
 | 检测模块（本节源码主角） | `src\marker_detector.py` | `MIN_AREA` 与 `find_target_contour` / `calculate_centroid` / `detect_marker` 的实现（本节引用第 33、66、73、75～76、78～80、82～84、86、89、95、97～98、100～101、102、105、129、131、135、140、141、143～151 行） |
 | M2 单图检测调用方 | `demo\run_single_image_detection.py` | 第 115 行 `result = detect_marker(image)`，走的就是本节"Mask → Contour → 质心"的完整流程 |
-| M3 视频逐帧检测调用方 | `src\video_tracker.py` | 第 485 行 `result = detect_marker(current_frame)`（2026-09-29 复核：旧行号 365 已随源码更新失效，详见 L05 小节），逐帧复用本节的检测流程（逐帧追踪实现细节已在 L05 学习） |
+| M3 视频逐帧检测调用方 | `src\video_tracker.py` | `track_video()` 第 491 行 `result = detect_marker(current_frame)`（2026-10-07 复核，行号以当前源码为准；详见 L05 小节），逐帧复用本节的检测流程（逐帧追踪实现细节已在 L05 学习） |
 | 本节课笔记 | `docs\learning\L04_Contour_Moments_Centroid.md` | 20 节完整笔记（含自测题 18 道，均不附答案） |
 
 ### 本节课确认的源码事实
@@ -340,43 +340,43 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 - 用一句话说清视频与 Frame 的关系：视频可以理解成按时间顺序排列的一系列静态图片，每一帧是一个 Frame；
 - 理解"视频不是一张巨大图片"：视频处理采用"一次拿一帧 → 处理 → 换下一帧"的方式；
 - 理解 FPS（每秒多少帧）与时间采样：30 fps 时相邻帧间隔 1/30 s ≈ 0.033333 s，视频数据是离散采样，时间分辨率为 1/fps；
-- 读懂 `time_s = frame_index / fps`（第 488 行），理解 fps 从视频文件读取、未硬编码（第 124、147 行），并知道 fps <= 0 时程序停止处理（第 432～435 行）；
-- 理解 `cv2.VideoCapture`（第 119 行）的作用（从视频文件中读取帧的对象），以及 `cap.get()` 读取 fps、总帧数等属性（第 124～125 行）；
-- 读懂 `cap.read()` 返回的两个值（第 438、521 行）：`ret` 表示是否成功读取，`frame` 是当前一张图像（BGR NumPy 数组）；
-- 理解 `current_frame`（第 474 行初始化、第 526 行更新）表示"当前正在处理的那一帧"，不是整个视频，每次循环结束后被新的下一帧替换；
-- 读懂 `track_video()` 的逐帧主循环（第 483～529 行）：检测 → 时间 → 写 CSV → 生成可视化 → 读取下一帧 → 判断结束 → 更新状态；
+- 读懂 `time_s = frame_index / fps`（`track_video()` 第 494 行），理解 fps 从视频文件读取、未硬编码（第 130、153 行），并知道 fps <= 0 时程序停止处理（第 438～441 行）；
+- 理解 `cv2.VideoCapture`（`open_video()` 第 125 行）的作用（从视频文件中读取帧的对象），以及 `cap.get()` 读取 fps、总帧数等属性（第 130～131 行）；
+- 读懂 `cap.read()` 返回的两个值（第 444、527 行）：`ret` 表示是否成功读取，`frame` 是当前一张图像（BGR NumPy 数组）；
+- 理解 `current_frame`（第 480 行初始化、第 532 行更新）表示"当前正在处理的那一帧"，不是整个视频，每次循环结束后被新的下一帧替换；
+- 读懂 `track_video()` 的逐帧主循环（第 489～535 行）：检测 → 时间 → 写 CSV → 生成可视化 → 读取下一帧 → 判断结束 → 更新状态；
 - 记住本节最重要的一句话："单张图片检测升级为视频处理，本质上是把同一个检测函数放进逐帧循环中"；
-- 说清 `marker_detector.py` 与 `video_tracker.py` 的分工：前者回答"这一张图片里目标在哪里"，后者负责"视频什么时候读哪一帧、如何循环、如何记录结果、如何输出"（第 34 行导入、第 485 行调用）；
-- 理解"处理当前帧 → 读取下一帧 → 判断是否结束"（第 485、491、521、522～524 行）的顺序保证最后一帧也被正常处理；
-- 理解检测失败的规范：`detected=False`、坐标字段留空，绝不写 0 / -1 / nan / 字符串（第 393、404 行），即"测不到，就明确标记缺失，而不是制造一个假测量"；
-- 理解 VideoWriter（第 246～247 行）与 Overlay Video 的用途（第 507～515 行写入）：人工检查检测框有没有跑偏、中心点有没有跟着目标、哪些帧检测失败；
-- 理解 `release()` 与 `try / finally`（第 534～538 行）：即使中途异常或 Ctrl+C，也尽量完成资源清理（第 530～533 行）。
+- 说清 `marker_detector.py` 与 `video_tracker.py` 的分工：前者回答"这一张图片里目标在哪里"，后者负责"视频什么时候读哪一帧、如何循环、如何记录结果、如何输出"（第 34 行导入、第 491 行调用）；
+- 理解"处理当前帧 → 读取下一帧 → 判断是否结束"（第 491、497、527、528～530 行）的顺序保证最后一帧也被正常处理；
+- 理解检测失败的规范：`detected=False`、坐标字段留空，绝不写 0 / -1 / nan / 字符串（第 399、410 行），即"测不到，就明确标记缺失，而不是制造一个假测量"；
+- 理解 VideoWriter（`open_overlay_writer()` 第 252～253 行）与 Overlay Video 的用途（第 513～521 行写入）：人工检查检测框有没有跑偏、中心点有没有跟着目标、哪些帧检测失败；
+- 理解 `release()` 与 `try / finally`（第 540～544 行）：即使中途异常或 Ctrl+C，也尽量完成资源清理（第 536～539 行）。
 
 ### 核心概念
 
 1. 视频 = 按时间顺序排列的一系列静态图片；每一帧是一个 Frame；Frame 是实际的图像数组（BGR NumPy 数组），不是抽象概念；视频不是"一张巨大图片"；
 2. 逐帧处理节奏："一次拿一帧 → 处理 → 换下一帧"；处理视频 = 对每一帧重复做单张图片能做的一切；
 3. FPS 决定相邻帧的时间间隔：30 fps → 1/30 s ≈ 0.033333 s；视频数据是离散采样，只能在帧时刻取值，时间分辨率 = 1/fps；
-4. `time_s = frame_index / fps`（第 488 行）：把帧号翻译成时间；frame_index 从 0 开始（第 475 行），所以第 0 帧 time_s = 0；CSV 中 time_s 写 6 位小数（第 398、404 行）；
-5. fps 从文件读取（第 124 行）、未硬编码（第 147 行打印说明）；非法 fps（<= 0）时第 432～435 行释放资源并停止；
-6. `cv2.VideoCapture(str(video_path))`（第 119 行）创建视频读取对象；打开失败明确返回 `(None, None)`（第 120～121 行）；`cap.get()` 可读 fps（第 124 行）、总帧数（第 125 行）、旋转元数据（第 128～131 行）；
-7. `cap.read()` 返回 `(ret, frame)`：`ret` 是"是否成功读取"的布尔标志，`frame` 才是图像数据；判断结束看 ret（第 522 行），检测用 frame（第 485 行）；
-8. 第一帧单独读取（第 438 行）用于确定程序实际处理的画面尺寸（第 444～457 行）；随后第 474 行 `current_frame = first_frame` 让第一帧直接进入循环处理，不浪费；
-9. `current_frame` 是"当前正在处理的那一帧"：第 474 行初始化为 first_frame，第 526 行被替换为 next_frame；它不是整个视频，也不携带历史（历史靠 CSV 与 records 记账，第 491、493～504 行）；
-10. 逐帧主循环（第 483 行 `while True`）：第 485 行 `detect_marker(current_frame)` → 第 488 行 `time_s` → 第 491 行写 CSV（每帧一行、失败也写）→ 第 507～515 行写叠加帧 → 第 521 行读下一帧 → 第 522～524 行判断结束 → 第 525～526 行更新 frame_index 与 current_frame；
+4. `time_s = frame_index / fps`（第 494 行）：把帧号翻译成时间；frame_index 从 0 开始（第 481 行），所以第 0 帧 time_s = 0；CSV 中 time_s 写 6 位小数（第 404、410 行）；
+5. fps 从文件读取（第 130 行）、未硬编码（第 153 行打印说明）；非法 fps（<= 0）时第 438～441 行释放资源并停止；
+6. `cv2.VideoCapture(str(video_path))`（第 125 行）创建视频读取对象；打开失败明确返回 `(None, None)`（第 126～127 行）；`cap.get()` 可读 fps（第 130 行）、总帧数（第 131 行）、旋转元数据（第 134～137 行）；
+7. `cap.read()` 返回 `(ret, frame)`：`ret` 是"是否成功读取"的布尔标志，`frame` 才是图像数据；判断结束看 ret（第 528 行），检测用 frame（第 491 行）；
+8. 第一帧单独读取（第 444 行）用于确定程序实际处理的画面尺寸（第 456～463 行）；随后第 480 行 `current_frame = first_frame` 让第一帧直接进入循环处理，不浪费；
+9. `current_frame` 是"当前正在处理的那一帧"：第 480 行初始化为 first_frame，第 532 行被替换为 next_frame；它不是整个视频，也不携带历史（历史靠 CSV 与 records 记账，第 497、499～510 行）；
+10. 逐帧主循环（第 489 行 `while True`）：第 491 行 `detect_marker(current_frame)` → 第 494 行 `time_s` → 第 497 行写 CSV（每帧一行、失败也写）→ 第 513～521 行写叠加帧 → 第 527 行读下一帧 → 第 528～530 行判断结束 → 第 531～532 行更新 frame_index 与 current_frame；
 11. 本节最重要的一句话："单张图片检测升级为视频处理，本质上是把同一个检测函数放进逐帧循环中"——`detect_marker()` 本身一行未改（复用 L02～L04）；
-12. 模块化分工：`marker_detector.py` 负责"这一张图片里目标在哪里"；`video_tracker.py` 负责"视频什么时候读哪一帧、如何循环、如何记录结果、如何输出"；检测参数唯一来源是 `marker_detector.py`（第 19～21 行模块说明，第 34 行导入，第 485 行调用）；
-13. 视频结束：第 521～524 行"读取下一帧 → 读不到就 break"；"处理当前帧 → 读取下一帧 → 判断是否结束"的顺序保证最后一帧也被处理；视频结束是正常终止，不是检测失败；
-14. 检测失败：`detected=False`、坐标字段为空（第 393、404 行）；不写 0 / -1 / nan / 字符串；`check_csv_data()`（第 637 行起）用多条检查项验证这一点（第 689～715 行）；
-15. VideoWriter：`open_overlay_writer()`（第 236～252 行）用第 246～247 行创建写入器，编码器候选 mp4v / avc1（第 47 行）；主流程第 507～515 行写入叠加帧；全部编码器失败时走代表性 PNG 回退（第 466、542～549 行）；
-16. Overlay Video 的用途：人工检查检测框有没有跑偏、中心点有没有跟着目标、哪些帧检测失败（失败帧只显示 DETECTION FAILED，第 190～201 行）；它是检查工具，不是新的测量数据；
-17. 资源清理：第 534～538 行 `finally` 中 `csv_file.close()` / `cap.release()` / `writer.release()`；配合 `try`（第 482 行）与 `except KeyboardInterrupt`（第 530～533 行），保证异常或中断时也尽量完成清理。
+12. 模块化分工：`marker_detector.py` 负责"这一张图片里目标在哪里"；`video_tracker.py` 负责"视频什么时候读哪一帧、如何循环、如何记录结果、如何输出"；检测参数唯一来源是 `marker_detector.py`（第 19～21 行模块说明，第 34 行导入，第 491 行调用）；
+13. 视频结束：第 527～530 行"读取下一帧 → 读不到就 break"；"处理当前帧 → 读取下一帧 → 判断是否结束"的顺序保证最后一帧也被处理；视频结束是正常终止，不是检测失败；
+14. 检测失败：`detected=False`、坐标字段为空（第 399、410 行）；不写 0 / -1 / nan / 字符串；`check_csv_data()`（第 643 行起）用多条检查项验证这一点（第 736～740、794～818 行）；
+15. VideoWriter：`open_overlay_writer()`（第 242～258 行）用第 252～253 行创建写入器，编码器候选 mp4v / avc1（第 47 行）；主流程第 513～521 行写入叠加帧；全部编码器失败时走代表性 PNG 回退（第 472、548～555 行）；
+16. Overlay Video 的用途：人工检查检测框有没有跑偏、中心点有没有跟着目标、哪些帧检测失败（失败帧只显示 DETECTION FAILED，第 196～207 行）；它是检查工具，不是新的测量数据；
+17. 资源清理：第 540～544 行 `finally` 中 `csv_file.close()` / `cap.release()` / `writer.release()`；配合 `try`（第 488 行）与 `except KeyboardInterrupt`（第 536～539 行），保证异常或中断时也尽量完成清理。
 
 ### 对应的项目文件
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
-| 视频追踪模块（本节源码主角） | `src\video_tracker.py` | `open_video` / `track_video` / `open_overlay_writer` / `build_csv_row` / `check_csv_data` 等实现（本节引用第 34、41、44、47、119～125、139、169、236～250、387～404、407、426～461、474～479、483～538、556～580、585、606、637 行） |
+| 视频追踪模块（本节源码主角） | `src\video_tracker.py` | `open_video` / `track_video` / `open_overlay_writer` / `build_csv_row` / `check_csv_data` 等实现（本节引用第 34、41、44、47、125～131、145、175、242～256、393～410、413、432～467、480～485、489～544、562～586、591、612、643 行） |
 | 检测模块（被复用，未修改） | `src\marker_detector.py` | 提供 `detect_marker()`；检测参数的唯一来源（对应 L02～L04） |
 | M3 视频追踪调用方 | `demo\run_video_tracking.py` | 第 35、37、38 行指定输入输出路径，第 43 行调用 `track_video()`，第 49 行打印统计，第 52～58 行 CSV 自检，第 63～66 行 SHA-256 对比 |
 | 本节课笔记 | `docs\learning\L05_从单张图片到视频_逐帧处理.md` | 19 节完整笔记（含自测题 18 道，均不附答案） |
@@ -388,43 +388,43 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 - 第 34 行：`from src.marker_detector import detect_marker`（模块分工与函数复用的入口）；
 - 第 41 行：`CSV_FIELDNAMES = ["frame", "time_s", "x_px", "y_px", "area_px", "detected"]`；
 - 第 44、47、50 行：`OVERLAY_SCALE = 0.5`、`OVERLAY_CODECS = ("mp4v", "avc1")`、`MAX_FALLBACK_PNGS = 5`；
-- 第 113 行：`def open_video(video_path):`；第 119 行：`cap = cv2.VideoCapture(str(video_path))`；第 120～121 行：打开失败返回 `(None, None)`；
-- 第 124 行：`video_info["fps"] = float(cap.get(cv2.CAP_PROP_FPS))`；第 125 行：`video_info["frame_count"] = int(round(cap.get(cv2.CAP_PROP_FRAME_COUNT)))`；第 128～131 行：旋转元数据；第 134 行：`enable_orientation_auto(cap)`；
-- 第 139 行：`def print_video_info(...)`；第 147 行：打印"实际 FPS：…（从当前视频文件读取，未硬编码）"；
-- 第 169 行：`def draw_tracking_frame(...)`；第 190～201 行：检测失败时只显示 DETECTION FAILED，不画任何虚假中心；
-- 第 236 行：`def open_overlay_writer(overlay_path, fps, frame_size):`；第 246 行：`fourcc = cv2.VideoWriter_fourcc(*codec_name)`；第 247 行：`writer = cv2.VideoWriter(str(overlay_path), fourcc, fps, (width, height))`；第 248～249 行：`writer.isOpened()` 后返回 `(writer, codec_name)`；第 250 行：失败候选 `writer.release()`；
-- 第 299～307 行：`read_frame_at()`（PNG 回退时用 `cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)` 跳帧读取）；第 365 行：回退方案中 `result = detect_marker(frame)`；
-- 第 387 行：`def build_csv_row(frame_index, time_s, result):`；第 393 行：文档字符串"失败时绝不写 0 / -1 / nan / 字符串"；第 395～403 行：成功行；第 404 行：失败行 `return [frame_index, "%.6f" % time_s, "", "", "", "False"]`；
-- 第 407 行：`def track_video(video_path, csv_path, overlay_path):`；第 422 行：`sha256_before = compute_sha256(video_path)`；第 426 行：`cap, video_info = open_video(video_path)`；第 431～435 行：fps 非法时释放并停止；
-- 第 438 行：`ret, first_frame = cap.read()`（第一次读取第一帧）；第 446～457 行：叠加视频 0.5 倍缩放与 `scale_x / scale_y`；第 459～461 行：`open_overlay_writer(...)`；
-- 第 474～475 行：`current_frame = first_frame`、`frame_index = 0`；第 477～479 行：打开 CSV 并写表头；第 482 行：`try:`；
-- 第 483 行：`while True:`；第 485 行：`result = detect_marker(current_frame)`；第 488 行：`time_s = frame_index / fps`；第 491 行：`csv_writer.writerow(build_csv_row(frame_index, time_s, result))`；第 493～504 行：每帧 `record` 记账；
-- 第 507～515 行：`cv2.resize` → `draw_tracking_frame` → `writer.write(overlay)`（写叠加帧）；第 517～518 行：PNG 回退时累计清晰度指标；
-- 第 521 行：`ret, next_frame = cap.read()`；第 522～524 行：`if not ret or next_frame is None: break`；第 525～526 行：`frame_index += 1`、`current_frame = next_frame`；第 528～529 行：每 200 帧打印进度；
-- 第 530～533 行：`except KeyboardInterrupt:`（提示已处理数据仍保留）；第 534～538 行：`finally:` 中 `csv_file.close()` / `cap.release()` / `writer.release()`；
-- 第 556～580 行：`summary` 统计字典；第 585 行：`compute_longest_miss_run`；第 606 行：`print_statistics`；第 637 行：`check_csv_data`（第 689～715 行的检查项验证"失败不伪造坐标"）。
+- 第 119 行：`def open_video(video_path):`；第 125 行：`cap = cv2.VideoCapture(str(video_path))`；第 126～127 行：打开失败返回 `(None, None)`；
+- 第 130 行：`video_info["fps"] = float(cap.get(cv2.CAP_PROP_FPS))`；第 131 行：`video_info["frame_count"] = int(round(cap.get(cv2.CAP_PROP_FRAME_COUNT)))`；第 134～137 行：旋转元数据；第 140 行：`enable_orientation_auto(cap)`；
+- 第 145 行：`def print_video_info(...)`；第 153 行：打印"实际 FPS：…（从当前视频文件读取，未硬编码）"；
+- 第 175 行：`def draw_tracking_frame(...)`；第 196～207 行：检测失败时只显示 DETECTION FAILED，不画任何虚假中心；
+- 第 242 行：`def open_overlay_writer(overlay_path, fps, frame_size):`；第 252 行：`fourcc = cv2.VideoWriter_fourcc(*codec_name)`；第 253 行：`writer = cv2.VideoWriter(str(overlay_path), fourcc, fps, (width, height))`；第 254～255 行：`writer.isOpened()` 后返回 `(writer, codec_name)`；第 256 行：失败候选 `writer.release()`；
+- 第 305～313 行：`read_frame_at()`（PNG 回退时用 `cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)` 跳帧读取）；第 371 行：回退方案中 `result = detect_marker(frame)`；
+- 第 393 行：`def build_csv_row(frame_index, time_s, result):`；第 399 行：文档字符串"失败时绝不写 0 / -1 / nan / 字符串"；第 401～409 行：成功行；第 410 行：失败行 `return [frame_index, "%.6f" % time_s, "", "", "", "False"]`；
+- 第 413 行：`def track_video(video_path, csv_path, overlay_path):`；第 428 行：`sha256_before = compute_sha256(video_path)`；第 432 行：`cap, video_info = open_video(video_path)`；第 438～441 行：fps 非法时释放并停止；
+- 第 444 行：`ret, first_frame = cap.read()`（第一次读取第一帧）；第 456～463 行：叠加视频 0.5 倍缩放与 `scale_x / scale_y`；第 465～467 行：`open_overlay_writer(...)`；
+- 第 480～481 行：`current_frame = first_frame`、`frame_index = 0`；第 483～485 行：打开 CSV 并写表头；第 488 行：`try:`；
+- 第 489 行：`while True:`；第 491 行：`result = detect_marker(current_frame)`；第 494 行：`time_s = frame_index / fps`；第 497 行：`csv_writer.writerow(build_csv_row(frame_index, time_s, result))`；第 499～510 行：每帧 `record` 记账；
+- 第 513～521 行：`cv2.resize` → `draw_tracking_frame` → `writer.write(overlay)`（写叠加帧）；第 523～524 行：PNG 回退时累计清晰度指标；
+- 第 527 行：`ret, next_frame = cap.read()`；第 528～530 行：`if not ret or next_frame is None: break`；第 531～532 行：`frame_index += 1`、`current_frame = next_frame`；第 534～535 行：每 200 帧打印进度；
+- 第 536～539 行：`except KeyboardInterrupt:`（提示已处理数据仍保留）；第 540～544 行：`finally:` 中 `csv_file.close()` / `cap.release()` / `writer.release()`；
+- 第 562～586 行：`summary` 统计字典；第 591 行：`compute_longest_miss_run`；第 612 行：`print_statistics`；第 643 行：`check_csv_data`（第 736～740、794～818 行的检查项验证"失败不伪造坐标"）。
 
 ### L05 源码地图
 
 | 位置（`src\video_tracker.py`） | 内容 |
 | --- | --- |
 | 第34行 | 导入 `detect_marker`（`from src.marker_detector import detect_marker`） |
-| 第119行 | `cv2.VideoCapture(str(video_path))` |
-| 第124行 | 读取 FPS（`cap.get(cv2.CAP_PROP_FPS)`） |
-| 第438行 | 读取第一帧（`ret, first_frame = cap.read()`） |
-| 第474～475行 | 初始化 `current_frame = first_frame` 与 `frame_index = 0` |
-| 第483行 | `while True:`（逐帧循环开始） |
-| 第485行 | `result = detect_marker(current_frame)` |
-| 第488行 | `time_s = frame_index / fps` |
-| 第491行 | 记录当前帧（`csv_writer.writerow(...)`） |
-| 第521行 | 读取下一帧（`ret, next_frame = cap.read()`） |
-| 第522～524行 | 视频结束判断（`if not ret or next_frame is None: break`） |
-| 第525～526行 | 更新帧号和 `current_frame`（`frame_index += 1`、`current_frame = next_frame`） |
-| 第534～538行 | `release`（`finally` 中 `csv_file.close()` / `cap.release()` / `writer.release()`） |
-| 第246～247行 | VideoWriter（`VideoWriter_fourcc` / `cv2.VideoWriter`） |
-| 第507～515行 | 写叠加帧（`cv2.resize` → `draw_tracking_frame` → `writer.write`） |
+| `open_video()` 第125行 | `cv2.VideoCapture(str(video_path))` |
+| 第130行 | 读取 FPS（`cap.get(cv2.CAP_PROP_FPS)`） |
+| 第444行 | 读取第一帧（`ret, first_frame = cap.read()`） |
+| 第480～481行 | 初始化 `current_frame = first_frame` 与 `frame_index = 0` |
+| `track_video()` 第489行 | `while True:`（逐帧循环开始） |
+| 第491行 | `result = detect_marker(current_frame)` |
+| 第494行 | `time_s = frame_index / fps` |
+| 第497行 | 记录当前帧（`csv_writer.writerow(...)`） |
+| 第527行 | 读取下一帧（`ret, next_frame = cap.read()`） |
+| 第528～530行 | 视频结束判断（`if not ret or next_frame is None: break`） |
+| 第531～532行 | 更新帧号和 `current_frame`（`frame_index += 1`、`current_frame = next_frame`） |
+| 第540～544行 | `release`（`finally` 中 `csv_file.close()` / `cap.release()` / `writer.release()`） |
+| `open_overlay_writer()` 第252～253行 | VideoWriter（`VideoWriter_fourcc` / `cv2.VideoWriter`） |
+| 第513～521行 | 写叠加帧（`cv2.resize` → `draw_tracking_frame` → `writer.write`） |
 
-（行号按 2026-09-29 当前源码 `src\video_tracker.py`（共 760 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
+（行号按 2026-10-07 当前源码 `src\video_tracker.py`（共 836 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
 
 ### 相关术语与易错点
 
@@ -449,42 +449,42 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 
 ### 本节课目标
 
-- 说清"为什么逐帧结果不能只留在单个 `result` 变量里"：第 485 行每轮覆盖 `result`，没有历史、不能持久化、无法复核；
-- 说出两条记录通道：磁盘 CSV（第 477～479 行打开并写表头、第 491 行每帧写一行）与内存 `records`（第 470、493～504 行）；
+- 说清"为什么逐帧结果不能只留在单个 `result` 变量里"：第 491 行每轮覆盖 `result`，没有历史、不能持久化、无法复核；
+- 说出两条记录通道：磁盘 CSV（第 483～485 行打开并写表头、第 497 行每帧写一行）与内存 `records`（第 476、499～510 行）；
 - 说清 CSV 的基本结构（纯文本、逗号分隔、一行一条记录、第一行是表头、表头前不加 metadata，第 40 行）；
-- 用真实 CSV 讲清 row / column / header / cell，并在源码里定位写表头（第 479 行）、写行（第 491 行）、读表头与数据行（第 650～651 行）；
+- 用真实 CSV 讲清 row / column / header / cell，并在源码里定位写表头（第 485 行）、写行（第 497 行）、读表头与数据行（第 666～667 行）；
 - 默写 `CSV_FIELDNAMES`（第 41 行）的 6 个字段与顺序，并说出每个字段的含义、来源与格式；
-- 读懂 `build_csv_row()`（第 387～404 行）：输入 `frame_index` / `time_s` / `result`，输出一行 6 个 cell；成功行第 396～403 行、失败行第 404 行；
-- 复述失败检测的 CSV 表达：`frame` / `time_s` 照写，`x_px` / `y_px` / `area_px` 留空，`detected=False`；理解为什么不是 0、-1、nan 或上一帧坐标（第 393 行；自检第 701～702、713、729～731 行）；
-- 区分 `records` 与 CSV（内存工作副本 vs 磁盘正式产物；键名 `success` 第 496 行 vs 列名 `detected` 第 41 行）；
+- 读懂 `build_csv_row()`（第 393～410 行）：输入 `frame_index` / `time_s` / `result`，输出一行 6 个 cell；成功行第 402～409 行、失败行第 410 行；
+- 复述失败检测的 CSV 表达：`frame` / `time_s` 照写，`x_px` / `y_px` / `area_px` 留空，`detected=False`；理解为什么不是 0、-1、nan 或上一帧坐标（第 399 行；自检第 726～727、738、794～818 行）；
+- 区分 `records` 与 CSV（内存工作副本 vs 磁盘正式产物；键名 `success` 第 502 行 vs 列名 `detected` 第 41 行）；
 - 说清 CSV 怎样形成离散时间序列（每帧一行 + frame 连续 + `time_s = frame_index / fps` 均匀步长 + 失败行占位）；
-- 说出 M3 `_track.csv` 与 M6 `_trajectory.csv` 的共同设计思想与字段差异（第 41 行 / 第 387～404 行 vs `src\external_oscillation_tracker.py` 第 87～96 行 / 第 337～377 行）；
+- 说出 M3 `_track.csv` 与 M6 `_trajectory.csv` 的共同设计思想与字段差异（第 41 行 / 第 393～410 行 vs `src\external_oscillation_tracker.py` 第 87～96 行 / 第 337～377 行）；
 - 会区分 VisionMotion 真实源码、教学概念伪代码与教学举例，不把后两者当作项目真实代码。
 
 ### 核心概念
 
-1. **`result` 是单帧快照**：第 485 行每轮被重新赋值；历史必须另找容器保存；
-2. **两条记录通道**：CSV 文件（第 477～479、491、535 行）与 `records` 列表（第 470、493～504 行），在同一逐帧循环里同步产生；
-3. **CSV 基本结构**：纯文本、逗号分隔、一行一条记录、第一行是表头、表头前不加 metadata（第 40、477～479 行）；
-4. **row / column / header / cell**：行 = 一条记录、列 = 一个字段、表头 = 第一行列名、cell = 行列交叉处一个值；读文件时 `header = rows[0]`（第 650 行）、`data_rows = rows[1:]`（第 651 行）；
-5. **`CSV_FIELDNAMES`（第 41 行）**：`["frame", "time_s", "x_px", "y_px", "area_px", "detected"]`，表头与列顺序的唯一来源；被第 479、653～655、665、723～724 行依赖；
-6. **`frame`**：帧编号从 0 开始（第 475 行），每轮 +1（第 525 行），成功 / 失败行都照写（第 397、404 行）；自检要求 0～N-1 连续（第 675～677 行）；
-7. **`time_s`**：`time_s = frame_index / fps`（第 488 行），写 6 位小数（第 398、404 行）；fps 从视频文件读取（第 124 行），不是硬编码；
-8. **`x_px` / `y_px`**：来自质心 `cx` / `cy`（第 399～400 行；源自 L04 的 `cx = m10 / m00`、`cy = m01 / m00`），2 位小数；失败时留空；
-9. **`area_px`**：来自轮廓面积（第 401 行），1 位小数；是检测质量字段，不是运动测量量；
-10. **`detected`**：写文本 `"True"` / `"False"`（第 402、404 行）；自检按字符串判断（第 689、705 行），`np.genfromtxt` 按布尔统计（第 726～728 行）；
-11. **`build_csv_row()`（第 387～404 行）**：一行 CSV 的"装配工"；成功行返回 5 个格式化字符串 + 1 个整数，失败行返回 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；
-12. **失败表达原则（第 393 行）**："失败时绝不写 0 / -1 / nan / 字符串"；失败行三个测量字段留空，`detected=False`（第 404 行）；"测不到，就明确标记缺失，而不是制造一个假测量"；
-13. **为什么不能用 0 / -1 / 上一帧坐标**：0 是合法坐标（自检第 701～702、713 行专门查 (0,0) 伪数据）；-1 / nan 会被当数值参与计算；上一帧坐标是伪造测量，事后无法分辨；
-14. **`records` vs CSV**：内存列表 vs 磁盘文件；字典键可多可少 vs 固定 6 列；原始数值 vs 格式化文本；统计 / 回退用 vs 正式数据用；`success`（第 496 行）对应 `detected`（第 41 行）；
-15. **离散时间序列**：一行 = 一个离散时刻的一次测量；每帧一行（第 491 行）+ frame 连续（第 675～677 行）+ 均匀步长 `1/fps`（第 488 行）+ 失败行占位 = 可继续分析的离散时间序列；
+1. **`result` 是单帧快照**：第 491 行每轮被重新赋值；历史必须另找容器保存；
+2. **两条记录通道**：CSV 文件（第 483～485、497、541 行）与 `records` 列表（第 476、499～510 行），在同一逐帧循环里同步产生；
+3. **CSV 基本结构**：纯文本、逗号分隔、一行一条记录、第一行是表头、表头前不加 metadata（第 40、483～485 行）；
+4. **row / column / header / cell**：行 = 一条记录、列 = 一个字段、表头 = 第一行列名、cell = 行列交叉处一个值；读文件时 `header = rows[0]`（第 666 行）、`data_rows = rows[1:]`（第 667 行）；
+5. **`CSV_FIELDNAMES`（第 41 行）**：`["frame", "time_s", "x_px", "y_px", "area_px", "detected"]`，表头与列顺序的唯一来源；被第 485 行写表头、第 670～671 行校验表头、第 681 / 704 行校验每行列数依赖；
+6. **`frame`**：帧编号从 0 开始（第 481 行），每轮 +1（第 531 行），成功 / 失败行都照写（第 403、410 行）；自检要求 0～N-1 连续（第 692～693 行）；
+7. **`time_s`**：`time_s = frame_index / fps`（第 494 行），写 6 位小数（第 404、410 行）；fps 从视频文件读取（第 130 行），不是硬编码；
+8. **`x_px` / `y_px`**：来自质心 `cx` / `cy`（第 405～406 行；源自 L04 的 `cx = m10 / m00`、`cy = m01 / m00`），2 位小数；失败时留空；
+9. **`area_px`**：来自轮廓面积（第 407 行），1 位小数；是检测质量字段，不是运动测量量；
+10. **`detected`**：写文本 `"True"` / `"False"`（第 408、410 行）；自检按字符串判断（第 736～737 行），第 10 项再用文本视角对空字段与 `detected=False` 对账（第 794～818 行）；
+11. **`build_csv_row()`（第 393～410 行）**：一行 CSV 的"装配工"；成功行返回 5 个格式化字符串 + 1 个整数，失败行返回 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；
+12. **失败表达原则（第 399 行）**："失败时绝不写 0 / -1 / nan / 字符串"；失败行三个测量字段留空，`detected=False`（第 410 行）；"测不到，就明确标记缺失，而不是制造一个假测量"；
+13. **为什么不能用 0 / -1 / 上一帧坐标**：0 是合法坐标（自检第 726～727、738 行专门查 (0,0) 伪数据）；-1 / nan 会被当数值参与计算；上一帧坐标是伪造测量，事后无法分辨；
+14. **`records` vs CSV**：内存列表 vs 磁盘文件；字典键可多可少 vs 固定 6 列；原始数值 vs 格式化文本；统计 / 回退用 vs 正式数据用；`success`（第 502 行）对应 `detected`（第 41 行）；
+15. **离散时间序列**：一行 = 一个离散时刻的一次测量；每帧一行（第 497 行）+ frame 连续（第 692～693 行）+ 均匀步长 `1/fps`（第 494 行）+ 失败行占位 = 可继续分析的离散时间序列；
 16. **M3 与 M6 的共同设计与差异**：共同点是"模块级 `CSV_FIELDNAMES` 单一来源、表头前无 metadata、每帧一行、失败留空 + False、时间格式 `%.6f`、行尾 `\n`、有表头自检"；差异在字段选择（`y_px` vs `y0_px`、M6 多 `bbox_w_px` / `bbox_h_px`、`detected` 列位置、覆盖区间、`csv.writer` vs `csv.DictWriter`）。
 
 ### 对应的项目文件
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
-| 数据记录模块（本节源码主角） | `src\video_tracker.py` | `CSV_FIELDNAMES`（第 41 行）、`build_csv_row()`（第 387～404 行）、`track_video()`（第 407 行起）、`records`（第 470、493～504 行）、`compute_longest_miss_run()`（第 585～598 行）、`check_csv_data()`（第 637～748 行） |
+| 数据记录模块（本节源码主角） | `src\video_tracker.py` | `CSV_FIELDNAMES`（第 41 行）、`build_csv_row()`（第 393～410 行）、`track_video()`（第 413 行起）、`records`（第 476、499～510 行）、`compute_longest_miss_run()`（第 591～604 行）、`check_csv_data()`（第 643～824 行） |
 | M3 数据产物（只读引用，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 `frame,time_s,x_px,y_px,area_px,detected`；170 行数据（frame 0～169）；时间步 0.041667 s（24 fps）；170/170 全 True |
 | M6 字段设计对比对象 | `src\external_oscillation_tracker.py` | `CSV_FIELDNAMES`（第 87～96 行）、`write_trajectory_csv()`（第 337～377 行）；本课只做字段设计对比，不展开其算法 |
 | M6 数据产物（只读引用，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 `frame,time_s,detected,x_px,y0_px,bbox_w_px,bbox_h_px,area_px`；160 行数据（frame 76～235）；时间步 0.033333 s（30 fps）；160/160 全 True |
@@ -494,16 +494,16 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 ### 本节课确认的源码事实
 
 - 第 41 行：`CSV_FIELDNAMES = ["frame", "time_s", "x_px", "y_px", "area_px", "detected"]`；
-- 第 387～404 行：`build_csv_row()`（第 391～393 行格式说明与失败规则、第 395～403 行成功行、第 404 行失败行）；
-- 第 407 行：`def track_video(video_path, csv_path, overlay_path):`；第 422 行：运行前 SHA-256；第 426 行：`open_video()`；
-- 第 470 行：`records = []`；第 471 行：`sharpness_list = []`（仅回退方案使用）；
-- 第 477 行：`csv_file = open(csv_path, "w", encoding="utf-8", newline="")`；第 478 行：`csv_writer = csv.writer(csv_file, lineterminator="\n")`；第 479 行：`csv_writer.writerow(CSV_FIELDNAMES)`；
-- 第 483 行：`while True:`；第 485 行：`result = detect_marker(current_frame)`；第 488 行：`time_s = frame_index / fps`；第 491 行：`csv_writer.writerow(build_csv_row(frame_index, time_s, result))`；
-- 第 493～504 行：`record` 字典（第 493～497 行）、成功时补 `cx` / `cy` / `area`（第 498～503 行）、`records.append(record)`（第 504 行）；
-- 第 521～526 行：读下一帧（第 521 行）、结束判断（第 522～524 行）、`frame_index += 1`（第 525 行）、`current_frame = next_frame`（第 526 行）；
-- 第 530～533 行：`except KeyboardInterrupt:`；第 534～538 行：`finally:` 中 `csv_file.close()`（第 535 行）、`cap.release()`（第 536 行）、`writer.release()`（第 538 行）；
-- 第 556～580 行：`summary` 统计（帧数、检出率、最长连续丢失、面积统计、首末时间等）；第 585～598 行：`compute_longest_miss_run()`；
-- 第 637～748 行：`check_csv_data()`（第 650～651 行 header / data_rows、第 653～655 行表头、第 657～659 行行数、第 661～673 行 frame 整数、第 675～677 行 frame 连续、第 679～715 行成功行 / 失败行 / (0,0) 伪数据 / 坐标范围、第 717～743 行 `np.genfromtxt` 与 NaN 一致性）；
+- 第 393～410 行：`build_csv_row()`（第 397～399 行格式说明与失败规则、第 401～409 行成功行、第 410 行失败行）；
+- 第 413 行：`def track_video(video_path, csv_path, overlay_path):`；第 428 行：运行前 SHA-256；第 432 行：`open_video()`；
+- 第 476 行：`records = []`；第 477 行：`sharpness_list = []`（仅回退方案使用）；
+- 第 483 行：`csv_file = open(csv_path, "w", encoding="utf-8", newline="")`；第 484 行：`csv_writer = csv.writer(csv_file, lineterminator="\n")`；第 485 行：`csv_writer.writerow(CSV_FIELDNAMES)`；
+- 第 489 行：`while True:`；第 491 行：`result = detect_marker(current_frame)`；第 494 行：`time_s = frame_index / fps`；第 497 行：`csv_writer.writerow(build_csv_row(frame_index, time_s, result))`；
+- 第 499～510 行：`record` 字典（第 499～503 行）、成功时补 `cx` / `cy` / `area`（第 504～509 行）、`records.append(record)`（第 510 行）；
+- 第 527～532 行：读下一帧（第 527 行）、结束判断（第 528～530 行）、`frame_index += 1`（第 531 行）、`current_frame = next_frame`（第 532 行）；
+- 第 536～539 行：`except KeyboardInterrupt:`；第 540～544 行：`finally:` 中 `csv_file.close()`（第 541 行）、`cap.release()`（第 542 行）、`writer.release()`（第 544 行）；
+- 第 562～586 行：`summary` 统计（帧数、检出率、最长连续丢失、面积统计、首末时间等）；第 591～604 行：`compute_longest_miss_run()`；
+- 第 643～824 行：`check_csv_data()`（第 666～667 行 header / data_rows、第 670～671 行表头、第 674～675 行行数、第 678～689 行 frame 整数、第 692～693 行 frame 连续、第 700～740 行成功行 / 失败行 / (0,0) 伪数据 / 坐标范围、第 742～783 行 `time_s` 时间轴一致性、第 794～818 行空测量字段与 `detected=False` 语义对账）；
 - M6 对照：`src\external_oscillation_tracker.py` 第 86～96 行表头、第 337～377 行 `write_trajectory_csv()`（第 341 行失败留空说明、第 348～349 行 `DictWriter` / `writeheader()`、第 350～363 行成功行、第 364～376 行失败行）、第 434～435 行表头自检。
 
 ### L06 源码地图
@@ -511,26 +511,26 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 | 位置（`src\video_tracker.py`） | 内容 |
 | --- | --- |
 | 第41行 | `CSV_FIELDNAMES`（表头与列顺序的唯一来源） |
-| 第387～404行 | `build_csv_row()`（一行 CSV 的装配；成功行第 395～403 行，失败行第 404 行） |
-| 第407行 | `track_video()` 定义 |
-| 第470行 | `records = []`（每帧一条记录） |
-| 第477～479行 | 打开 CSV、创建 writer、写表头 |
-| 第483行 | `while True:`（逐帧循环） |
-| 第485行 | `result = detect_marker(current_frame)` |
-| 第488行 | `time_s = frame_index / fps` |
-| 第491行 | `csv_writer.writerow(build_csv_row(...))`（每帧一行） |
-| 第493～504行 | `record` 记账与 `records` 追加 |
-| 第521～526行 | 读下一帧、结束判断、更新 `frame_index` / `current_frame` |
-| 第535行 | `csv_file.close()`（`finally`，与第 536、538 行同组） |
-| 第556～580行 | `summary` 统计字典 |
-| 第585～598行 | `compute_longest_miss_run()` |
-| 第637～748行 | `check_csv_data()`（CSV 完整性自检） |
+| 第393～410行 | `build_csv_row()`（一行 CSV 的装配；成功行第 401～409 行，失败行第 410 行） |
+| 第413行 | `track_video()` 定义 |
+| 第476行 | `records = []`（每帧一条记录） |
+| 第483～485行 | 打开 CSV、创建 writer、写表头 |
+| 第489行 | `while True:`（逐帧循环） |
+| 第491行 | `result = detect_marker(current_frame)` |
+| 第494行 | `time_s = frame_index / fps` |
+| 第497行 | `csv_writer.writerow(build_csv_row(...))`（每帧一行） |
+| 第499～510行 | `record` 记账与 `records` 追加 |
+| 第527～532行 | 读下一帧、结束判断、更新 `frame_index` / `current_frame` |
+| 第541行 | `csv_file.close()`（`finally`，与第 542、544 行同组） |
+| 第562～586行 | `summary` 统计字典 |
+| 第591～604行 | `compute_longest_miss_run()` |
+| 第643～824行 | `check_csv_data()`（CSV 完整性自检，10 项） |
 
-（行号按 2026-10-02 当前源码 `src\video_tracker.py`（共 760 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
+（行号按 2026-10-07 当前源码 `src\video_tracker.py`（共 836 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
 
 ### 相关术语与易错点
 
-- 术语：[`COURSE_GLOSSARY.md`](COURSE_GLOSSARY.md) → "L06 从逐帧结果到 CSV：数据记录、字段设计与时间序列"（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、np.genfromtxt、csv.DictWriter 等）；
+- 术语：[`COURSE_GLOSSARY.md`](COURSE_GLOSSARY.md) → "L06 从逐帧结果到 CSV：数据记录、字段设计与时间序列"（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、csv.DictWriter 等）；
 - 易错点：[`COURSE_MISTAKES.md`](COURSE_MISTAKES.md) → "L06 从逐帧结果到 CSV：数据记录、字段设计与时间序列"（result 每轮覆盖、CSV 不是 Excel、表头与数据行、失败写 0 / -1 / 上一帧坐标、失败行跳过、records 与 CSV 混用、time_s 硬编码、字段随意改动、M3 / M6 字段混用、教学示例与真实源码不分等）。
 
 ### 本节课暂未学习的内容
@@ -554,17 +554,17 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 - 用一句话说清"检测成功"与"检测失败"的区别：成功 = 测到了并给出测量值；失败 = 这一帧没有可用的测量值；
 - 说清"检测失败 ≠ 程序崩溃"：失败是 `detect_marker()` 的正常返回值，程序不抛异常、不中断整段视频，只把这一帧如实标记为缺失；
 - 按顺序说出 `src\marker_detector.py` 的三道失败判定：无轮廓（第 75～76 行）、最大轮廓面积 < `MIN_AREA`（第 83～84 行）、`m00 == 0` 无法算质心（第 97～98 行）；
-- 区分三种"失败的返回"：`find_target_contour()` / `calculate_centroid()` 的 `None`（第 76、84、98 行）、`detect_marker()` 的 `{"success": False, "mask": mask}`（第 133、137 行）、CSV 失败行（第 404 行）；
+- 区分三种"失败的返回"：`find_target_contour()` / `calculate_centroid()` 的 `None`（第 76、84、98 行）、`detect_marker()` 的 `{"success": False, "mask": mask}`（第 133、137 行）、CSV 失败行（第 410 行）；
 - 解释为什么失败返回结构里没有 `cx` / `cy` / `area` / `bbox` / `contour`：这些键只在成功分支（第 143～151 行）写入；使用方必须先看 `success` 再取字段；
-- 说出 `detected=False` 与 CSV 空字段的对应（第 395、404 行），并解释为什么缺失不能用 `0` / `-1` / `nan` / 上一帧坐标代替（第 393 行；自检第 701～702、713、725～731 行）；
-- 说出 `records` 如何记录失败：三条固定键 `frame` / `time_s` / `success`，成功才追加 `cx` / `cy` / `area`（第 493～504 行，`append` 在 `if` 外）；
-- 说出 `draw_tracking_frame()`（第 169～233 行）失败帧只显示 "DETECTION FAILED"（第 190～201 行）、不画虚假中心；成功帧画绿框 + 圆圈 + 十字 + 坐标文字（第 204～231 行）；
-- 解释"中间坏帧为什么不会让整个视频处理停止"：循环里没有因 `success=False` 而退出的路径；唯一 `break` 是"读不到下一帧"（第 521～524 行）；
-- 读懂 `compute_longest_miss_run()`（第 585～598 行）：最长连续丢失帧数；返回 0 ⇔ 整段无失败帧；
-- 说出 `detection_rate` 的来源（第 564～567 行，打印于第 619 行）与局限：不反映失败分布、不校验数值合理性（要配合 `longest_miss_run` 与九项检查）；
-- 逐条说出 `check_csv_data()` 的九项检查（第 637～748 行）：表头（第 654～655 行）、行数（第 658～659 行）、frame 合法（第 661～673 行）与连续（第 675～677 行）、成功行数值（第 711 行）、失败行留空（第 712 行）、无 (0,0) 伪数据（第 701～702、713 行）、坐标范围（第 703～704、714～715 行）、`np.genfromtxt` 读取与 NaN ↔ False 对账（第 725～735、742～743 行）；第 747 行九项全过才算通过；
-- 解释 `area_px` 的质量意义：`MIN_AREA = 200` 是进门门槛（第 33、83～84 行）；运行期统计 min / median / max（第 569～571 行）并打印（第 623～625 行）；面积异常是"测量可疑"的线索；
-- 说出 M3 与 M6 对失败的不同质量门槛：M3 允许失败但要求诚实（第 705～712、725～735 行）；M6 的 `check_trajectory_csv()` 把 "detected 全为 True"（`external_oscillation_tracker.py` 第 452～455 行）、空值 0（第 457～459 行）、无 >30 px 突跳（第 480～483 行）、无候选歧义（第 485～492 行）、时间严格（第 494～501 行）列为硬性门槛；
+- 说出 `detected=False` 与 CSV 空字段的对应（第 401、410 行），并解释为什么缺失不能用 `0` / `-1` / `nan` / 上一帧坐标代替（第 399 行；自检第 726～727、738、794～818 行）；
+- 说出 `records` 如何记录失败：三条固定键 `frame` / `time_s` / `success`，成功才追加 `cx` / `cy` / `area`（第 499～510 行，`append` 在 `if` 外）；
+- 说出 `draw_tracking_frame()`（第 175～239 行）失败帧只显示 "DETECTION FAILED"（第 196～207 行）、不画虚假中心；成功帧画绿框 + 圆圈 + 十字 + 坐标文字（第 209～237 行）；
+- 解释"中间坏帧为什么不会让整个视频处理停止"：循环里没有因 `success=False` 而退出的路径；唯一 `break` 是"读不到下一帧"（第 527～530 行）；
+- 读懂 `compute_longest_miss_run()`（第 591～604 行）：最长连续丢失帧数；返回 0 ⇔ 整段无失败帧；
+- 说出 `detection_rate` 的来源（第 570～573 行，打印于第 625 行）与局限：不反映失败分布、不校验数值合理性（要配合 `longest_miss_run` 与十项检查）；
+- 逐条说出 `check_csv_data()` 的十项检查（第 643～824 行）：表头（第 670～671 行）、行数（第 674～675 行）、frame 合法（第 678～689 行）与连续（第 692～693 行）、成功行数值（第 736 行）、失败行留空（第 737 行）、无 (0,0) 伪数据（第 726～727、738 行）、坐标范围（第 728～729、739～740 行）、`time_s` 时间轴一致性（第 742～783 行，第 9 项）、CSV 空测量字段与 `detected=False` 语义对账（第 794～818 行，第 10 项）；第 823 行十项全过才算通过；
+- 解释 `area_px` 的质量意义：`MIN_AREA = 200` 是进门门槛（第 33、83～84 行）；运行期统计 min / median / max（第 575～577 行）并打印（第 629～631 行）；面积异常是"测量可疑"的线索；
+- 说出 M3 与 M6 对失败的不同质量门槛：M3 允许失败但要求诚实（第 730～732、737、794～818 行）；M6 的 `check_trajectory_csv()` 把 "detected 全为 True"（`external_oscillation_tracker.py` 第 452～455 行）、空值 0（第 457～459 行）、无 >30 px 突跳（第 480～483 行）、无候选歧义（第 485～492 行）、时间严格（第 494～501 行）列为硬性门槛；
 - 给出"质量检查"与"鲁棒性"的定义；理解本项目"鲁棒 ≠ 检出率 100%"：鲁棒 = 坏情况被如实记录、可被发现、不伪造数据；
 - 解释"证据边界"：哪些结论由源码支持、哪些由真实 CSV 支持、哪些不能声称；养成诚实记录实验数据的习惯；
 - 永远分清五类材料：真实源码、真实 CSV 数据、概念解释、教学示例、概念伪代码。
@@ -574,22 +574,22 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 1. **检测成功**：`detect_marker()` 返回 `success=True` + `cx` / `cy` / `area` / `bbox` / `contour` / `mask`（`marker_detector.py` 第 143～151 行）；含义 = "这一帧有可用测量值"；
 2. **检测失败**：三道判定（第 75～76、83～84、97～98 行）任一触发，返回 `{"success": False, "mask": mask}`（第 133、137 行）；含义 = "这一帧没有可用测量值"，不是崩溃；
 3. **三道失败判定**：无外部轮廓（第 75～76 行）；最大轮廓面积 < `MIN_AREA = 200`（第 33、83～84 行）；`m00 == 0` 质心不可算（第 97～98 行）；
-4. **失败的三种表达**：函数级 `None`（第 76、84、98 行）→ 模块级 `success=False` 字典（第 133、137 行）→ 文件级失败行（第 404 行）；逐级翻译；
-5. **失败返回没有测量键**：`cx` / `cy` / `area` / `bbox` / `contour` 只在成功分支存在；`mask` 保留（与第 129 行同一次计算，可作诊断）；调用方"先看 success，再取字段"（第 395、190～201 行两处示范）；
-6. **CSV 失败行（第 404 行）**：`[frame_index, "%.6f" % time_s, "", "", "", "False"]`；frame / time_s 照写、三个测量字段留空、`detected=False`；
-7. **缺失不伪造原则（第 393 行）**："失败时绝不写 0 / -1 / nan / 字符串"；0/-1 会被当数值污染统计；nan 文本分不清来源；上一帧坐标是假测量；自检第 701～702、713 行查 (0,0)，第 725～735 行查 NaN ↔ False 对账；
-8. **为什么 (0,0) 可疑（第 701～702 行）**：图像原点在左上角，真实目标恰在 (0,0) 概率极低；它是"没算出来却写默认值"的典型痕迹；
-9. **records 的失败记录（第 493～504 行）**：`record` 固定三键 `frame` / `time_s` / `success`；成功才补 `cx` / `cy` / `area`（第 498～503 行）；`records.append(record)` 在 `if` 外（第 504 行）→ 失败帧同样占一条；
-10. **draw_tracking_frame()（第 169～233 行）**：失败分支（第 190～201 行）只写红色 "DETECTION FAILED" 并 `return overlay`；成功分支（第 204～231 行）画绿框、圆圈、十字、`center=(cx, cy) px`；
-11. **坏帧不中断**：逐帧循环不按 `success` 决定去留；写 CSV（第 491 行）→ 记 records（第 493～504 行）→ 画帧（第 506～518 行）→ 读下一帧（第 521 行）；唯一 `break` 在第 522～524 行（读不到下一帧）；
-12. **compute_longest_miss_run()（第 585～598 行）**：成功清零、失败累加并刷新最大值；返回"最长连续丢失帧数"；`0` ⇔ 没有失败帧；被 `summary` 使用（第 568 行）、第 621 行打印；
-13. **detection_rate（第 564～567 行）**：`detected_count / len(records)`；第 619 行以 `%.4f%%` 打印；局限 = 不反映失败分布、不校验数值合理性；
-14. **check_csv_data() 九项检查（第 637～748 行）**：①表头（第 654～655 行）②行数（第 658～659 行）③frame 合法（第 661～673 行）④frame 连续（第 675～677 行）⑤成功行数值（第 711 行）⑥失败行留空（第 712 行）⑦无 (0,0)（第 713 行）⑧坐标范围（第 714～715 行）⑨`np.genfromtxt` + NaN 对账（第 742～743 行，NaN 细节第 725～735 行）；第 747 行 `passed = all(...)`；
-15. **坐标范围检查（第 703～704 行）**：`0 ≤ x ≤ frame_width` 且 `0 ≤ y ≤ frame_height`；尺寸由调用方传入（`demo\run_video_tracking.py` 第 55～56 行），不是硬编码；
-16. **NaN 与 detected=False 对应（第 725～735 行）**：空字段读回为 NaN；两个读取视角（`csv.reader` 与 `np.genfromtxt`）数出的失败帧数必须一致，否则自检不通过；
-17. **area 质量意义**：进门门槛 `MIN_AREA = 200`（第 33、83～84 行）；成功帧面积写入 CSV（第 401 行）；`summary` 统计 min / median / max（第 569～571 行）、第 623～625 行打印；面积偏离平时水平 = 遮挡 / 距离 / 模糊 / 干扰的线索；本课不做自动异常检测，只提示人工核对；
-18. **M3 与 M6 的不同质量门槛**：M3（记录型）= 允许失败但要求诚实（第 705～712、725～735 行）；M6（分析型）= 要求 100% 检出 + 无空值 + 无突跳 + 无歧义 + 时间严格（`external_oscillation_tracker.py` 第 452～501 行）；差异来自下游用途不同；
-19. **质量检查定义**：以磁盘上的产物为对象、只读、逐项规则验证、给出显式通过 / 不通过（第 639、646～648、747 行）；
+4. **失败的三种表达**：函数级 `None`（第 76、84、98 行）→ 模块级 `success=False` 字典（第 133、137 行）→ 文件级失败行（第 410 行）；逐级翻译；
+5. **失败返回没有测量键**：`cx` / `cy` / `area` / `bbox` / `contour` 只在成功分支存在；`mask` 保留（与第 129 行同一次计算，可作诊断）；调用方"先看 success，再取字段"（第 401、196～207 行两处示范）；
+6. **CSV 失败行（第 410 行）**：`[frame_index, "%.6f" % time_s, "", "", "", "False"]`；frame / time_s 照写、三个测量字段留空、`detected=False`；
+7. **缺失不伪造原则（第 399 行）**："失败时绝不写 0 / -1 / nan / 字符串"；0/-1 会被当数值污染统计；nan 文本分不清来源；上一帧坐标是假测量；自检第 726～727、738 行查 (0,0)，第 794～818 行查空字段与 `detected=False` 对账；
+8. **为什么 (0,0) 可疑（第 726～727 行）**：图像原点在左上角，真实目标恰在 (0,0) 概率极低；它是"没算出来却写默认值"的典型痕迹；
+9. **records 的失败记录（第 499～510 行）**：`record` 固定三键 `frame` / `time_s` / `success`；成功才补 `cx` / `cy` / `area`（第 504～509 行）；`records.append(record)` 在 `if` 外（第 510 行）→ 失败帧同样占一条；
+10. **draw_tracking_frame()（第 175～239 行）**：失败分支（第 196～207 行）只写红色 "DETECTION FAILED" 并 `return overlay`；成功分支（第 209～237 行）画绿框、圆圈、十字、`center=(cx, cy) px`；
+11. **坏帧不中断**：逐帧循环不按 `success` 决定去留；写 CSV（第 497 行）→ 记 records（第 499～510 行）→ 画帧（第 512～524 行）→ 读下一帧（第 527 行）；唯一 `break` 在第 528～530 行（读不到下一帧）；
+12. **compute_longest_miss_run()（第 591～604 行）**：成功清零、失败累加并刷新最大值；返回"最长连续丢失帧数"；`0` ⇔ 没有失败帧；被 `summary` 使用（第 574 行）、第 627 行打印；
+13. **detection_rate（第 570～573 行）**：`detected_count / len(records)`；第 625 行以 `%.4f%%` 打印；局限 = 不反映失败分布、不校验数值合理性；
+14. **check_csv_data() 十项检查（第 643～824 行）**：①表头（第 670～671 行）②行数（第 674～675 行）③frame 合法（第 678～689 行）④frame 连续（第 692～693 行）⑤成功行数值（第 736 行）⑥失败行留空（第 737 行）⑦无 (0,0)（第 726～727、738 行）⑧坐标范围（第 728～729、739～740 行）⑨`time_s` 与 `frame / fps` 时间轴一致性（第 742～783 行）⑩CSV 空测量字段与 `detected=False` 语义对账（第 794～818 行）；第 823 行 `passed = all(...)`；
+15. **坐标范围检查（第 728～729 行）**：`0 ≤ x ≤ frame_width` 且 `0 ≤ y ≤ frame_height`；尺寸由调用方传入（`demo\run_video_tracking.py` 第 55～56 行），不是硬编码；
+16. **空测量字段与 detected=False 对应（第 794～818 行）**：`detected=False` 的行测量字段必须全空、空 `x_px` 行数必须等于 `detected=False` 行数（第 817 行判定），否则自检不通过；现行实现不再使用 `np.genfromtxt`；
+17. **area 质量意义**：进门门槛 `MIN_AREA = 200`（第 33、83～84 行）；成功帧面积写入 CSV（第 407 行）；`summary` 统计 min / median / max（第 575～577 行）、第 629～631 行打印；面积偏离平时水平 = 遮挡 / 距离 / 模糊 / 干扰的线索；本课不做自动异常检测，只提示人工核对；
+18. **M3 与 M6 的不同质量门槛**：M3（记录型）= 允许失败但要求诚实（第 730～732、737、794～818 行）；M6（分析型）= 要求 100% 检出 + 无空值 + 无突跳 + 无歧义 + 时间严格（`external_oscillation_tracker.py` 第 452～501 行）；差异来自下游用途不同；
+19. **质量检查定义**：以磁盘上的产物为对象、只读、逐项规则验证、给出显式通过 / 不通过（第 645、662～664、823 行）；
 20. **鲁棒性定义**：坏情况来临时"不崩溃、不伪造、不丢时间轴、不被坏帧拖垮、把问题暴露出来"；鲁棒 ≠ 检出率 100%；
 21. **证据边界**：本课两份真实 CSV 都是 100% 检出、0 失败帧（第 16 节统计），所以失败处理是"设计可核对、实测未触发"；诚实记录 = 不把"设计上支持"写成"实测已发生"。
 
@@ -598,11 +598,11 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
 | 检测器（三道失败判定的源码主角） | `src\marker_detector.py` | `find_target_contour()`（第 66～86 行；第 75～76、83～84 行失败）、`calculate_centroid()`（第 89～102 行；第 97～98 行失败）、`detect_marker()`（第 105～151 行；第 132～133、136～137 行失败返回） |
-| 记录与检查模块（本节第二主角） | `src\video_tracker.py` | `draw_tracking_frame()`（第 169～233 行；DETECTION FAILED 第 190～201 行）、`build_csv_row()`（第 387～404 行；原则第 393 行、失败行第 404 行）、`records`（第 470、493～504 行）、`summary`（第 556～580 行）、`compute_longest_miss_run()`（第 585～598 行）、`print_statistics()`（第 606～629 行）、`check_csv_data()`（第 637～748 行；NaN 对账第 725～735 行、汇总第 747 行） |
+| 记录与检查模块（本节第二主角） | `src\video_tracker.py` | `draw_tracking_frame()`（第 175～239 行；DETECTION FAILED 第 196～207 行）、`build_csv_row()`（第 393～410 行；原则第 399 行、失败行第 410 行）、`records`（第 476、499～510 行）、`summary`（第 562～586 行）、`compute_longest_miss_run()`（第 591～604 行）、`print_statistics()`（第 612～635 行）、`check_csv_data()`（第 643～824 行；`time_s` 时间轴第 742～783 行、失败字段语义对账第 794～818 行、汇总第 823 行） |
 | 调用方 | `demo\run_video_tracking.py` | 第 49 行 `print_statistics()`；第 52～58 行 `check_csv_data()` 与 `print_check_results()`（传入 `summary["width"]` / `["height"]`） |
 | M6 质量门槛对照 | `src\external_oscillation_tracker.py` | `check_trajectory_csv()`（第 422～505 行；100% 检出第 452～455 行、空值第 457～459 行、突跳第 480～483 行、歧义第 485～492 行、时间第 494～501 行）；本课不展开其检测算法 |
-| M3 数据产物（只读核对，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 6 列；170 行（frame 0～169）；170/170 全 True、0 失败行、0 空字段、0 NaN；时间 0.000000～7.041667 s（24 fps）；x 618.28～1195.0、y 91.74～351.89；area 24409.0 / 64846.25 / 105163.5 |
-| M6 数据产物（只读核对，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 8 列；160 行（frame 76～235）；160/160 全 True、0 失败行、0 空字段、0 NaN；时间 2.533333～7.833333 s（≈ 30 fps）；x 718.5～728.0、y0_px 508.0～622.0；area 226 / 508.5 / 658 |
+| M3 数据产物（只读核对，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 6 列；170 行（frame 0～169）；170/170 全 True、0 失败行、0 空字段；时间 0.000000～7.041667 s（24 fps）；x 618.28～1195.0、y 91.74～351.89；area 24409.0 / 64846.25 / 105163.5 |
+| M6 数据产物（只读核对，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 8 列；160 行（frame 76～235）；160/160 全 True、0 失败行、0 空字段；时间 2.533333～7.833333 s（≈ 30 fps）；x 718.5～728.0、y0_px 508.0～622.0；area 226 / 508.5 / 658 |
 | 本节课笔记 | [`L07_检测失败与鲁棒性.md`](L07_检测失败与鲁棒性.md) | 24 节完整笔记（含自测题 18 道，均不附答案；文末另附"代码与事实来源说明"） |
 
 ### 本节课确认的源码事实
@@ -611,13 +611,13 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 - 第 66～86 行：`find_target_contour()`；第 73 行 `findContours`；第 75～76 行无轮廓 `return None`；第 79～80 行按面积降序取最大；第 83～84 行 `< MIN_AREA` 则 `return None`；第 86 行返回最大轮廓；
 - 第 89～102 行：`calculate_centroid()`；第 95 行 `cv2.moments`；第 97～98 行 `m00 == 0` 则 `return None`；第 100～102 行 `cx = m10 / m00`、`cy = m01 / m00`；
 - 第 105～151 行：`detect_marker()`；第 129 行生成掩膜；第 131～133 行轮廓失败返回 `{"success": False, "mask": mask}`；第 135～137 行质心失败同样返回；第 139～141 行成功路径算 `cx` / `cy` / `area` / `bbox`；第 143～151 行成功字典；
-- `src\video_tracker.py` 第 169～233 行：`draw_tracking_frame()`；第 176 行 `copy()`；第 179～188 行帧号 / 时间；第 190～201 行失败分支 "DETECTION FAILED" + `return overlay`；第 204～212 行坐标缩放；第 215～219 行绿框 / 圆圈 / 十字；第 222～231 行坐标文字；
-- 第 387～404 行：`build_csv_row()`；第 391～393 行格式与"失败时绝不写 0 / -1 / nan / 字符串"；第 395～403 行成功行；第 404 行失败行 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；
-- 第 470 行：`records = []`；第 490 行注释"每帧一行，检测失败也要写"；第 491 行 `csv_writer.writerow(...)`；第 493～504 行 `record` 组装与追加（第 498～503 行成功补键；第 504 行 `records.append` 在 `if` 外）；
-- 第 521～524 行：读下一帧；读不到才 `break`（唯一按设计的循环退出路径）；第 530～533 行 `KeyboardInterrupt`；
-- 第 556～580 行：`summary`（第 564～567 行四个帧数 / 率统计；第 568 行 `longest_miss_run`；第 569～571 行 area 统计）；
-- 第 585～598 行：`compute_longest_miss_run()`；第 606～629 行：`print_statistics()`（第 618～621 行检出统计、第 623～625 行 area 统计）；
-- 第 637～748 行：`check_csv_data()` 九项检查（第 654～655、658～659、661～673、675～677 行四项结构与 frame 检查；第 689～715 行成功 / 失败行遍历与第 701～702 行 (0,0)、第 703～704 行范围、第 705～707 行失败行留空；第 711～715 行四项判定；第 717～743 行 `np.genfromtxt` 与第 725～735 行 NaN ↔ False 对账；第 747 行汇总）；
+- `src\video_tracker.py` 第 175～239 行：`draw_tracking_frame()`；第 182 行 `copy()`；第 185～194 行帧号 / 时间；第 196～207 行失败分支 "DETECTION FAILED" + `return overlay`；第 210～218 行坐标缩放；第 221～225 行绿框 / 圆圈 / 十字；第 228～237 行坐标文字；
+- 第 393～410 行：`build_csv_row()`；第 397～399 行格式与"失败时绝不写 0 / -1 / nan / 字符串"；第 401～409 行成功行；第 410 行失败行 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；
+- 第 476 行：`records = []`；第 496 行注释"每帧一行，检测失败也要写"；第 497 行 `csv_writer.writerow(...)`；第 499～510 行 `record` 组装与追加（第 504～509 行成功补键；第 510 行 `records.append` 在 `if` 外）；
+- 第 527～530 行：读下一帧；读不到才 `break`（唯一按设计的循环退出路径）；第 536～539 行 `KeyboardInterrupt`；
+- 第 562～586 行：`summary`（第 570～573 行四个帧数 / 率统计；第 574 行 `longest_miss_run`；第 575～577 行 area 统计）；
+- 第 591～604 行：`compute_longest_miss_run()`；第 612～635 行：`print_statistics()`（第 624～627 行检出统计、第 629～631 行 area 统计）；
+- 第 643～824 行：`check_csv_data()` 十项检查（第 670～671、674～675、678～689、692～693 行四项结构与 frame 检查；第 700～740 行成功 / 失败行遍历与第 726～727 行 (0,0)、第 728～729 行范围、第 730～732 行失败行留空；第 736～740 行四项判定；第 742～783 行第 9 项 `time_s` 时间轴一致性；第 794～818 行第 10 项空测量字段与 `detected=False` 语义对账；第 823 行汇总）；
 - `src\external_oscillation_tracker.py`：第 87～96 行 8 列字段；第 99～100 行 `MAX_JUMP_PX = 30.0` / `TIME_TOLERANCE_S = 1e-5`；第 119～132 行 `verify_video_sha256()`；第 337～377 行 `write_trajectory_csv()`（失败行第 364～376 行）；第 380～403 行 `load_trajectory_csv()`（空字段 → `None` 第 397～399 行）；第 422～505 行 `check_trajectory_csv()`（第 452～455、457～459、467～472、475～478、480～492、494～501 行；第 503 行注释与第 504 行汇总）。
 
 ### L07 源码地图
@@ -627,17 +627,17 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 | `src\marker_detector.py` 第 66～86 行 | `find_target_contour()`（失败第 75～76、83～84 行） |
 | `src\marker_detector.py` 第 89～102 行 | `calculate_centroid()`（失败第 97～98 行） |
 | `src\marker_detector.py` 第 105～151 行 | `detect_marker()`（失败返回第 132～133、136～137 行；成功字典第 143～151 行） |
-| `src\video_tracker.py` 第 169～233 行 | `draw_tracking_frame()`（失败显示第 190～201 行） |
-| `src\video_tracker.py` 第 387～404 行 | `build_csv_row()`（原则第 393 行、失败行第 404 行） |
-| `src\video_tracker.py` 第 470、493～504 行 | `records` 初始化与成功 / 失败记账 |
-| `src\video_tracker.py` 第 521～524 行 | 唯一的循环退出：读不到下一帧 |
-| `src\video_tracker.py` 第 556～580 行 | `summary`（第 564～568 行检测统计） |
-| `src\video_tracker.py` 第 585～598 行 | `compute_longest_miss_run()` |
-| `src\video_tracker.py` 第 606～629 行 | `print_statistics()` |
-| `src\video_tracker.py` 第 637～748 行 | `check_csv_data()`（九项检查；第 701～704、705～712、725～735、747 行） |
+| `src\video_tracker.py` 第 175～239 行 | `draw_tracking_frame()`（失败显示第 196～207 行） |
+| `src\video_tracker.py` 第 393～410 行 | `build_csv_row()`（原则第 399 行、失败行第 410 行） |
+| `src\video_tracker.py` 第 476、499～510 行 | `records` 初始化与成功 / 失败记账 |
+| `src\video_tracker.py` 第 527～530 行 | 唯一的循环退出：读不到下一帧 |
+| `src\video_tracker.py` 第 562～586 行 | `summary`（第 570～574 行检测统计） |
+| `src\video_tracker.py` 第 591～604 行 | `compute_longest_miss_run()` |
+| `src\video_tracker.py` 第 612～635 行 | `print_statistics()` |
+| `src\video_tracker.py` 第 643～824 行 | `check_csv_data()`（十项检查；第 726～729、730～737、742～783、794～818、823 行） |
 | `src\external_oscillation_tracker.py` 第 422～505 行 | M6 独立质量检查（100% 检出第 452～455 行等） |
 
-（行号按 2026-10-02 当前源码 `src\marker_detector.py`（共 151 行）、`src\video_tracker.py`（共 760 行）、`src\external_oscillation_tracker.py`（共 614 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
+（行号按 2026-10-07 当前源码 `src\marker_detector.py`（共 151 行）、`src\video_tracker.py`（共 836 行）、`src\external_oscillation_tracker.py`（共 614 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
 
 ### 相关术语与易错点
 
@@ -1276,7 +1276,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - segments 第 565–591 行：`boundary_indexes` 第 566 行、`travel_px` 第 571 / 587 行、`below_min_travel` 第 588 行；
 - 打印部分：第 763 行转向点数量、第 765–770 行运动段数量、第 777–792 行每个转向点、第 798–813 行每个运动段；没有时间间隔 / 周期 / 频率打印；
 - 只读检索：全项目 `M5.4` / `M5.5` 命中 0 条；`src\` / `demo\` 中"周期 / 频率 / FFT"命中均为边界声明或 M6 冻结值引用；
-- 旁证：`src\video_tracker.py` 第 17、609 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行同样声明不做频率 / 周期分析；
+- 旁证：`src\video_tracker.py` 第 17、615 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行同样声明不做频率 / 周期分析；
 - M6 侧：`src\m63_final_visualization.py` 第 7 行不重新计算周期 / 频率 / 极值 / FFT；第 110 行 `REPRESENTATIVE_INTERVAL = (150.0, 5.0000, 166.5, 5.5500, 0.550)` 是写死的字面量；第 112–127 行 `FROZEN` 含 `T_exp = 0.542593`、`f_exp = 1.843003` 等；第 202–219 行 `check_frozen_extrema_against_csv()` 只核对封板值与 CSV，不做极值搜索、不做周期重新计算；
 - `demo\run_m53_plot.py` 第 19 行不计算周期 / 频率 / 振幅 / 频谱；第 67–74 行冻结 6 个转向点；第 382 行打印"本轮不计算任何振动参数"。
 

@@ -715,7 +715,7 @@
 - **英文名称**：Video
 - **初学者解释**：可以理解成按时间顺序排列的一系列静态图片；它不是一个"新的数据种类"，而是"帧的序列"加上帧率等元数据。
 - **VisionMotion 中的具体作用**：本项目的输入数据源之一。`data\raw\EXP-002-VIDEO-001.mp4` 就是被逐帧追踪的真实视频；视频不是"一张巨大图片"，程序用 VideoCapture 打开它、一次读一帧。视频 → 帧序列 → 逐帧检测，就是 L05 的知识主线。
-- **源码位置**：`src\video_tracker.py` 第 119 行（`cv2.VideoCapture` 打开的输入文件）；`demo\run_video_tracking.py` 第 35 行（真实视频路径 `data\raw\EXP-002-VIDEO-001.mp4`）。
+- **源码位置**：`src\video_tracker.py::open_video()` 第 125 行（`cv2.VideoCapture` 打开的输入文件）；`demo\run_video_tracking.py` 第 35 行（真实视频路径 `data\raw\EXP-002-VIDEO-001.mp4`）。
 
 ### 2. Frame
 
@@ -723,8 +723,8 @@
 - **中文名称**：帧
 - **英文名称**：Frame
 - **初学者解释**：视频里的单张静态图片，是**实际的图像数组**（BGR NumPy 数组，有高度、宽度与 3 个颜色通道），可以像任何一张图片一样被检测函数处理。
-- **VisionMotion 中的具体作用**：视频追踪的最小处理单位：每一帧先被 `detect_marker()` 检测，再把结果写进 CSV 的一行。第 438 行读出的 `first_frame` 与第 521 行读出的 `next_frame` 都是"一帧"；第 474、526 行的 `current_frame` 也是"一帧"。注意：一帧是图像数据，不是帧号（帧号是 `frame` / `frame_index`）。
-- **源码位置**：`src\video_tracker.py` 第 438、474、485、521、526 行。
+- **VisionMotion 中的具体作用**：视频追踪的最小处理单位：每一帧先被 `detect_marker()` 检测，再把结果写进 CSV 的一行。第 444 行读出的 `first_frame` 与第 527 行读出的 `next_frame` 都是"一帧"；第 480、532 行的 `current_frame` 也是"一帧"。注意：一帧是图像数据，不是帧号（帧号是 `frame` / `frame_index`）。
+- **源码位置**：`src\video_tracker.py` 第 444、480、491、527、532 行。
 
 ### 3. FPS
 
@@ -732,80 +732,80 @@
 - **中文名称**：每秒帧数 / 帧率
 - **英文名称**：FPS（frames per second）
 - **初学者解释**：每秒有多少帧，也就是"视频的播放/记录速度"；它决定相邻两帧之间的时间间隔：间隔 = 1/fps。
-- **VisionMotion 中的具体作用**：fps 在 `open_video()` 中从视频文件读取（第 124 行，未硬编码；第 147 行打印时特别注明）；主循环用它把帧号翻译成时间：`time_s = frame_index / fps`（第 488 行）。本项目视频 30 fps 时，相邻帧间隔 1/30 s ≈ 0.033333 s。fps 非法（<= 0）时第 432～435 行停止处理。
-- **源码位置**：`src\video_tracker.py` 第 124、147、431～435、488 行。
+- **VisionMotion 中的具体作用**：fps 在 `open_video()` 中从视频文件读取（第 130 行，未硬编码；第 153 行打印时特别注明）；主循环用它把帧号翻译成时间：`time_s = frame_index / fps`（第 494 行）。本项目视频 30 fps 时，相邻帧间隔 1/30 s ≈ 0.033333 s。fps 非法（<= 0）时第 438～441 行停止处理。
+- **源码位置**：`src\video_tracker.py` 第 130、153、438～441、494 行。
 
 ### 4. VideoCapture
 
 - **中文名称**：视频读取对象（OpenCV）
 - **英文名称**：VideoCapture（`cv2.VideoCapture`）
 - **初学者解释**：OpenCV 里用来打开视频文件、一次读取一帧的对象；还能用 `cap.get()` 读取 fps、总帧数等视频属性。
-- **VisionMotion 中的具体作用**：视频处理的入口，在 `open_video()` 中创建（第 119 行 `cap = cv2.VideoCapture(str(video_path))`）；打开失败时第 120～121 行明确返回 `(None, None)`；随后用 `cap.get(cv2.CAP_PROP_FPS)` 读 fps（第 124 行）、`cap.get(cv2.CAP_PROP_FRAME_COUNT)` 读总帧数（第 125 行）。它记住"读到哪儿了"，所以连续 `cap.read()` 能顺序拿到每一帧。
-- **源码位置**：`src\video_tracker.py` 第 113、119～125 行。
+- **VisionMotion 中的具体作用**：视频处理的入口，在 `open_video()` 中创建（第 125 行 `cap = cv2.VideoCapture(str(video_path))`）；打开失败时第 126～127 行明确返回 `(None, None)`；随后用 `cap.get(cv2.CAP_PROP_FPS)` 读 fps（第 130 行）、`cap.get(cv2.CAP_PROP_FRAME_COUNT)` 读总帧数（第 131 行）。它记住"读到哪儿了"，所以连续 `cap.read()` 能顺序拿到每一帧。
+- **源码位置**：`src\video_tracker.py` 第 119、125～131 行。
 
 ### 5. cap.read
 
 - **中文名称**：读取下一帧（OpenCV）
 - **英文名称**：cap.read（`cv2.VideoCapture.read`）
 - **初学者解释**：从视频读取对象中读取一帧，返回两个值：`ret`（是否成功）与 `frame`（图像数据）；每调用一次，读取位置前进一帧。
-- **VisionMotion 中的具体作用**：逐帧循环的"供帧"动作：第 438 行第一次读取第一帧（用于确定画面尺寸，第 444～457 行）；循环内第 521 行 `ret, next_frame = cap.read()` 读取下一帧；第 522～524 行读到 `ret=False` 就结束循环。视频处理的基本节奏"一次拿一帧 → 处理 → 换下一帧"就是由它实现的。
-- **源码位置**：`src\video_tracker.py` 第 438、521 行（另见第 304 行 PNG 回退路径中的 `cap.read()`）。
+- **VisionMotion 中的具体作用**：逐帧循环的"供帧"动作：第 444 行第一次读取第一帧（用于确定画面尺寸，第 456～463 行）；循环内第 527 行 `ret, next_frame = cap.read()` 读取下一帧；第 528～530 行读到 `ret=False` 就结束循环。视频处理的基本节奏"一次拿一帧 → 处理 → 换下一帧"就是由它实现的。
+- **源码位置**：`src\video_tracker.py` 第 444、527 行（另见第 310 行 PNG 回退路径中的 `cap.read()`）。
 
 ### 6. ret
 
 - **中文名称**：读取是否成功的返回值
 - **英文名称**：ret（return 的缩写，OpenCV 惯例名）
 - **初学者解释**：`cap.read()` 返回的第一个值，布尔标志：`True` 表示成功读到一帧，`False` 表示读不到（通常意味着视频结束）。
-- **VisionMotion 中的具体作用**：循环的控制信号：第 439 行用 `if not ret or first_frame is None` 判断第一帧读取失败；第 522～524 行用 `if not ret or next_frame is None: break` 结束逐帧循环。**ret 和 frame 不是一回事**：`ret` 回答"读到了吗"，`frame` 才是"读到的那张图"（检测用 frame，判断结束用 ret）。
-- **源码位置**：`src\video_tracker.py` 第 438～439、521～522 行。
+- **VisionMotion 中的具体作用**：循环的控制信号：第 445 行用 `if not ret or first_frame is None` 判断第一帧读取失败；第 528～530 行用 `if not ret or next_frame is None: break` 结束逐帧循环。**ret 和 frame 不是一回事**：`ret` 回答"读到了吗"，`frame` 才是"读到的那张图"（检测用 frame，判断结束用 ret）。
+- **源码位置**：`src\video_tracker.py` 第 444～445、527～528 行。
 
 ### 7. current_frame
 
 - **中文名称**：当前正在处理的那一帧
 - **英文名称**：current_frame
 - **初学者解释**：一个变量，存放"这一轮要处理的那一张图片"；它不是整个视频，每次循环结束后会被新的下一帧替换。
-- **VisionMotion 中的具体作用**：主循环的处理对象：第 474 行 `current_frame = first_frame`（初始化，第一帧直接进入循环）；循环里第 485 行 `detect_marker(current_frame)` 检测它、第 507～515 行缩放它、画它；循环末尾第 526 行 `current_frame = next_frame` 换成新读到的下一帧（第 525 行同步递增 `frame_index`）。历史不留在 current_frame 里，而是靠 CSV（第 491 行）与 `records`（第 493～504 行）另外记账。
-- **源码位置**：`src\video_tracker.py` 第 474、485、507～515、525～526 行。
+- **VisionMotion 中的具体作用**：主循环的处理对象：第 480 行 `current_frame = first_frame`（初始化，第一帧直接进入循环）；循环里第 491 行 `detect_marker(current_frame)` 检测它、第 513～521 行缩放它、画它；循环末尾第 532 行 `current_frame = next_frame` 换成新读到的下一帧（第 531 行同步递增 `frame_index`）。历史不留在 current_frame 里，而是靠 CSV（第 497 行）与 `records`（第 499～510 行）另外记账。
+- **源码位置**：`src\video_tracker.py` 第 480、491、513～521、531～532 行。
 
 ### 8. VideoWriter
 
 - **中文名称**：视频写入对象（OpenCV）
 - **英文名称**：VideoWriter（`cv2.VideoWriter`）
 - **初学者解释**：OpenCV 里用来把一帧一帧画面写成视频文件的对象；创建时要用 fourcc 指定编码器，并给出 fps 与画面尺寸。
-- **VisionMotion 中的具体作用**：生成叠加标注视频：在 `open_overlay_writer()` 中创建（第 246 行 `cv2.VideoWriter_fourcc(*codec_name)`、第 247 行 `cv2.VideoWriter(str(overlay_path), fourcc, fps, (width, height))`）；编码器候选 mp4v / avc1（第 47 行），逐个尝试，打开成功返回 `(writer, codec_name)`（第 248～249 行），失败候选立即 `release()`（第 250 行）；主流程第 507～515 行 `writer.write(overlay)` 写入每一帧。**VideoWriter 是"写输出视频"，不是读取视频**——读取用 VideoCapture。
-- **源码位置**：`src\video_tracker.py` 第 44、47、236～252、459～461、507～515 行。
+- **VisionMotion 中的具体作用**：生成叠加标注视频：在 `open_overlay_writer()` 中创建（第 252 行 `cv2.VideoWriter_fourcc(*codec_name)`、第 253 行 `cv2.VideoWriter(str(overlay_path), fourcc, fps, (width, height))`）；编码器候选 mp4v / avc1（第 47 行），逐个尝试，打开成功返回 `(writer, codec_name)`（第 254～255 行），失败候选立即 `release()`（第 256 行）；主流程第 513～521 行 `writer.write(overlay)` 写入每一帧。**VideoWriter 是"写输出视频"，不是读取视频**——读取用 VideoCapture。
+- **源码位置**：`src\video_tracker.py` 第 44、47、242～258、465～467、513～521 行。
 
 ### 9. Overlay Video
 
 - **中文名称**：叠加标注视频
 - **英文名称**：Overlay Video
 - **初学者解释**：在原始画面的副本上叠加"检测结果标记"（外接框、中心点、坐标文字、帧号与时间）后写出的检查视频；原始视频本身不被修改。
-- **VisionMotion 中的具体作用**：给人看的检查工具，由 `draw_tracking_frame()`（第 169 行）与第 507～515 行的写入流程生成，输出到 `results\EXP-002-VIDEO-001_overlay.mp4`。用途是人工检查三件事：检测框有没有跑偏、中心点有没有跟着目标、哪些帧检测失败（失败帧只显示 "DETECTION FAILED"，第 190～201 行）。它是检查工具，不是新的测量数据；正式数据以 CSV 为准。
-- **源码位置**：`src\video_tracker.py` 第 169～233、507～515 行；输出路径见 `demo\run_video_tracking.py` 第 38 行。
+- **VisionMotion 中的具体作用**：给人看的检查工具，由 `draw_tracking_frame()`（第 175 行）与第 513～521 行的写入流程生成，输出到 `results\EXP-002-VIDEO-001_overlay.mp4`。用途是人工检查三件事：检测框有没有跑偏、中心点有没有跟着目标、哪些帧检测失败（失败帧只显示 "DETECTION FAILED"，第 196～207 行）。它是检查工具，不是新的测量数据；正式数据以 CSV 为准。
+- **源码位置**：`src\video_tracker.py` 第 175～239、513～521 行；输出路径见 `demo\run_video_tracking.py` 第 38 行。
 
 ### 10. release
 
 - **中文名称**：释放资源
 - **英文名称**：release
 - **初学者解释**：用完把资源交还给系统：关闭视频读取器 / 写入器，释放文件句柄与解码器；不释放可能导致资源被占用、输出文件不完整。
-- **VisionMotion 中的具体作用**：资源清理写在 `finally` 块（第 534～538 行）：`csv_file.close()`（第 535 行）、`cap.release()`（第 536 行）、`writer.release()`（第 538 行，writer 存在时）；配合 `try`（第 482 行）与 `except KeyboardInterrupt`（第 530～533 行），即使中途异常或按 Ctrl+C，也尽量完成清理，已处理的帧数据仍保留在 CSV 与叠加视频中。失败路径上也有 `release()`：第 250、378、434、441 行等。
-- **源码位置**：`src\video_tracker.py` 第 482、530～538 行（及第 250、378 行）。
+- **VisionMotion 中的具体作用**：资源清理写在 `finally` 块（第 540～544 行）：`csv_file.close()`（第 541 行）、`cap.release()`（第 542 行）、`writer.release()`（第 544 行，writer 存在时）；配合 `try`（第 488 行）与 `except KeyboardInterrupt`（第 536～539 行），即使中途异常或按 Ctrl+C，也尽量完成清理，已处理的帧数据仍保留在 CSV 与叠加视频中。失败路径上也有 `release()`：第 256、384、440、447 行等。
+- **源码位置**：`src\video_tracker.py` 第 488、536～544 行（及第 256、384 行）。
 
 ### 11. Frame Loop
 
 - **中文名称**：逐帧循环
 - **英文名称**：Frame Loop
 - **初学者解释**：对视频的每一帧重复执行同一套处理的循环结构；本项目采用的循环节奏是"处理当前帧 → 读取下一帧 → 判断是否结束"。
-- **VisionMotion 中的具体作用**：`track_video()` 的 `while True:`（第 483 行）：每轮依次做检测（第 485 行）、时间换算（第 488 行）、写 CSV（第 491 行）、写叠加帧（第 507～515 行）、读取下一帧（第 521 行）、判断结束（第 522～524 行）、更新 `frame_index` 与 `current_frame`（第 525～526 行）。因为"先处理、后读下一帧、再判断"，**最后一帧也能被正常处理**。
-- **源码位置**：`src\video_tracker.py` 第 483～526 行。
+- **VisionMotion 中的具体作用**：`track_video()` 的 `while True:`（第 489 行）：每轮依次做检测（第 491 行）、时间换算（第 494 行）、写 CSV（第 497 行）、写叠加帧（第 513～521 行）、读取下一帧（第 527 行）、判断结束（第 528～530 行）、更新 `frame_index` 与 `current_frame`（第 531～532 行）。因为"先处理、后读下一帧、再判断"，**最后一帧也能被正常处理**。
+- **源码位置**：`src\video_tracker.py` 第 489～532 行。
 
 ### 12. Function Reuse
 
 - **中文名称**：函数复用
 - **英文名称**：Function Reuse
 - **初学者解释**：同一段函数被不同场景直接调用，而不是在每个新场景里复制粘贴一套新逻辑；写一次、测一次、多处使用。
-- **VisionMotion 中的具体作用**：本节最重要的工程事实：`src\marker_detector.py` 的 `detect_marker()` 同时被单图检测（`demo\run_single_image_detection.py` 第 115 行）、视频逐帧追踪（`src\video_tracker.py` 第 485 行）与 PNG 回退方案（第 365 行）三处直接调用，检测函数本身没有为视频重写。这就是"单张图片检测升级为视频处理，本质上是把同一个检测函数放进逐帧循环中"。
-- **源码位置**：`src\video_tracker.py` 第 34、365、485 行；`demo\run_single_image_detection.py` 第 115 行。
+- **VisionMotion 中的具体作用**：本节最重要的工程事实：`src\marker_detector.py` 的 `detect_marker()` 同时被单图检测（`demo\run_single_image_detection.py` 第 115 行）、视频逐帧追踪（`src\video_tracker.py` 第 491 行）与 PNG 回退方案（第 371 行）三处直接调用，检测函数本身没有为视频重写。这就是"单张图片检测升级为视频处理，本质上是把同一个检测函数放进逐帧循环中"。
+- **源码位置**：`src\video_tracker.py` 第 34、371、491 行；`demo\run_single_image_detection.py` 第 115 行。
 
 ### 13. Module
 
@@ -813,7 +813,7 @@
 - **英文名称**：Module
 - **初学者解释**：一个 `.py` 文件把相关功能组织在一起，通过 `import` 提供给别的文件使用；模块之间靠明确的接口协作。
 - **VisionMotion 中的具体作用**：`src\marker_detector.py` 是"检测模块"，负责回答"这一张图片里目标在哪里"；`src\video_tracker.py` 是"视频追踪模块"，负责"视频什么时候读哪一帧、如何循环、如何记录结果、如何输出"；第 34 行 `from src.marker_detector import detect_marker` 就是两个模块之间的接口。`video_tracker.py` 的模块说明（第 15～23 行）还明确：检测参数的唯一来源是 `marker_detector.py`，本模块不重新定义检测参数。
-- **源码位置**：`src\video_tracker.py` 第 15～23、34、485 行。
+- **源码位置**：`src\video_tracker.py` 第 15～23、34、491 行。
 
 ---
 
@@ -826,120 +826,120 @@
 - **中文名称**：行（CSV 的一行）
 - **英文名称**：Row
 - **初学者解释**：CSV 里横向的一条完整记录，由多个 cell 组成、用逗号分隔；一行代表一次记录。
-- **VisionMotion 中的具体作用**：本项目约定"一行 = 一个时刻的一次视觉测量结果"：`track_video()` 第 491 行每处理一帧就写一行（成功、失败都写）；读取时第 648 行 `rows = list(reader)` 把整个文件读成"行的列表"，第 650～651 行把表头行与数据行分开；第 657～659 行要求数据行数 = 实际解码帧数。
-- **源码位置**：`src\video_tracker.py` 第 491、646～651、657～659 行。
+- **VisionMotion 中的具体作用**：本项目约定"一行 = 一个时刻的一次视觉测量结果"：`track_video()` 第 497 行每处理一帧就写一行（成功、失败都写）；读取时第 664 行 `rows = list(reader)` 把整个文件读成"行的列表"，第 666～667 行把表头行与数据行分开；第 674～675 行要求数据行数 = 实际解码帧数。
+- **源码位置**：`src\video_tracker.py` 第 497、662～667、674～675 行。
 
 ### 2. Column
 
 - **中文名称**：列（CSV 的一列）
 - **英文名称**：Column
 - **初学者解释**：同一列在所有行里代表同一种属性；列的名字与顺序由第一行表头定义。
-- **VisionMotion 中的具体作用**：第 41 行 `CSV_FIELDNAMES` 定义 6 列的名字与顺序；读取与检查时按列取值（第 686～687 行取 `x_px` / `y_px` / `area_px`，第 689、705 行读 `detected`），第 711～715 行逐列校验成功行与失败行的规则。改列顺序或列名会直接破坏这些既有代码与自检（第 653～655、665、723～724 行）。
-- **源码位置**：`src\video_tracker.py` 第 41、686～715 行。
+- **VisionMotion 中的具体作用**：第 41 行 `CSV_FIELDNAMES` 定义 6 列的名字与顺序；读取与检查时按列取值（第 711～712 行取 `x_px` / `y_px` / `area_px`，第 736、737 行判定 `detected`），第 736～740 行逐列校验成功行与失败行的规则。改列顺序或列名会直接破坏这些既有代码与自检（第 670～671 行表头、第 681 / 704 行每行列数）。
+- **源码位置**：`src\video_tracker.py` 第 41、711～740 行。
 
 ### 3. Header
 
 - **中文名称**：表头
 - **英文名称**：Header
 - **初学者解释**：CSV 的第一行，说明每一列是什么；表头不是数据行。
-- **VisionMotion 中的具体作用**：第 40 行注释明确"第一行就是真正的表头，前面不加任何 metadata"；第 479 行把 `CSV_FIELDNAMES` 写成第一行；读回时第 650 行 `header = rows[0]`、第 651 行 `data_rows = rows[1:]`；第 653～655 行校验表头是否等于 `CSV_FIELDNAMES`；第 723～724 行校验 `np.genfromtxt` 读回的列名是否一致。M6 的表头注释与检查同款（`src\external_oscillation_tracker.py` 第 86、434～435 行）。
-- **源码位置**：`src\video_tracker.py` 第 40～41、479、650～651、653～655、723～724 行；`src\external_oscillation_tracker.py` 第 86、434～435 行。
+- **VisionMotion 中的具体作用**：第 40 行注释明确"第一行就是真正的表头，前面不加任何 metadata"；第 485 行把 `CSV_FIELDNAMES` 写成第一行；读回时第 666 行 `header = rows[0]`、第 667 行 `data_rows = rows[1:]`；第 670～671 行校验表头是否等于 `CSV_FIELDNAMES`（现行实现用 `csv.reader` 文本视角校验，不再用 `np.genfromtxt`）。M6 的表头注释与检查同款（`src\external_oscillation_tracker.py` 第 86、434～435 行）。
+- **源码位置**：`src\video_tracker.py` 第 40～41、485、666～667、670～671 行；`src\external_oscillation_tracker.py` 第 86、434～435 行。
 
 ### 4. Cell
 
 - **中文名称**：单元格
 - **英文名称**：Cell
 - **初学者解释**：行与列交叉处的一个值；CSV 里所有 cell 都是文本，类型由写入格式与读取约定决定。
-- **VisionMotion 中的具体作用**：成功行的每个 cell 由第 396～403 行给出（`frame` 整数、`time_s` / 坐标 / 面积格式化字符串、`detected` 写 `"True"`）；失败行第 404 行的三个测量 cell 是空字符串 `""`；第 665 行检查每行 cell 数是否等于 6；第 686～707 行逐格检查数值与留空规则。空 cell 表示"没测到"，不是 0。
-- **源码位置**：`src\video_tracker.py` 第 395～404、665、686～707 行。
+- **VisionMotion 中的具体作用**：成功行的每个 cell 由第 402～409 行给出（`frame` 整数、`time_s` / 坐标 / 面积格式化字符串、`detected` 写 `"True"`）；失败行第 410 行的三个测量 cell 是空字符串 `""`；第 681 / 704 行检查每行 cell 数是否等于 6；第 711～732 行逐格检查数值与留空规则。空 cell 表示"没测到"，不是 0。
+- **源码位置**：`src\video_tracker.py` 第 401～410、681 / 704、711～732 行。
 
 ### 5. CSV_FIELDNAMES
 
 - **中文名称**：CSV 字段名列表（表头与列顺序的唯一来源）
 - **英文名称**：CSV_FIELDNAMES
 - **初学者解释**：一个字符串列表，按顺序列出 CSV 每一列的名字；写表头、写数据行、读回校验都以它为准。
-- **VisionMotion 中的具体作用**：第 41 行定义为 `["frame", "time_s", "x_px", "y_px", "area_px", "detected"]`；被四处依赖：写表头（第 479 行）、cell 数校验（第 665 行）、表头校验（第 653～655 行）、列名校验（第 723～724 行）。同时，第 396～404 行返回的 6 个值必须与它的顺序一一对应。M6 也有同类常量，但字段不同（`src\external_oscillation_tracker.py` 第 87～96 行，8 列）。
-- **源码位置**：`src\video_tracker.py` 第 40～41、479、653～655、665、723～724 行；`src\external_oscillation_tracker.py` 第 86～96 行。
+- **VisionMotion 中的具体作用**：第 41 行定义为 `["frame", "time_s", "x_px", "y_px", "area_px", "detected"]`；被三处依赖：写表头（第 485 行）、表头校验（第 670～671 行）、cell 数校验（第 681 / 704 行）。同时，第 402～410 行返回的 6 个值必须与它的顺序一一对应。M6 也有同类常量，但字段不同（`src\external_oscillation_tracker.py` 第 87～96 行，8 列）。
+- **源码位置**：`src\video_tracker.py` 第 40～41、485、670～671、681 / 704 行；`src\external_oscillation_tracker.py` 第 86～96 行。
 
 ### 6. build_csv_row
 
 - **中文名称**：构造一行 CSV 数据（函数）
 - **英文名称**：build_csv_row
 - **初学者解释**：把"一帧的检测结果"翻译成"CSV 的一行"的函数；输出是 6 个 cell 组成的列表。
-- **VisionMotion 中的具体作用**：第 387 行定义 `build_csv_row(frame_index, time_s, result)`；成功行在第 396～403 行（`"%.6f"` 时间、`"%.2f"` 坐标、`"%.1f"` 面积、`"True"`），失败行在第 404 行 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；第 491 行在逐帧循环里调用它写入每一帧。
-- **源码位置**：`src\video_tracker.py` 第 387～404、491 行。
+- **VisionMotion 中的具体作用**：第 393 行定义 `build_csv_row(frame_index, time_s, result)`；成功行在第 402～409 行（`"%.6f"` 时间、`"%.2f"` 坐标、`"%.1f"` 面积、`"True"`），失败行在第 410 行 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；第 497 行在逐帧循环里调用它写入每一帧。
+- **源码位置**：`src\video_tracker.py` 第 393～410、497 行。
 
 ### 7. writerow
 
 - **中文名称**：写入一行（csv writer 的方法）
 - **英文名称**：writerow
 - **初学者解释**：csv 写入器的方法，把"一串值"写成文件里的一行（自动补逗号与行尾），一次调用写一行。
-- **VisionMotion 中的具体作用**：第 478 行创建 `csv.writer(csv_file, lineterminator="\n")`；第 479 行 `writerow(CSV_FIELDNAMES)` 写表头；第 491 行 `writerow(build_csv_row(...))` 写数据行。M6 用 `csv.DictWriter` 的 `writerow` 写字典行（`src\external_oscillation_tracker.py` 第 348、352、365 行），写法不同、每帧一行相同。
-- **源码位置**：`src\video_tracker.py` 第 478～479、491 行；`src\external_oscillation_tracker.py` 第 348、352、365 行。
+- **VisionMotion 中的具体作用**：第 484 行创建 `csv.writer(csv_file, lineterminator="\n")`；第 485 行 `writerow(CSV_FIELDNAMES)` 写表头；第 497 行 `writerow(build_csv_row(...))` 写数据行。M6 用 `csv.DictWriter` 的 `writerow` 写字典行（`src\external_oscillation_tracker.py` 第 348、352、365 行），写法不同、每帧一行相同。
+- **源码位置**：`src\video_tracker.py` 第 484～485、497 行；`src\external_oscillation_tracker.py` 第 348、352、365 行。
 
 ### 8. lineterminator
 
 - **中文名称**：行尾字符（csv 写入参数）
 - **英文名称**：lineterminator
 - **初学者解释**：指定 CSV 每一行结尾用什么字符；本项目统一用 `"\n"`（LF），保证不同平台写出的文件行尾一致。
-- **VisionMotion 中的具体作用**：第 478 行 `csv.writer(..., lineterminator="\n")`；M6 第 348 行同样设置，并在第 347 行注释"行尾使用 `\n`，与 results/ 下已有 CSV 保持一致（不写入 CRLF）"。配合第 477 行的 `newline=""`（避免文本模式换行转换叠加出空行），两份 CSV 的行结构保持统一。
-- **源码位置**：`src\video_tracker.py` 第 477～478 行；`src\external_oscillation_tracker.py` 第 346～348 行。
+- **VisionMotion 中的具体作用**：第 484 行 `csv.writer(..., lineterminator="\n")`；M6 第 348 行同样设置，并在第 347 行注释"行尾使用 `\n`，与 results/ 下已有 CSV 保持一致（不写入 CRLF）"。配合第 483 行的 `newline=""`（避免文本模式换行转换叠加出空行），两份 CSV 的行结构保持统一。
+- **源码位置**：`src\video_tracker.py` 第 483～484 行；`src\external_oscillation_tracker.py` 第 346～348 行。
 
 ### 9. records
 
 - **中文名称**：逐帧记录列表（运行内台账）
 - **英文名称**：records
 - **初学者解释**：内存里的一个列表，每帧追加一条字典记录；只在程序运行期间存在，程序退出就消失。
-- **VisionMotion 中的具体作用**：第 470 行创建（注释"每帧一条记录，用于统计与自检"）；第 493～497 行每帧建 `{frame, time_s, success}`；成功帧再补 `cx` / `cy` / `area`（第 498～501 行）并累计 `detected_count` / `area_list`（第 502～503 行）；第 504 行 `records.append(record)`。它被 `summary` 统计（第 556～580 行）、`compute_longest_miss_run()`（第 585～598 行）与 PNG 回退选帧（第 260～286、310～334、544～549 行）使用。与 CSV 的区别：不落盘、键名是 `success`（第 496 行）、失败帧没有坐标键。
-- **源码位置**：`src\video_tracker.py` 第 470、493～504、556～580、585～598 行。
+- **VisionMotion 中的具体作用**：第 476 行创建（注释"每帧一条记录，用于统计与自检"）；第 499～503 行每帧建 `{frame, time_s, success}`；成功帧再补 `cx` / `cy` / `area`（第 504～507 行）并累计 `detected_count` / `area_list`（第 508～509 行）；第 510 行 `records.append(record)`。它被 `summary` 统计（第 562～586 行）、`compute_longest_miss_run()`（第 591～604 行）与 PNG 回退选帧（第 266～292、316～340、550～555 行）使用。与 CSV 的区别：不落盘、键名是 `success`（第 502 行）、失败帧没有坐标键。
+- **源码位置**：`src\video_tracker.py` 第 476、499～510、562～586、591～604 行。
 
 ### 10. Missing Value
 
 - **中文名称**：缺失值
 - **英文名称**：Missing Value
 - **初学者解释**：应该有一次测量、但实际没有测到的位置；缺失要显式表达"没有"，而不是填入一个假数字。
-- **VisionMotion 中的具体作用**：失败帧的 `x_px` / `y_px` / `area_px` 写成空 cell、同时 `detected=False`（第 393、404 行）；读取端 `np.genfromtxt` 把空 cell 读成 NaN（第 721～731 行），自检要求 NaN 行数 = `detected=False` 行数（第 729～731 行）。第 393 行明确"失败时绝不写 0 / -1 / nan / 字符串"——0 与 -1 是合法数值，会污染后续统计；上一帧坐标则是伪造测量。
-- **源码位置**：`src\video_tracker.py` 第 393、404、705～707、713、721～731 行。
+- **VisionMotion 中的具体作用**：失败帧的 `x_px` / `y_px` / `area_px` 写成空 cell、同时 `detected=False`（第 399、410 行）；自检用 `csv.reader` 的文本视角对账：空测量字段行数 = `detected=False` 行数（第 794～818 行，第 817 行判定，现行实现不再使用 `np.genfromtxt`）。第 399 行明确"失败时绝不写 0 / -1 / nan / 字符串"——0 与 -1 是合法数值，会污染后续统计；上一帧坐标则是伪造测量。
+- **源码位置**：`src\video_tracker.py` 第 399、410、730～732、738、794～818 行。
 
 ### 11. Discrete Time Series
 
 - **中文名称**：离散时间序列
 - **英文名称**：Discrete Time Series
 - **初学者解释**：按时间顺序排列的一系列测量值，只在离散时刻采样；采样间隔 = 1/fps。L01 已学"时间序列"概念，本条目补充 L06 的记录视角。
-- **VisionMotion 中的具体作用**：CSV 每帧一行（第 491 行）、`frame` 从 0 到 N-1 连续（第 675～677 行）、`time_s = frame_index / fps` 提供时间轴（第 488、398、404 行）、失败行占位保证时间轴不缺格。`x_px(t)` / `y_px(t)` 等信号就是按行顺序读同一列得到的离散序列；后续位移 / 周期 / 频率分析都以它为输入（本课只记录，不分析）。
-- **源码位置**：`src\video_tracker.py` 第 488、491、653～677 行。
+- **VisionMotion 中的具体作用**：CSV 每帧一行（第 497 行）、`frame` 从 0 到 N-1 连续（第 692～693 行）、`time_s = frame_index / fps` 提供时间轴（第 494、404、410 行）、失败行占位保证时间轴不缺格。`x_px(t)` / `y_px(t)` 等信号就是按行顺序读同一列得到的离散序列；后续位移 / 周期 / 频率分析都以它为输入（本课只记录，不分析）。
+- **源码位置**：`src\video_tracker.py` 第 494、497、670～693 行。
 
 ### 12. Field Design
 
 - **中文名称**：字段设计
 - **英文名称**：Field Design
 - **初学者解释**：为一份数据表决定"有哪些列、叫什么名字、什么顺序、什么格式、缺失怎么写、读回来怎么解释"；不只是"起名字"。
-- **VisionMotion 中的具体作用**：第 40～41 行（表头定义与"不加 metadata"）、第 395～404 行（每个 cell 的格式）、第 653～655、665、723～724 行（自检）共同构成 M3 的字段设计。M3 的 6 列与 M6 的 8 列（`src\video_tracker.py` 第 41 行 vs `src\external_oscillation_tracker.py` 第 87～96 行）说明"字段跟着这份数据要回答的问题走"，但共同底线是表头、时间轴、失败留空 + False。
-- **源码位置**：`src\video_tracker.py` 第 40～41、395～404、653～665、723～724 行；`src\external_oscillation_tracker.py` 第 87～96 行。
+- **VisionMotion 中的具体作用**：第 40～41 行（表头定义与"不加 metadata"）、第 401～410 行（每个 cell 的格式）、第 670～671、681 / 704 行（自检）共同构成 M3 的字段设计。M3 的 6 列与 M6 的 8 列（`src\video_tracker.py` 第 41 行 vs `src\external_oscillation_tracker.py` 第 87～96 行）说明"字段跟着这份数据要回答的问题走"，但共同底线是表头、时间轴、失败留空 + False。
+- **源码位置**：`src\video_tracker.py` 第 40～41、401～410、670～671、681 / 704 行；`src\external_oscillation_tracker.py` 第 87～96 行。
 
 ### 13. np.genfromtxt
 
 - **中文名称**：NumPy 文本读取函数
 - **英文名称**：np.genfromtxt
 - **初学者解释**：NumPy 提供的"从文本文件读表格"的函数；`names=True` 表示第一行当作列名，空字段会被读成 NaN。
-- **VisionMotion 中的具体作用**：`check_csv_data()` 第 721 行用它做"独立读取验证"：列名必须与 `CSV_FIELDNAMES` 一致（第 723～724 行）；`x_px` 的 NaN 数量必须等于 `detected=False` 的行数（第 725～731 行）——证明"失败留空"在下游读取时仍然是"缺失"，不是被丢弃、也不是被当成 0。
-- **源码位置**：`src\video_tracker.py` 第 717～743 行（第 721 行调用）。
+- **VisionMotion 中的具体作用（现行口径，2026-10-07 复核）**：**当前 `check_csv_data()` 已不再使用 `np.genfromtxt`**。早期版本曾用它做"独立读取验证"（把 `"True"` / `"False"` 列整列读成 float64 的 NaN，导致含失败行的合法 CSV 被误判），源码第 786～793 行现在只保留这段历史注释。现行第 10 项改用 `csv.reader` 的文本视角对账：空 `x_px` 行数必须等于 `detected=False` 行数（第 794～818 行，第 817 行判定）——同样证明"失败留空"在读取端仍然是"缺失"，不是被丢弃、也不是被当成 0。
+- **源码位置**：`src\video_tracker.py` 第 786～793 行（历史注释）与第 794～818 行（现行文本视角对账）。
 
 ### 14. csv.DictWriter
 
 - **中文名称**：按字典写行的 CSV 写入器
 - **英文名称**：csv.DictWriter
 - **初学者解释**：csv 模块里按"字典 + fieldnames"写行的写入器，能一次性写出表头；字段留空时写空字符串。
-- **VisionMotion 中的具体作用**：M6 的 `write_trajectory_csv()` 用它在第 348 行创建（`fieldnames=CSV_FIELDNAMES`、`lineterminator="\n"`）、第 349 行 `writeheader()` 写表头、第 352、365 行写成功 / 失败字典行；与 M3 的 `csv.writer` + 列表（第 478、491 行）形成对照——两种写法保证同样的"表头 + 每帧一行 + 失败留空"。
-- **源码位置**：`src\external_oscillation_tracker.py` 第 337～377 行（第 348、349、352、365 行）；对照 `src\video_tracker.py` 第 478、491 行。
+- **VisionMotion 中的具体作用**：M6 的 `write_trajectory_csv()` 用它在第 348 行创建（`fieldnames=CSV_FIELDNAMES`、`lineterminator="\n"`）、第 349 行 `writeheader()` 写表头、第 352、365 行写成功 / 失败字典行；与 M3 的 `csv.writer` + 列表（第 484、497 行）形成对照——两种写法保证同样的"表头 + 每帧一行 + 失败留空"。
+- **源码位置**：`src\external_oscillation_tracker.py` 第 337～377 行（第 348、349、352、365 行）；对照 `src\video_tracker.py` 第 484、497 行。
 
 ### 15. y_px
 
 - **中文名称**：质心竖直像素坐标
 - **英文名称**：y_px
 - **初学者解释**：目标质心的竖直坐标（图像坐标 y 越往下数值越大）；它是 M3 `_track.csv` 的列名，不要与 M6 的 `y0_px` 混用。
-- **VisionMotion 中的具体作用**：M3 `_track.csv` 的第 4 列（`src\video_tracker.py` 第 41 行）；第 400 行写入 `result["cy"]`（`"%.2f"` 格式），失败时留空（第 404 行）。`cy` 来自 L04 的质心公式 `cy = m01 / m00`（`src\marker_detector.py` 第 101 行）。M6 不使用 `y_px`：它的正式位置特征是 `y0_px = 暗带上缘`（`src\external_oscillation_tracker.py` 第 84、92、306 行）——两者不是同一种测量。
-- **源码位置**：`src\video_tracker.py` 第 41、400、404 行；`src\marker_detector.py` 第 101 行；`src\external_oscillation_tracker.py` 第 84、92 行。
+- **VisionMotion 中的具体作用**：M3 `_track.csv` 的第 4 列（`src\video_tracker.py` 第 41 行）；第 406 行写入 `result["cy"]`（`"%.2f"` 格式），失败时留空（第 410 行）。`cy` 来自 L04 的质心公式 `cy = m01 / m00`（`src\marker_detector.py` 第 101 行）。M6 不使用 `y_px`：它的正式位置特征是 `y0_px = 暗带上缘`（`src\external_oscillation_tracker.py` 第 84、92、306 行）——两者不是同一种测量。
+- **源码位置**：`src\video_tracker.py` 第 41、406、410 行；`src\marker_detector.py` 第 101 行；`src\external_oscillation_tracker.py` 第 84、92 行。
 
 ### 16. _track.csv / _trajectory.csv
 
@@ -955,8 +955,8 @@
 - **中文名称**：帧（补充：一帧 = CSV 里的一行记录）
 - **英文名称**：Frame
 - **初学者解释**：帧是视频里的一张图像；在 L06 里，每一帧还对应 CSV 里的一行测量记录——帧既是"一张图"，也是一个"采样时刻"。
-- **VisionMotion 中的具体作用**：逐帧循环里，第 474 / 526 行的 `current_frame` 是图像数据，第 475 / 525 行的 `frame_index` 是帧编号；第 491 行把这一帧写成 CSV 的一行，第 493～504 行把它追加进 `records`。检测失败的帧同样占一行（第 404 行），所以"帧 ↔ CSV 行"在 M3 里是一一对应的（自检第 657～659 行核对行数、第 675～677 行核对 frame 连续）。
-- **源码位置**：`src\video_tracker.py` 第 475、483、491、493～504、521～526、657～659、675～677 行。
+- **VisionMotion 中的具体作用**：逐帧循环里，第 480 / 532 行的 `current_frame` 是图像数据，第 481 / 531 行的 `frame_index` 是帧编号；第 497 行把这一帧写成 CSV 的一行，第 499～510 行把它追加进 `records`。检测失败的帧同样占一行（第 410 行），所以"帧 ↔ CSV 行"在 M3 里是一一对应的（自检第 674～675 行核对行数、第 692～693 行核对 frame 连续）。
+- **源码位置**：`src\video_tracker.py` 第 481、489、497、499～510、527～532、674～675、692～693 行。
 
 ### 18. time_s（补充视角）
 
@@ -964,8 +964,8 @@
 - **中文名称**：时间（秒）（补充：CSV 的时间轴列）
 - **英文名称**：time_s
 - **初学者解释**：`time_s` 是每一帧在视频时间轴上的时刻，由帧号除以 fps 得到；在 CSV 里它是第二列，提供整张表的"横轴"。
-- **VisionMotion 中的具体作用**：第 488 行 `time_s = frame_index / fps`；第 398 / 404 行用 `"%.6f"` 写 6 位小数；`fps` 由第 124 行从视频文件读取（M3 视频由已有 CSV 反推 ≈ 24 fps，M6 为 30 fps——两个数字不同，说明不能硬编码）。失败行也照写 `time_s`（第 404 行），时间轴因此不断裂；M6 自检还要求每行 `time_s` 满足 `frame / fps`（`src\external_oscillation_tracker.py` 第 494～500 行）。
-- **源码位置**：`src\video_tracker.py` 第 124、398、404、488、495 行；`src\external_oscillation_tracker.py` 第 302～303、494～500 行。
+- **VisionMotion 中的具体作用**：第 494 行 `time_s = frame_index / fps`；第 404 / 410 行用 `"%.6f"` 写 6 位小数；`fps` 由第 130 行从视频文件读取（M3 视频由已有 CSV 反推 ≈ 24 fps，M6 为 30 fps——两个数字不同，说明不能硬编码）。失败行也照写 `time_s`（第 410 行），时间轴因此不断裂；M3 现行自检第 9 项逐行要求 `time_s` 满足 `frame / fps`（第 742～783 行），M6 自检也有同类要求（`src\external_oscillation_tracker.py` 第 494～500 行）。
+- **源码位置**：`src\video_tracker.py` 第 130、404、410、494、501 行；`src\external_oscillation_tracker.py` 第 302～303、494～500 行。
 
 ### 19. x_px（补充视角）
 
@@ -973,8 +973,8 @@
 - **中文名称**：水平像素坐标（补充）
 - **英文名称**：x_px
 - **初学者解释**：`x_px` 表示目标中心的水平像素坐标；但"目标中心"具体指什么，各模块可能不同——必须看写它的代码。
-- **VisionMotion 中的具体作用**：M3 的 `x_px` 是红色标记**质心**的横坐标：第 399 行写 `"%.2f" % result["cx"]`，`cx` 来自 `src\marker_detector.py` 第 145 行（公式 `cx = m10 / m00` 在第 100 行）；失败时留空（第 404 行）。M6 的 `x_px` 则是暗带外接框中心、仅作 QC 记录（`src\external_oscillation_tracker.py` 第 220～221 行）——同名不同义，读数据前先确认来源。
-- **源码位置**：`src\video_tracker.py` 第 399、404 行；`src\marker_detector.py` 第 100、145 行；`src\external_oscillation_tracker.py` 第 220～221 行。
+- **VisionMotion 中的具体作用**：M3 的 `x_px` 是红色标记**质心**的横坐标：第 405 行写 `"%.2f" % result["cx"]`，`cx` 来自 `src\marker_detector.py` 第 145 行（公式 `cx = m10 / m00` 在第 100 行）；失败时留空（第 410 行）。M6 的 `x_px` 则是暗带外接框中心、仅作 QC 记录（`src\external_oscillation_tracker.py` 第 220～221 行）——同名不同义，读数据前先确认来源。
+- **源码位置**：`src\video_tracker.py` 第 405、410 行；`src\marker_detector.py` 第 100、145 行；`src\external_oscillation_tracker.py` 第 220～221 行。
 
 ### 20. area_px（补充视角）
 
@@ -982,8 +982,8 @@
 - **中文名称**：目标面积（像素²）（补充）
 - **英文名称**：area_px
 - **初学者解释**：`area_px` 记录目标区域的面积，单位是"像素²"；它是检测质量指标，不是"目标移动了多少"的测量量。
-- **VisionMotion 中的具体作用**：第 401 行写 `"%.1f" % result["area"]`，`area` 来自 `src\marker_detector.py` 第 140 行 `cv2.contourArea(contour)`（第 147 行返回）；失败时留空（第 404 行）。M6 的同名列写整数（`src\external_oscillation_tracker.py` 第 361 行），但同样是"检测区域大小"的质量线索。
-- **源码位置**：`src\video_tracker.py` 第 401、404 行；`src\marker_detector.py` 第 140、147 行；`src\external_oscillation_tracker.py` 第 361 行。
+- **VisionMotion 中的具体作用**：第 407 行写 `"%.1f" % result["area"]`，`area` 来自 `src\marker_detector.py` 第 140 行 `cv2.contourArea(contour)`（第 147 行返回）；失败时留空（第 410 行）。M6 的同名列写整数（`src\external_oscillation_tracker.py` 第 361 行），但同样是"检测区域大小"的质量线索。
+- **源码位置**：`src\video_tracker.py` 第 407、410 行；`src\marker_detector.py` 第 140、147 行；`src\external_oscillation_tracker.py` 第 361 行。
 
 ### 21. detected（补充视角）
 
@@ -991,8 +991,8 @@
 - **中文名称**：检测成功标志（补充）
 - **英文名称**：detected
 - **初学者解释**：`detected` 表示"这一帧的测量是否有效"；CSV 里写的是文本 `True` / `False`，不是数字 1 / 0。
-- **VisionMotion 中的具体作用**：来自 `result["success"]`（第 395 行在 `build_csv_row()` 里判断；第 402 / 404 行写成 `"True"` / `"False"`；`src\marker_detector.py` 第 144 行成功、第 133 / 137 行失败）。内存 `records` 里的键叫 `success`（第 496 行）而不是 `detected`。读取端：自检按字符串比较（第 689、705 行），`np.genfromtxt` 读成布尔后统计成功行数（第 726～728 行）。M6 的写法相同（`src\external_oscillation_tracker.py` 第 304、356、369 行）。
-- **源码位置**：`src\video_tracker.py` 第 41、395、402、404、496、689、705、726～728 行；`src\marker_detector.py` 第 133、137、144 行；`src\external_oscillation_tracker.py` 第 304、356、369 行。
+- **VisionMotion 中的具体作用**：来自 `result["success"]`（第 401 行在 `build_csv_row()` 里判断；第 408 / 410 行写成 `"True"` / `"False"`；`src\marker_detector.py` 第 144 行成功、第 133 / 137 行失败）。内存 `records` 里的键叫 `success`（第 502 行）而不是 `detected`。读取端：自检按字符串比较（第 736、737 行），第 10 项再用文本视角对空字段与 `detected=False` 对账（第 794～818 行）。M6 的写法相同（`src\external_oscillation_tracker.py` 第 304、356、369 行）。
+- **源码位置**：`src\video_tracker.py` 第 41、401、408、410、502、736、737、794～818 行；`src\marker_detector.py` 第 133、137、144 行；`src\external_oscillation_tracker.py` 第 304、356、369 行。
 
 ### 22. CSV（补充视角）
 
@@ -1000,8 +1000,8 @@
 - **中文名称**：逗号分隔值（补充：项目内约定）
 - **英文名称**：CSV
 - **初学者解释**：L01 已解释 CSV 是纯文本表格；L06 补上"这份项目的 CSV 具体长什么样"：第一行真表头、每帧一行、失败留空 + False。
-- **VisionMotion 中的具体作用**：第 40 行注释"第一行就是真正的表头，前面不加任何 metadata"；第 477～479 行用 UTF-8、`newline=""`、`lineterminator="\n"` 打开文件并写表头（第 26 行 `import csv`）；第 491 行每帧写一行（失败也写）；第 404 行失败行三个测量字段留空、`detected=False`。读取端用标准库 `csv.reader`（第 646～648 行）与 `np.genfromtxt`（第 721～743 行）都能直接读取，并由 `check_csv_data()`（第 637～748 行）逐项验收。
-- **源码位置**：`src\video_tracker.py` 第 26、40、404、477～479、491、646～648、721～743 行。
+- **VisionMotion 中的具体作用**：第 40 行注释"第一行就是真正的表头，前面不加任何 metadata"；第 483～485 行用 UTF-8、`newline=""`、`lineterminator="\n"` 打开文件并写表头（第 26 行 `import csv`）；第 497 行每帧写一行（失败也写）；第 410 行失败行三个测量字段留空、`detected=False`。读取端用标准库 `csv.reader`（第 662～664 行）直接读回，并由 `check_csv_data()`（第 643～824 行，十项）逐项验收（现行实现不再依赖 `np.genfromtxt`）。
+- **源码位置**：`src\video_tracker.py` 第 26、40、410、483～485、497、662～664、742～783、794～818 行。
 
 ---
 
@@ -1012,80 +1012,80 @@
 - **中文名称**：检测失败
 - **英文名称**：Detection Failure
 - **初学者解释**：检测失败表示"这一帧没有测到可用的目标"，它是程序正常返回的一种结果，不是程序崩溃或报错。
-- **VisionMotion 中的具体作用**：`src\marker_detector.py` 的三道判定任一触发即为检测失败：没有轮廓（第 75～76 行）、最大轮廓面积 < `MIN_AREA = 200`（第 33、83～84 行）、`m00 == 0` 无法算质心（第 97～98 行）；`detect_marker()` 统一返回 `{"success": False, "mask": mask}`（第 132～133、136～137 行）；下游把它翻译成 CSV 失败行 `detected=False` + 空字段（`src\video_tracker.py` 第 393、404 行）。整个逐帧循环不会因此停止（第 483～526 行）。
-- **源码位置**：`src\marker_detector.py` 第 33、75～76、83～84、97～98、132～133、136～137 行；`src\video_tracker.py` 第 393、404、483～526 行。
+- **VisionMotion 中的具体作用**：`src\marker_detector.py` 的三道判定任一触发即为检测失败：没有轮廓（第 75～76 行）、最大轮廓面积 < `MIN_AREA = 200`（第 33、83～84 行）、`m00 == 0` 无法算质心（第 97～98 行）；`detect_marker()` 统一返回 `{"success": False, "mask": mask}`（第 132～133、136～137 行）；下游把它翻译成 CSV 失败行 `detected=False` + 空字段（`src\video_tracker.py` 第 399、410 行）。整个逐帧循环不会因此停止（第 489～532 行）。
+- **源码位置**：`src\marker_detector.py` 第 33、75～76、83～84、97～98、132～133、136～137 行；`src\video_tracker.py` 第 399、410、489～532 行。
 
 ### 2. success（成功标志，内存字段）
 
 - **中文名称**：成功标志（补充视角）
 - **英文名称**：success
 - **初学者解释**：`success` 是 `detect_marker()` 返回字典里的布尔字段（成功 `True` / 失败 `False`），是调用方判断"这一帧有没有测量值"的唯一判据；CSV 文件里对应的列名是 `detected`。
-- **VisionMotion 中的具体作用**：成功时 `success=True`（第 144 行）；失败时 `success=False`（第 133、137 行）；`build_csv_row()` 第 395 行 `if result["success"]:` 决定写成功行还是失败行；`records` 里存的是 `"success": bool(result["success"])`（`src\video_tracker.py` 第 496 行），而 CSV 里写文本 `"True"` / `"False"`（第 402、404 行）；`compute_longest_miss_run()` 读 `record["success"]`（第 592 行）。
-- **源码位置**：`src\marker_detector.py` 第 133、137、144 行；`src\video_tracker.py` 第 395、402、404、496、592 行。
+- **VisionMotion 中的具体作用**：成功时 `success=True`（第 144 行）；失败时 `success=False`（第 133、137 行）；`build_csv_row()` 第 401 行 `if result["success"]:` 决定写成功行还是失败行；`records` 里存的是 `"success": bool(result["success"])`（`src\video_tracker.py` 第 502 行），而 CSV 里写文本 `"True"` / `"False"`（第 408、410 行）；`compute_longest_miss_run()` 读 `record["success"]`（第 598 行）。
+- **源码位置**：`src\marker_detector.py` 第 133、137、144 行；`src\video_tracker.py` 第 401、408、410、502、598 行。
 
 ### 3. DETECTION FAILED（失败提示文字）
 
 - **中文名称**：检测失败提示文字
 - **英文名称**：DETECTION FAILED
 - **初学者解释**：叠加视频里失败帧左上角显示的红色英文文字，意思是"这一帧没有检测到目标"；出现它时画面上不会再有绿框和中心点。
-- **VisionMotion 中的具体作用**：`draw_tracking_frame()` 第 190～201 行：`if not result["success"]:` 后用红色 `(0, 0, 255)` 在 (10, 70) 写 "DETECTION FAILED"，随后 `return overlay`（第 201 行），成功分支的绿框 / 圆圈 / 十字 / 坐标文字（第 204～231 行）不会执行。它与 CSV 第 404 行"不伪造缺失"是同一条原则的两种呈现。
-- **源码位置**：`src\video_tracker.py` 第 169～233 行（失败显示第 190～201 行）。
+- **VisionMotion 中的具体作用**：`draw_tracking_frame()` 第 196～207 行：`if not result["success"]:` 后用红色 `(0, 0, 255)` 在 (10, 70) 写 "DETECTION FAILED"，随后 `return overlay`（第 207 行），成功分支的绿框 / 圆圈 / 十字 / 坐标文字（第 209～237 行）不会执行。它与 CSV 第 410 行"不伪造缺失"是同一条原则的两种呈现。
+- **源码位置**：`src\video_tracker.py` 第 175～239 行（失败显示第 196～207 行）。
 
 ### 4. 失败返回结构（Failure Return Structure）
 
 - **中文名称**：失败返回结构
 - **英文名称**：Failure Return Structure
 - **初学者解释**：检测失败时 `detect_marker()` 返回的字典只含两个键：`success`（False）与 `mask`；`cx` / `cy` / `area` / `bbox` / `contour` 这些测量键**不存在**——因为没有测到，就没有这些值。
-- **VisionMotion 中的具体作用**：`return {"success": False, "mask": mask}`（第 132～133、136～137 行）；这些键只在成功分支（第 143～151 行）写入。使用侧的配套约定：`build_csv_row()` 只在成功分支取键（`src\video_tracker.py` 第 395～403 行）；`draw_tracking_frame()` 失败时提前返回（第 190～201 行）——所以"缺键"不会引发 `KeyError`。`mask` 保留是因为它与第 129 行同一次计算，可作为诊断用的中间结果。
-- **源码位置**：`src\marker_detector.py` 第 129、132～133、136～137、143～151 行；`src\video_tracker.py` 第 190～201、395～404 行。
+- **VisionMotion 中的具体作用**：`return {"success": False, "mask": mask}`（第 132～133、136～137 行）；这些键只在成功分支（第 143～151 行）写入。使用侧的配套约定：`build_csv_row()` 只在成功分支取键（`src\video_tracker.py` 第 401～409 行）；`draw_tracking_frame()` 失败时提前返回（第 196～207 行）——所以"缺键"不会引发 `KeyError`。`mask` 保留是因为它与第 129 行同一次计算，可作为诊断用的中间结果。
+- **源码位置**：`src\marker_detector.py` 第 129、132～133、136～137、143～151 行；`src\video_tracker.py` 第 196～207、401～410 行。
 
 ### 5. 空字段（Empty Field）
 
 - **中文名称**：空字段（补充视角）
 - **英文名称**：Empty Field
 - **初学者解释**：CSV 失败行里 x / y / area 三列不是 0、不是 -1、不是 nan 文本，而是"什么都没有"——两个逗号之间是空的。
-- **VisionMotion 中的具体作用**：`build_csv_row()` 第 404 行返回 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；第 393 行原则"失败时绝不写 0 / -1 / nan / 字符串"。读取端：`csv.reader` 读回空字符串，`np.genfromtxt` 把空字段读成 NaN（第 725～735 行据此对账）。自检第 712 行要求 `detected=False` 的行 x / y / area 全部为空。
-- **源码位置**：`src\video_tracker.py` 第 393、404、705～707、712、725～735 行。
+- **VisionMotion 中的具体作用**：`build_csv_row()` 第 410 行返回 `[frame_index, "%.6f" % time_s, "", "", "", "False"]`；第 399 行原则"失败时绝不写 0 / -1 / nan / 字符串"。读取端：`csv.reader` 读回空字符串；自检第 794～818 行用文本视角要求"空测量字段行数 = `detected=False` 行数"（第 817 行判定），第 737 行要求 `detected=False` 的行 x / y / area 全部为空。
+- **源码位置**：`src\video_tracker.py` 第 399、410、730～732、737、794～818 行。
 
 ### 6. (0,0) 伪数据
 
 - **中文名称**：(0,0) 伪数据
 - **英文名称**：Zero-Zero Fake Data
 - **初学者解释**：`x=0 且 y=0` 的"成功行"高度可疑：图像原点在左上角，真实目标恰好落在精确 (0,0) 的概率极低；它常见于"没算出来却写了默认值 0"的情况。
-- **VisionMotion 中的具体作用**：`check_csv_data()` 第 701～702 行收集 `x == 0.0 且 y == 0.0` 的行，第 713 行把它作为独立检查项"不存在 x=0, y=0 伪数据"。它是第 393 行"失败绝不写 0"的机器验收。
-- **源码位置**：`src\video_tracker.py` 第 393、701～702、713 行。
+- **VisionMotion 中的具体作用**：`check_csv_data()` 第 726～727 行收集 `x == 0.0 且 y == 0.0` 的行，第 738 行把它作为独立检查项"不存在 x=0, y=0 伪数据"。它是第 399 行"失败绝不写 0"的机器验收。
+- **源码位置**：`src\video_tracker.py` 第 399、726～727、738 行。
 
 ### 7. detection_rate（检出成功率）
 
 - **中文名称**：检出成功率
 - **英文名称**：detection rate
 - **初学者解释**：成功帧数占实际处理帧数的比例，0～1 之间；`1.0` 表示每一帧都检测成功。
-- **VisionMotion 中的具体作用**：`summary` 第 567 行 `detected_count / float(len(records))`；`print_statistics()` 第 619 行以 `%.4f%%` 打印。它只回答"有多少帧测到了"，不反映失败的分布（另见 `longest_miss_run`），也不校验数值是否合理（另见 `check_csv_data()`）。本课只读核对：两份真实 CSV 均为 1.0000。
-- **源码位置**：`src\video_tracker.py` 第 564～567、619 行。
+- **VisionMotion 中的具体作用**：`summary` 第 573 行 `detected_count / float(len(records))`；`print_statistics()` 第 625 行以 `%.4f%%` 打印。它只回答"有多少帧测到了"，不反映失败的分布（另见 `longest_miss_run`），也不校验数值是否合理（另见 `check_csv_data()`）。本课只读核对：两份真实 CSV 均为 1.0000。
+- **源码位置**：`src\video_tracker.py` 第 570～573、625 行。
 
 ### 8. longest_miss_run（最长连续丢失帧数）
 
 - **中文名称**：最长连续丢失帧数
 - **英文名称**：longest miss run
 - **初学者解释**：一整段数据里"连续多少帧一直没测到目标"的最大值；它衡量的是空白的**长度**，不是空白的**数量**。
-- **VisionMotion 中的具体作用**：`compute_longest_miss_run()`（第 585～598 行）遍历 `records`：成功把当前连续计数清零，失败累加并刷新历史最大值（第 592～597 行）；返回 0 当且仅当整段没有失败帧。`summary` 第 568 行调用，`print_statistics()` 第 621 行打印"最长连续丢失帧"。
-- **源码位置**：`src\video_tracker.py` 第 568、585～598、621 行。
+- **VisionMotion 中的具体作用**：`compute_longest_miss_run()`（第 591～604 行）遍历 `records`：成功把当前连续计数清零，失败累加并刷新历史最大值（第 598～603 行）；返回 0 当且仅当整段没有失败帧。`summary` 第 574 行调用，`print_statistics()` 第 627 行打印"最长连续丢失帧"。
+- **源码位置**：`src\video_tracker.py` 第 574、591～604、627 行。
 
 ### 9. Quality Check（质量检查）
 
 - **中文名称**：质量检查
 - **英文名称**：Quality Check / QC
 - **初学者解释**：对"写出来的数据文件"做体检：格式对不对、行数对不对、失败有没有被诚实标记、数值有没有明显不合理；只读，不修改数据。
-- **VisionMotion 中的具体作用**：M3 的 `check_csv_data()`（`src\video_tracker.py` 第 637～748 行）重新打开 CSV 做九项检查（表头、行数、frame 合法与连续、成功行数值、失败行留空、无 (0,0)、坐标范围、`np.genfromtxt` 读取与 NaN ↔ False 对账），第 747 行九项全过才算通过；M6 的 `check_trajectory_csv()`（`src\external_oscillation_tracker.py` 第 422～505 行）以更严的"分析型"门槛检查（100% 检出、无空值、无突跳、无歧义、时间严格）。
-- **源码位置**：`src\video_tracker.py` 第 637～748 行；`src\external_oscillation_tracker.py` 第 422～505 行。
+- **VisionMotion 中的具体作用**：M3 的 `check_csv_data()`（`src\video_tracker.py` 第 643～824 行）重新打开 CSV 做十项检查（表头、行数、frame 合法与连续、成功行数值、失败行留空、无 (0,0)、坐标范围、`time_s` 与 `frame / fps` 时间轴一致性、CSV 空测量字段与 `detected=False` 语义对账），第 823 行十项全过才算通过；M6 的 `check_trajectory_csv()`（`src\external_oscillation_tracker.py` 第 422～505 行）以更严的"分析型"门槛检查（100% 检出、无空值、无突跳、无歧义、时间严格）。
+- **源码位置**：`src\video_tracker.py` 第 643～824 行；`src\external_oscillation_tracker.py` 第 422～505 行。
 
 ### 10. Robustness（鲁棒性）
 
 - **中文名称**：鲁棒性
 - **英文名称**：Robustness
 - **初学者解释**：系统在"测不到 / 情况变差"时的表现是否仍然可靠：不崩溃、不编造数据、不弄乱时间轴、不被一帧坏数据拖垮，并且能把问题显示出来让人知道。
-- **VisionMotion 中的具体作用**：五条落点——失败是返回值不是异常（`src\marker_detector.py` 第 132～133、136～137 行）；失败不写伪数据（`src\video_tracker.py` 第 393、404 行）；失败帧照写 frame / time_s（第 490～491 行）；循环不因单帧失败退出（第 483～526 行，唯一 `break` 第 522～524 行）；失败被显示与统计（第 190～201、564～568、637～748 行）。因此"鲁棒 ≠ 检出率 100%"。
-- **源码位置**：`src\marker_detector.py` 第 132～133、136～137 行；`src\video_tracker.py` 第 190～201、393、404、483～526、564～568、637～748 行。
+- **VisionMotion 中的具体作用**：五条落点——失败是返回值不是异常（`src\marker_detector.py` 第 132～133、136～137 行）；失败不写伪数据（`src\video_tracker.py` 第 399、410 行）；失败帧照写 frame / time_s（第 496～497 行）；循环不因单帧失败退出（第 489～532 行，唯一 `break` 第 528～530 行）；失败被显示与统计（第 196～207、570～574、643～824 行）。因此"鲁棒 ≠ 检出率 100%"。
+- **源码位置**：`src\marker_detector.py` 第 132～133、136～137 行；`src\video_tracker.py` 第 196～207、399、410、489～532、570～574、643～824 行。
 
 ### 11. Evidence Boundary（证据边界）
 
@@ -1836,7 +1836,7 @@
 - **英文名称**：frame rate（fps）
 - **初学者解释**：每秒采样多少帧；对视频而言，frame rate 就是采样频率 fs。
 - **VisionMotion 中的具体作用**：M3 当前视频为 24 fps（`results\EXP-002-VIDEO-001_track.csv` 中 frame 1 → 0.041667 s、末帧 169 → 7.041667 s），M6 为 30 fps——两条数据链 fps 不同，说明 `time_s = frame / fps` 里的 fps 必须从各自视频读取，不能照搬。
-- **源码位置**：`src\video_tracker.py` 第 124、431～435、488 行（M3 从视频读取 fps）；`README.md` 第 46 行（M6 30 fps）；真实产物 `results\EXP-002-VIDEO-001_track.csv`、`results\EXP-EXT-LAB67-V1_trajectory.csv`。
+- **源码位置**：`src\video_tracker.py` 第 130、438～441、494 行（M3 从视频读取 fps）；`README.md` 第 46 行（M6 30 fps）；真实产物 `results\EXP-002-VIDEO-001_track.csv`、`results\EXP-EXT-LAB67-V1_trajectory.csv`。
 
 ### 5. 奈奎斯特频率（采样口径）
 
@@ -1986,14 +1986,14 @@
 - **中文名称**：代码阅读六步法
 - **英文名称**：six-step code reading
 - **初学者解释**：一套与编程语言无关的读代码流程：入口 → 输入 → 核心函数 → 真实数据 → 输出 → 自检与失败处理。
-- **VisionMotion 中的具体作用**：入口看 `demo\` 的无参数脚本；输入看路径与检查（视频 SHA-256 第 261 / 422 行）；核心函数列"输入 → 处理 → 输出"清单；拿真实数据走完整条链（EXP-004 frame 0：`852.81 / 208.63 → 851.987 → −3.215 → −0.5283`）；输出看 `write` / `savefig` / `prs.save()` 与字段规范；最后看自检与失败处理（`check_csv_data()` 第 637～748 行）。**能跟着一个数字走完整条链，才算真的读懂了代码。**
-- **源码位置**：`docs\learning\L20_完整项目复盘.md` 第 15 节；`src\video_tracker.py` 第 637～748 行；`src\displacement.py` 第 568～761 行。
+- **VisionMotion 中的具体作用**：入口看 `demo\` 的无参数脚本；输入看路径与检查（视频 SHA-256 第 261 / 428 行）；核心函数列"输入 → 处理 → 输出"清单；拿真实数据走完整条链（EXP-004 frame 0：`852.81 / 208.63 → 851.987 → −3.215 → −0.5283`）；输出看 `write` / `savefig` / `prs.save()` 与字段规范；最后看自检与失败处理（`check_csv_data()` 第 643～824 行）。**能跟着一个数字走完整条链，才算真的读懂了代码。**
+- **源码位置**：`docs\learning\L20_完整项目复盘.md` 第 15 节；`src\video_tracker.py` 第 643～824 行；`src\displacement.py` 第 568～761 行。
 
 ---
 
 ## 后续课程术语（尚未学习）
 
-以下术语在 L01 中只作为"后续要学的内容"登记名称；其中 BGR / HSV / Mask / Morphology（形态学）/ Contour / Moments / Centroid 以及 `marker_detector.py` 源码已在 **L02** 学完并补入正文，视频逐帧追踪（`video_tracker.py`）已在 **L05** 学完并补入正文，逐帧结果写入 CSV 的字段设计与自检（`CSV_FIELDNAMES`、`build_csv_row`、`records`、`check_csv_data`）已在 **L06** 学完并补入正文，检测失败判定、失败表达、质量检查与鲁棒性（`marker_detector.py` 三道失败判定、`detect_marker()` 失败返回、`DETECTION FAILED`、九项自检、M6 独立质量检查、证据边界）已在 **L07** 学完并补入正文，Calibration（像素尺度标定、px/mm、mm/px、`compute_scale()`、`unit_direction()`、`project_point()`、`ds_px → ds_mm`、M4 / M5 冻结标定常量、无标定原则）已在 **L08** 学完并补入正文，标定的六步逐行讲解、原始方向向量与单位方向向量（归一化的三条理由）、点积与一维投影（`project_point()` 的"再次归一化"）、M4 / M5 方向常量（`U` / `U_004`）、六类材料与真实 CSV 的只读核对已在 **L09** 学完并补入正文，valid gate（第二道数据筛选）、位移基线 `s0`（`compute_s0()`、窗口与最少有效帧）、`ds_px` / `ds_mm` 的完整位移流程与三份真实 ds CSV 的只读复核已在 **L10** 学完并补入正文，位移符号语义（ds 的正负 / 大小）、运动方向判据（Δds）、正方向约定（P1 → P2）与 `MIN_TURN_TRAVEL_PX` 的最小认识已在 **L11** 学完并补入正文，转向点检测与运动段切分（`detect_turning_points()`、peak / valley、分析序列、状态机、direction、extreme_index、turn_indexes、20 px 反向行程阈值、确认帧、turns、describe、direction_before / direction_after、运动段、boundary_indexes、travel_px、below_min_travel、原始数据原则、冻结与可复现）已在 **L12** 学完并补入正文，往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期稳定性判据思想（以及 M6 冻结值 T_exp / f_exp 的对照记录）已在 **L13** 学完并补入正文（**注意：周期 / 频率在项目中仍未实现计算**），本清单只保留仍未学习的部分：
+以下术语在 L01 中只作为"后续要学的内容"登记名称；其中 BGR / HSV / Mask / Morphology（形态学）/ Contour / Moments / Centroid 以及 `marker_detector.py` 源码已在 **L02** 学完并补入正文，视频逐帧追踪（`video_tracker.py`）已在 **L05** 学完并补入正文，逐帧结果写入 CSV 的字段设计与自检（`CSV_FIELDNAMES`、`build_csv_row`、`records`、`check_csv_data`）已在 **L06** 学完并补入正文，检测失败判定、失败表达、质量检查与鲁棒性（`marker_detector.py` 三道失败判定、`detect_marker()` 失败返回、`DETECTION FAILED`、十项自检、M6 独立质量检查、证据边界）已在 **L07** 学完并补入正文，Calibration（像素尺度标定、px/mm、mm/px、`compute_scale()`、`unit_direction()`、`project_point()`、`ds_px → ds_mm`、M4 / M5 冻结标定常量、无标定原则）已在 **L08** 学完并补入正文，标定的六步逐行讲解、原始方向向量与单位方向向量（归一化的三条理由）、点积与一维投影（`project_point()` 的"再次归一化"）、M4 / M5 方向常量（`U` / `U_004`）、六类材料与真实 CSV 的只读核对已在 **L09** 学完并补入正文，valid gate（第二道数据筛选）、位移基线 `s0`（`compute_s0()`、窗口与最少有效帧）、`ds_px` / `ds_mm` 的完整位移流程与三份真实 ds CSV 的只读复核已在 **L10** 学完并补入正文，位移符号语义（ds 的正负 / 大小）、运动方向判据（Δds）、正方向约定（P1 → P2）与 `MIN_TURN_TRAVEL_PX` 的最小认识已在 **L11** 学完并补入正文，转向点检测与运动段切分（`detect_turning_points()`、peak / valley、分析序列、状态机、direction、extreme_index、turn_indexes、20 px 反向行程阈值、确认帧、turns、describe、direction_before / direction_after、运动段、boundary_indexes、travel_px、below_min_travel、原始数据原则、冻结与可复现）已在 **L12** 学完并补入正文，往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期稳定性判据思想（以及 M6 冻结值 T_exp / f_exp 的对照记录）已在 **L13** 学完并补入正文（**注意：周期 / 频率在项目中仍未实现计算**），本清单只保留仍未学习的部分：
 
 周期 / 频率（L13 已建立概念与判据思想，并记录 M6 外部公开视频的冻结值；但项目代码仍未实现周期 / 频率计算）
 
@@ -2012,12 +2012,12 @@ FFT / 频谱、简谐振动（仍未学习，L13 只登记名称，不展开）
 - L02 词条（BGR、HSV、Hue、Saturation、Value、Mask、Threshold、Morphological Opening、Erosion、Dilation、Contour、Moments、Centroid、Bounding Rectangle、Binary Image、Kernel、Channel）的参数与代码事实来自 `src\marker_detector.py`，未重新运行任何程序。
 - L03 词条（Pixel 补充视角、NumPy Array、Image、BGR 补充视角、RGB、HSV 补充视角、Hue / Saturation / Value 补充视角、Color Space、Threshold 补充视角、Mask 补充视角、Binary Image 补充视角、cv2.cvtColor、cv2.inRange、bitwise_or、Contour 补充视角）的事实来自 `src\marker_detector.py` 第 22～27、48、51～52、55、73、110 行附近；未重新运行任何程序。
 - L04 词条（Contour 补充视角、findContours、RETR_EXTERNAL、CHAIN_APPROX_SIMPLE、Contour Area、Moments 补充视角、m00、m10、m01、Centroid 补充视角、Bounding Rectangle 补充视角、MIN_AREA）的事实来自 `src\marker_detector.py` 第 33、73、75～76、78～80、82～84、95、97～98、100～102、140、141 行附近（按 2026-09-29 当前源码逐行核对）；未重新运行任何程序。
-- L05 词条（Video、Frame 补充视角、FPS 补充视角、VideoCapture、cap.read、ret、current_frame、VideoWriter、Overlay Video、release、Frame Loop、Function Reuse、Module）的事实来自 `src\video_tracker.py` 第 15～23、34、44、47、119～125、147、169～201、236～252、365、431～435、438、474～475、482～491、507～515、521～526、530～538 行附近与 `demo\run_video_tracking.py` 第 35、38、43、52～58 行（按 2026-09-29 当前源码逐行核对，`src\video_tracker.py` 共 760 行）；未重新运行任何程序。
-- L06 词条（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、np.genfromtxt、csv.DictWriter、y_px、_track.csv / _trajectory.csv，以及 Frame / time_s / x_px / area_px / detected / CSV 六个补充视角）的事实来自 `src\video_tracker.py` 第 26、40～41、124、387～404、470、477～479、488、491、493～504、637～748 行与 `src\external_oscillation_tracker.py` 第 86～96、220～221、302～304、337～377、494～500 行；产物数据（只读核对，未重新生成）来自 `results\EXP-002-VIDEO-001_track.csv`（表头 6 列、170 行数据）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行数据）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
-- L07 词条（Detection Failure、success、DETECTION FAILED、失败返回结构、空字段、`(0,0)` 伪数据、detection_rate、longest_miss_run、Quality Check、Robustness、Evidence Boundary）的事实来自 `src\marker_detector.py` 第 33、75～76、83～84、97～98、129、132～133、136～137、143～151 行与 `src\video_tracker.py` 第 190～201、387～404、470、483～526、556～580、585～598、606～629、637～748 行，M6 对照来自 `src\external_oscillation_tracker.py` 第 422～505 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-002-VIDEO-001_track.csv`（170 行、170/170 全 True、0 失败行、0 空字段、area 24409.0 / 64846.25 / 105163.5）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（160 行、160/160 全 True、0 失败行、0 空字段、area 226 / 508.5 / 658）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
+- L05 词条（Video、Frame 补充视角、FPS 补充视角、VideoCapture、cap.read、ret、current_frame、VideoWriter、Overlay Video、release、Frame Loop、Function Reuse、Module）的事实来自 `src\video_tracker.py` 第 15～23、34、44、47、125～131、153、175～207、242～258、371、437～441、444、480～481、488～497、513～521、527～532、536～544 行附近与 `demo\run_video_tracking.py` 第 35、38、43、52～58 行（按 2026-10-07 当前源码逐行核对，`src\video_tracker.py` 共 836 行）；未重新运行任何程序。
+- L06 词条（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、np.genfromtxt、csv.DictWriter、y_px、_track.csv / _trajectory.csv，以及 Frame / time_s / x_px / area_px / detected / CSV 六个补充视角）的事实来自 `src\video_tracker.py` 第 26、40～41、130、393～410、476、483～485、494、497、499～510、643～824 行与 `src\external_oscillation_tracker.py` 第 86～96、220～221、302～304、337～377、494～500 行；产物数据（只读核对，未重新生成）来自 `results\EXP-002-VIDEO-001_track.csv`（表头 6 列、170 行数据）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行数据）（按 2026-10-07 当前源码与产物逐行核对）；未重新运行任何程序。
+- L07 词条（Detection Failure、success、DETECTION FAILED、失败返回结构、空字段、`(0,0)` 伪数据、detection_rate、longest_miss_run、Quality Check、Robustness、Evidence Boundary）的事实来自 `src\marker_detector.py` 第 33、75～76、83～84、97～98、129、132～133、136～137、143～151 行与 `src\video_tracker.py` 第 196～207、393～410、476、489～532、562～586、591～604、612～635、643～824 行，M6 对照来自 `src\external_oscillation_tracker.py` 第 422～505 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-002-VIDEO-001_track.csv`（170 行、170/170 全 True、0 失败行、0 空字段、area 24409.0 / 64846.25 / 105163.5）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（160 行、160/160 全 True、0 失败行、0 空字段、area 226 / 508.5 / 658）（按 2026-10-07 当前源码与产物逐行核对）；未重新运行任何程序。
 - L08 词条（Calibration、图像坐标系 / 物理世界坐标系、px/mm、mm/px、pixel_distance、compute_scale、已知真实长度、M4 冻结标定常量、M5 冻结标定常量、unit_direction、project_point、s_px、ds_px、ds_mm、无标定原则、y0_px 字段名读法）的事实来自 `src\calibration.py` 第 1～22、24、32～43、46～70、73～92、100～144（第 125～126、128～131、134～135、137～138、140～144 行）、147～173、176～204 行，`src\displacement.py` 第 23、41～55（第 48～50、52～53、55 行）、57～64、72～90、98～150、277～340（第 339～340 行）、348～382、725～740 行，`src\dynamic_displacement.py` 第 20～23、40、59～66（第 60～62、64～65、66 行）、68～76、78～80、91～109、121～174、338～350（第 349～350 行）、1097～1116 行，以及 `src\external_oscillation_tracker.py` 第 31～34、84、87～96 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`（1961 行、valid 1050/911、ds_px -1.249～350.268、ds_mm -0.2170～60.8426）、`results\EXP-003-STATIC-003_ds.csv`（1984 行、valid 1192/792、ds_px -0.311～346.530、ds_mm -0.0540～60.1932）、`results\EXP-004-DYNAMIC-001_ds.csv`（1766 行、valid 1766/0、ds_px -3.215～402.715、ds_mm -0.5283～66.1663）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行、x_px 718.5～728.0、y0_px 508～622）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
 - 新增术语时请保持五字段格式（中文名称 / 英文名称 / 初学者解释 / VisionMotion 中的具体作用 / 源码位置），并在"速查索引"中同步登记。
 
 - 记录日期：2026-09-28；L04 记录日期：2026-09-29；L05 记录日期：2026-09-29；L06 记录日期：2026-10-02；L07 记录日期：2026-10-02；L08 记录日期：2026-10-02；L09 记录日期：2026-10-02；L10 记录日期：2026-10-02；L11 记录日期：2026-10-04；L12 记录日期：2026-10-04；L13 记录日期：2026-10-04；L14 记录日期：2026-10-04；L15 记录日期：2026-10-04；L16 记录日期：2026-10-04；L17 记录日期：2026-10-04；L18 记录日期：2026-10-04；L19 记录日期：2026-10-04；L20 记录日期：2026-10-04；当前已登记课程：L01–L20。
 - L11 词条（Δds、运动方向（正向 / 负向）、正方向约定（P1 → P2）、参考位置与符号侧、符号统计、平台 + 台阶 + 空洞、连续往返、MIN_TURN_TRAVEL_PX 最小认识、五类材料）的事实来自 `src\displacement.py` 第 44～46、55、272～274、284～285、338～340、360～363 行与 `src\dynamic_displacement.py` 第 30、59～66、82～87、111～113、133、462、474～477、480～481 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv` 及对应三份 `_track.csv`（valid 1050/911、1192/792、1766/0；`ds_mm` −0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663；正/负/零 = 1016/34/0、1174/18/0、1605/161/0；M5 f237→f313 与 f963→f1015 两条方向例子；平台 / 空洞统计 180 / 147 帧）（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
-- L13 词条（往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期 T、频率 f、周期稳定性判据、冻结值（T_exp / f_exp）、运动段 ≠ 周期）的事实来自 `src\dynamic_displacement.py` 第 16、28、30、462–593 行（重点：540–547、552–563、565–591、763、765–770、777–792、798–813 行）、`src\m63_final_visualization.py` 第 7、109–110、112–127、202–219 行、`demo\run_m53_plot.py` 第 19、67–74、382 行，旁证 `src\video_tracker.py` 第 17、608–609 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行，M6 对照 `docs\M6.3_FINAL_REPORT.md` 第 154–169 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0–1765；6 个转向点时间 f491 8.166327 / f602 10.012483 / f838 13.937642 / f1063 17.679849 / f1254 20.856567 / f1513 25.164263 s；5 个半周期候选 1.846156 / 3.925159 / 3.742207 / 3.176718 / 4.307696 s，最小 1.846156、最大 4.307696、均值 3.399587、最大 / 最小 ≈ 2.33；peak→peak 5.771315 / 6.918925 s，均值 6.345120；valley→valley 7.667366 / 7.484414 s，均值 7.575890；2 × 半周期均值 6.799174 s；偏差 ≈ −6.68% / +11.42%）；上述间隔数字均为只读分析结果（内存中读取与计算，未写任何文件），不是当前项目代码已经实现的功能；只读检索显示全项目 M5.4 / M5.5 命中 0 条（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
+- L13 词条（往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期 T、频率 f、周期稳定性判据、冻结值（T_exp / f_exp）、运动段 ≠ 周期）的事实来自 `src\dynamic_displacement.py` 第 16、28、30、462–593 行（重点：540–547、552–563、565–591、763、765–770、777–792、798–813 行）、`src\m63_final_visualization.py` 第 7、109–110、112–127、202–219 行、`demo\run_m53_plot.py` 第 19、67–74、382 行，旁证 `src\video_tracker.py` 第 17 行、`print_statistics()` 第 614–615 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行，M6 对照 `docs\M6.3_FINAL_REPORT.md` 第 154–169 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0–1765；6 个转向点时间 f491 8.166327 / f602 10.012483 / f838 13.937642 / f1063 17.679849 / f1254 20.856567 / f1513 25.164263 s；5 个半周期候选 1.846156 / 3.925159 / 3.742207 / 3.176718 / 4.307696 s，最小 1.846156、最大 4.307696、均值 3.399587、最大 / 最小 ≈ 2.33；peak→peak 5.771315 / 6.918925 s，均值 6.345120；valley→valley 7.667366 / 7.484414 s，均值 7.575890；2 × 半周期均值 6.799174 s；偏差 ≈ −6.68% / +11.42%）；上述间隔数字均为只读分析结果（内存中读取与计算，未写任何文件），不是当前项目代码已经实现的功能；只读检索显示全项目 M5.4 / M5.5 命中 0 条（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。

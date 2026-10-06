@@ -132,6 +132,25 @@ def verify_video_sha256(video_path, expected_sha256=EXTERNAL_VIDEO_SHA256):
     return actual_sha256
 
 
+def video_sha256_ok(sha256_before, sha256_after, expected_sha256=EXTERNAL_VIDEO_SHA256):
+    """
+    原始视频 SHA-256 完整性判据（返回 True / False，绝不抛异常）。
+
+    只有同时满足下列三项才算“完整”，缺一即为 False（不默认放行）：
+        1. 运行前哈希 == 预期基线哈希；
+        2. 运行后哈希 == 预期基线哈希；
+        3. 运行后哈希 == 运行前哈希（原始视频未被改动）。
+    比较前统一转小写，只消除十六进制大小写差异，不做数值或格式放宽。
+    未提供哈希（None）视为“无法证明完整”，记为 False。
+    """
+    if sha256_before is None or sha256_after is None:
+        return False
+    before = str(sha256_before).lower()
+    after = str(sha256_after).lower()
+    expected = str(expected_sha256).lower()
+    return before == expected and after == expected and before == after
+
+
 def read_video_info(capture):
     """
     读取视频参数（分辨率 / fps / 总帧数）。这里读到的就是实际用于 time_s 的 fps。
@@ -419,9 +438,14 @@ def _range_text(values, digits=2):
     )
 
 
-def check_trajectory_csv(csv_data, run_rows, fps, start_frame=START_FRAME, end_frame=END_FRAME):
+def check_trajectory_csv(csv_data, run_rows, fps, start_frame=START_FRAME, end_frame=END_FRAME,
+                         sha256_before=None, sha256_after=None,
+                         expected_sha256=EXTERNAL_VIDEO_SHA256):
     """
     独立质量检查：以“写出的 CSV 文件”为主要对象，运行期记录用于候选歧义等额外统计。
+
+    第 16 项为原始视频 SHA-256 完整性：由 sha256_before / sha256_after / expected_sha256
+    共同判定（运行前 = 预期基线，且运行后 = 运行前）。未提供哈希时记为未通过，不放行。
 
     返回 (checks, passed)，checks 为 [(说明, 是否通过), ...]。
     """
@@ -500,7 +524,14 @@ def check_trajectory_csv(csv_data, run_rows, fps, start_frame=START_FRAME, end_f
          max_time_error <= TIME_TOLERANCE_S)
     )
 
-    # 16. 原始视频未被改动（运行前后 SHA-256 一致）
+    # 16. 原始视频 SHA-256 完整性（运行前 = 预期基线；运行后 = 运行前，即原始视频未被改动）
+    sha256_ok = video_sha256_ok(sha256_before, sha256_after, expected_sha256)
+    checks.append(
+        ("原始视频 SHA-256 完整性：运行前 = 预期基线 %s…、运行后 = 运行前（原始视频未被改动）"
+         % str(expected_sha256).lower()[:12],
+         sha256_ok)
+    )
+
     passed = all(ok for _, ok in checks)
     return checks, passed
 
@@ -595,7 +626,10 @@ def run_external_tracking(video_path, csv_path, start_frame=START_FRAME, end_fra
     written_csv_path = write_trajectory_csv(summary["rows"], csv_path)
     csv_data = load_trajectory_csv(written_csv_path)
     checks, passed = check_trajectory_csv(
-        csv_data, summary["rows"], summary["video_info"]["fps"], start_frame, end_frame
+        csv_data, summary["rows"], summary["video_info"]["fps"], start_frame, end_frame,
+        sha256_before=summary["sha256_before"],
+        sha256_after=summary["sha256_after"],
+        expected_sha256=expected_sha256,
     )
 
     print_trajectory_summary(summary, written_csv_path, csv_data)

@@ -176,6 +176,25 @@
 | 周期稳定性判据 | period stability criterion | L13（概念层；项目未实现） |
 | 冻结值（T_exp / f_exp） | frozen values | L13 / M6 |
 | 运动段 ≠ 周期 | segment ≠ period | L13 |
+| 采样 | sampling | L19 |
+| 采样率 / 采样频率 fs | sampling frequency | L19 |
+| 采样间隔 dt | sampling interval | L19 |
+| 帧率 / frame rate | frame rate | L19 |
+| 频率格点 f_k = k · df | frequency bin | L19 |
+| 频谱泄漏 | spectral leakage | L19 |
+| 窗函数 | window function | L19 |
+| Zero padding（零填充） | zero padding | L19 |
+| 整周期截断 / 非整数周期截断 | integer / non-integer period truncation | L19 |
+| 记录长度 T_record | record length | L18 / L19 |
+| 完整工程流水线 | end-to-end pipeline | L20 |
+| 两条数据路线（M2–M5 自采 / M6 外部） | two data routes | L20 |
+| 检测 vs 测量 | detection vs measurement | L20 |
+| detected vs valid（总复盘口径） | detected vs valid | L10 / L20 |
+| 冻结值 ≠ 运行时能力 | frozen value vs runtime capability | L20 |
+| 文档漂移 | documentation drift | L20 |
+| 证据边界 / 五类材料 | evidence boundary / five material labels | L20 |
+| 项目能力边界（能做 / 不能做） | capability boundary | L20 |
+| 代码阅读六步法 | six-step code reading | L20 |
 
 ---
 
@@ -945,7 +964,7 @@
 - **中文名称**：时间（秒）（补充：CSV 的时间轴列）
 - **英文名称**：time_s
 - **初学者解释**：`time_s` 是每一帧在视频时间轴上的时刻，由帧号除以 fps 得到；在 CSV 里它是第二列，提供整张表的"横轴"。
-- **VisionMotion 中的具体作用**：第 488 行 `time_s = frame_index / fps`；第 398 / 404 行用 `"%.6f"` 写 6 位小数；`fps` 由第 124 行从视频文件读取（M3 视频由已有 CSV 反推 ≈ 60.12 fps，M6 为 30 fps——两个数字不同，说明不能硬编码）。失败行也照写 `time_s`（第 404 行），时间轴因此不断裂；M6 自检还要求每行 `time_s` 满足 `frame / fps`（`src\external_oscillation_tracker.py` 第 494～500 行）。
+- **VisionMotion 中的具体作用**：第 488 行 `time_s = frame_index / fps`；第 398 / 404 行用 `"%.6f"` 写 6 位小数；`fps` 由第 124 行从视频文件读取（M3 视频由已有 CSV 反推 ≈ 24 fps，M6 为 30 fps——两个数字不同，说明不能硬编码）。失败行也照写 `time_s`（第 404 行），时间轴因此不断裂；M6 自检还要求每行 `time_s` 满足 `frame / fps`（`src\external_oscillation_tracker.py` 第 494～500 行）。
 - **源码位置**：`src\video_tracker.py` 第 124、398、404、488、495 行；`src\external_oscillation_tracker.py` 第 302～303、494～500 行。
 
 ### 19. x_px（补充视角）
@@ -1781,6 +1800,197 @@
 
 ---
 
+## L19 采样、频率格点与频谱泄漏——真实视频里的 FFT 为什么不会完美
+
+> 本节词条的核心纪律：L19 讨论的是"视频怎样把连续运动变成离散采样序列、FFT 的输出为什么只能落在固定格点上"的**概念与只读核对**——
+> M6 的真实采样参数（N = 160、frame 76–235、fs = 30 Hz、dt = 1/30 s、T_record = 5.3333 s）来自 `src\external_oscillation_tracker.py` 第 60–62 行、`README.md` 第 46 行、`docs\M6.3_FINAL_REPORT.md` 第 60、181 行；
+> df = fs / N、频率格点、频谱泄漏、窗函数、zero padding 都是**概念工具与核对算术**，当前 `src\` / `demo\` 没有运行时 FFT、窗函数、补零实现（`src\m63_final_visualization.py` 第 7 行明确不重算 FFT，第 119–120 行只是冻结值）。
+
+### 1. 采样（sampling）
+
+- **中文名称**：采样
+- **英文名称**：sampling
+- **初学者解释**：把连续变化的世界按固定时间间隔"取点"，只保存这些离散时刻的值；两次取点之间发生的事情没有记录。
+- **VisionMotion 中的具体作用**：视频不是连续信号，而是以固定时间间隔拍摄的离散帧序列；M6 视频为 30 fps，即每 1/30 s 拍一帧，每一帧经 L16 流程给出一次 y0 测量，因此 y0(t) 只在 t = frame / 30 这些离散时刻存在采样值。一句话：**y0(t) 是从视频采样得到的时间序列，不是对连续运动的直接观测**。
+- **源码位置**：无运行时"采样器"代码（采样由视频拍摄本身完成）；概念与真实参数见 `src\external_oscillation_tracker.py` 第 60–62 行、`README.md` 第 46 行、`docs\M6.3_FINAL_REPORT.md` 第 60 行。
+
+### 2. 采样率 / 采样频率 fs（sampling frequency）
+
+- **中文名称**：采样率 / 采样频率
+- **英文名称**：sampling frequency（sample rate）
+- **初学者解释**：每秒取多少个点，单位 Hz（= 1/s）；视频里就是帧率 fps。
+- **VisionMotion 中的具体作用**：M6 的 fs = 30 Hz（30 fps）；它决定采样间隔 dt = 1 / fs 与可无歧义表达的最高频率（奈奎斯特频率 fs / 2 = 15 Hz）。M6 主频约 1.84 Hz，远低于 15 Hz，因此主振动成分远离混叠风险。**fs 是"每秒多少点"，N 是"一共多少点"，两个量不能混淆。**
+- **源码位置**：`README.md` 第 46 行；`docs\M6.3_FINAL_REPORT.md` 第 58 行；`src\external_oscillation_tracker.py` 第 268–276 行（fps 检查）。无运行时采样代码。
+
+### 3. 采样间隔 dt（sampling interval）
+
+- **中文名称**：采样间隔
+- **英文名称**：sampling interval
+- **初学者解释**：相邻两个采样点之间的时间差，dt = 1 / fs；它是这条数据能分辨的最小时间尺度。
+- **VisionMotion 中的具体作用**：M6 的 dt = 1/30 s ≈ 0.033333 s，即"1 frame ≈ 0.0333 s"（报告第 253 行，与 `src\m63_final_visualization.py` 第 117 行冻结 `dT_sampling = 0.0333` 对应）；这也是 L17 峰—峰间隔只能落在 16 / 16.5 / 17 帧格点上的原因。
+- **源码位置**：无源码实现（概念算术）；`src\m63_final_visualization.py` 第 117 行冻结值；`docs\M6.3_FINAL_REPORT.md` 第 253 行。
+
+### 4. 帧率 / frame rate
+
+- **中文名称**：帧率
+- **英文名称**：frame rate（fps）
+- **初学者解释**：每秒采样多少帧；对视频而言，frame rate 就是采样频率 fs。
+- **VisionMotion 中的具体作用**：M3 当前视频为 24 fps（`results\EXP-002-VIDEO-001_track.csv` 中 frame 1 → 0.041667 s、末帧 169 → 7.041667 s），M6 为 30 fps——两条数据链 fps 不同，说明 `time_s = frame / fps` 里的 fps 必须从各自视频读取，不能照搬。
+- **源码位置**：`src\video_tracker.py` 第 124、431～435、488 行（M3 从视频读取 fps）；`README.md` 第 46 行（M6 30 fps）；真实产物 `results\EXP-002-VIDEO-001_track.csv`、`results\EXP-EXT-LAB67-V1_trajectory.csv`。
+
+### 5. 奈奎斯特频率（采样口径）
+
+- **中文名称**：奈奎斯特频率
+- **英文名称**：Nyquist frequency
+- **初学者解释**：采样率为 fs 时，可无歧义表达的最高频率是 fs / 2；超过它的成分会发生混叠（aliasing）。
+- **VisionMotion 中的具体作用**：M6 的奈奎斯特频率 = 30 / 2 = 15 Hz；M6 主频约 1.84 Hz，远低于 15 Hz，因此主振动成分在时间采样上远离混叠风险（一般理论；L18 已登记，L19 在采样语境下重申）。这是核对算术，不是源码实现。
+- **源码位置**：无源码实现；`README.md` 第 46 行（fs = 30 Hz）；`docs\M6.3_FINAL_REPORT.md` 第 154–169 行（概念口径）。
+
+### 6. 频率格点（frequency bin）f_k = k · df
+
+- **中文名称**：频率格点
+- **英文名称**：frequency bin
+- **初学者解释**：FFT 的输出不是一条可任意取值的连续频率曲线，而是只能落在等间隔的离散频率点上：f_k = k · df。
+- **VisionMotion 中的具体作用**：M6 口径下 df = 30 / 160 = 0.1875 Hz，单边格点为 0、0.1875、0.375 … 15 Hz（k = 0…80）。**1.875 Hz = 10 × 0.1875 Hz，正好是 k = 10 号格点**；**1.843003 Hz 位于格点之间**（1.843003 / 0.1875 ≈ 9.83），最近的格点是 k = 10（1.875 Hz），距离 0.031997 Hz。FFT 报告的"主峰"只能是最近格点的读数，不是"更精确地测到了 1.875 Hz"。
+- **源码位置**：无源码实现（概念 / 核对算术）；冻结值见 `src\m63_final_visualization.py` 第 119–120 行；`docs\M6.3_FINAL_REPORT.md` 第 175、179–180 行。
+
+### 7. 频率分辨率 df = fs / N
+
+- **中文名称**：频率分辨率
+- **英文名称**：frequency resolution
+- **初学者解释**：频谱上相邻格点的间隔；df = fs / N = 1 / T_record，记录越长格点越密、能分辨的频率差越小。
+- **VisionMotion 中的具体作用**：M6 核对 df = fs / N = 30 / 160 = 0.1875 Hz，与冻结值 df_fft = 0.1875 一致（第 120 行）；半格 = df / 2 = 0.09375 Hz。频率相差 Δf 的两个成分，需要至少约 1 / Δf 的观测时间才可能被区分。这是核对算术，不是源码实现。**注意 df 描述的是"这条记录的分辨能力"，不是 FFT 算法的精度极限。**
+- **源码位置**：`src\m63_final_visualization.py` 第 120、398–399、428–430 行；`docs\M6.3_FINAL_REPORT.md` 第 180、186 行。
+
+### 8. 记录长度 T_record
+
+- **中文名称**：记录长度
+- **英文名称**：record length
+- **初学者解释**：一段 DFT / FFT 分析使用的总时长；常用口径 T_record = N / fs。
+- **VisionMotion 中的具体作用**：M6 核对 T_record = 160 / 30 = 5.3333 s（报告第 181 行）。口径注意：CSV 首末采样点时间戳之差是 159 / 30 = 5.3000 s，两者相差一个采样间隔；讨论频率格点与分辨率时使用 **T_record = 5.3333 s**。这是核对计算，不是源码实现。
+- **源码位置**：无源码实现；`README.md` 第 46–47 行；`docs\M6.3_FINAL_REPORT.md` 第 60、181 行；真实数据（只读核对）`results\EXP-EXT-LAB67-V1_trajectory.csv`。
+
+### 9. 频谱泄漏（spectral leakage）
+
+- **中文名称**：频谱泄漏
+- **英文名称**：spectral leakage
+- **初学者解释**：把一段有限长信号交给 FFT，等于隐含假设它按记录长度无限重复；当记录内不是整数个周期时，周期延拓在边界处跳变，能量"漏"到邻近频率格点上。
+- **VisionMotion 中的具体作用**：泄漏四要素 = ① 有限记录（只有 frame 76–235，5.3333 s）；② 非整数周期截断（M6 主频 1.843003 Hz 在记录内约含 9.83 个周期）；③ 周期延拓边界不连续；④ 能量扩散到邻近格点。**泄漏不是数据错误**，而是"有限记录 + 非整数周期"的系统性效应；它解释为什么 FFT 主峰落在最近格点 1.875 Hz。
+- **源码位置**：无源码实现（概念 / 核对算术）；`docs\M6.3_FINAL_REPORT.md` 第 175、185–186 行；`src\m63_final_visualization.py` 第 119–120 行（冻结值）。
+
+### 10. 整周期截断 / 非整数周期截断
+
+- **中文名称**：整周期截断 / 非整数周期截断
+- **英文名称**：integer / non-integer period truncation
+- **初学者解释**：记录内包含的周期数是否恰好为整数；整数时周期延拓首尾连续、能量集中在单一格点；非整数时边界跳变、能量扩散（泄漏）。
+- **VisionMotion 中的具体作用**：1.875 Hz 恰为 10 × df（记录内 10 个整周期，理想化示例）；M6 真实主频 1.843003 Hz 约含 9.83 个周期（非整数）——真实视频几乎不可能恰好整周期截断。**注意区分：1.843003 Hz 是真实时域结果，1.875 Hz 是真实冻结 FFT 主峰，1.900 Hz 只存在于 L19 教学示例 B。**
+- **源码位置**：无源码实现；概念见 `docs\learning\L19_采样_频率格点与频谱泄漏.md` 第 8–9 节；真实值见 `docs\M6.3_FINAL_REPORT.md`。
+
+### 11. 窗函数（window function）
+
+- **中文名称**：窗函数
+- **英文名称**：window function
+- **初学者解释**：在做 FFT 前给记录两端做平滑渐变（如 Hann / Hamming / Blackman），压低记录边界处的幅度，从而减小首尾跳变。
+- **VisionMotion 中的具体作用**：矩形窗（截断本身隐含）主瓣最窄但旁瓣较高、泄漏明显；Hann / Hamming / Blackman 压低旁瓣、减弱泄漏，代价是**主瓣变宽、分辨能力下降**——**加窗不一定更准确，而是权衡**。项目事实边界：M6.3 封板 FFT 的做法是"不加窗"（报告第 175 行），当前 `src\` / `demo\` 没有任何窗函数实现。
+- **源码位置**：无源码实现（只读检索 `hann` / `hamming` / `blackman` / `加窗` 0 命中）；`docs\M6.3_FINAL_REPORT.md` 第 175 行。
+
+### 12. Zero padding（零填充）
+
+- **中文名称**：零填充
+- **英文名称**：zero padding
+- **初学者解释**：在有限记录末尾补上一串零再做 FFT，使输出频率格点变密、频谱曲线看起来更光滑。
+- **VisionMotion 中的具体作用**：zero padding **不增加真实观测时间**（物理观测仍是 5.3333 s）、**不增加原始信息**；真实分辨能力仍由 T_record 决定，不能靠补零区分两个本来就分不开的频率。项目事实边界：M6.3 封板做法是"不补零"（报告第 175 行），当前 `src\` / `demo\` 没有 `np.pad` / 补零实现。
+- **源码位置**：无源码实现（`src\dynamic_displacement.py` 第 28 行是"不做补零"的否定声明）；`docs\M6.3_FINAL_REPORT.md` 第 175 行。
+
+### 13. FFT 交叉验证（采样 / 格点口径）
+
+- **中文名称**：FFT 交叉验证
+- **英文名称**：FFT cross-validation
+- **初学者解释**：用另一种独立方法（频域 FFT）在同一段数据上复核时域结果，而不是用它替换时域测量。
+- **VisionMotion 中的具体作用**：M6 的 f_exp = 1.843003 Hz（时域）与 f_FFT = 1.875 Hz（频域主峰）差值 0.031997 Hz（相对差 1.74%）**小于半格** 0.09375 Hz，属于同一数据上的一致性确认；**不能把 1.875 Hz 视为比 1.843003 Hz 更"正确"**。报告第 185 行明确"FFT 仅作为独立的频域交叉验证，不替代时域峰—峰周期测量"。
+- **源码位置**：`src\m63_final_visualization.py` 第 114、119–120、388–478 行（图 B 是频率数值对照图，不是频谱图）；`src\m73_presentation.py` 第 423–424 行（PPT 文字）；`docs\M6.3_FINAL_REPORT.md` 第 185–186 行。
+
+---
+
+## L20 完整项目复盘——从视频到运动参数，我到底真正做了什么
+
+> 本节词条的核心纪律：L20 是**总复盘课**，不引入新算法；它把 L01～L19 串成一条完整流水线，并划清"运行时能力 / 冻结分析结果 / 文档漂移"的边界。
+> L20 只做课程记录与只读核对（读源码、读 CSV、读文档 + 内存算术），**未修改 `src\` / `demo\` / `results\`、未运行 demo、未重算 FFT、未生成任何结果文件**。
+
+### 1. 完整工程流水线（end-to-end pipeline）
+
+- **中文名称**：完整工程流水线
+- **英文名称**：end-to-end pipeline
+- **初学者解释**：从"输入一张图片 / 一段视频"到"输出运动参数与报告"的一条完整、可解释、可复现的处理链。
+- **VisionMotion 中的具体作用**：19 个环节 = 图片 / 视频 → 解码成帧 → 检测 → 像素位置 → CSV → 有效性判断 → 标定 → 一维投影 → s → s0 → ds_px → ds_mm → 转向点 → 运动段 →（周期 / 频率 / FFT）→ 可视化 → 报告 / PPT。其中"周期 / 频率 / FFT"三格对 M5 无运行时实现、对 M6 只有冻结值——流水线的价值在"每一步能解释、结果能复现"，而不是"全程自动"。
+- **源码位置**：各环节实现见 `docs\learning\L20_完整项目复盘.md` 第 2 节表；`README.md` 第 15 行。
+
+### 2. 两条数据路线（two data routes）
+
+- **中文名称**：两条数据路线
+- **英文名称**：two data routes
+- **初学者解释**：同一个项目里并行的两条独立数据链，共享同一套"CSV 记录规范"，但视觉目标、检测方法与标定策略完全不同。
+- **VisionMotion 中的具体作用**：M2–M5 自采路线（红色目标 + 连通域质心 + 标定 px/mm + 毫米位移 + 转向点 / 运动段）与 M6 外部公开视频路线（ROI + 灰度 + 暗连通域 + 暗带上缘 y0 + **无标定** + 像素 + 冻结周期 / 频率 / FFT）。**两条路线的结论不能互相搬运**（例如 M6 的 T / f 不能套到 EXP-004 上，M6 不能给毫米位移）。
+- **源码位置**：`src\marker_detector.py` / `src\calibration.py` 等（自采）；`src\external_oscillation_tracker.py`（M6）；`docs\learning\L20_完整项目复盘.md` 第 1.2 节。
+
+### 3. 检测 vs 测量（detection vs measurement）
+
+- **中文名称**：检测与测量
+- **英文名称**：detection vs measurement
+- **初学者解释**：检测回答"目标在画面里的哪里（像素）"；测量回答"目标在物理世界里移动了多少（毫米）"——两件不同的事。
+- **VisionMotion 中的具体作用**：`detect_marker()` 给出的是**像素位置** `(cx, cy)` / 面积；只有再经过标定、投影与基线 `s0` 之后，才得到"位移" `ds_px / ds_mm`。**像素坐标不是物理位移；M6 只有检测与像素位置，没有测量。**
+- **源码位置**：`src\marker_detector.py` 第 105～151 行（检测）；`src\displacement.py` 第 328～340 行 / `src\dynamic_displacement.py` 第 338～350 行（测量）；`docs\learning\L20_完整项目复盘.md` 第 5 节。
+
+### 4. detected vs valid（总复盘口径）
+
+- **中文名称**：detected 与 valid
+- **英文名称**：detected vs valid
+- **初学者解释**：两层状态——`detected` 回答"看到了吗"，`valid` 回答"这一帧的数据能用吗"。
+- **VisionMotion 中的具体作用**：`detected` 由检测器产生；`valid` 由各实验专属的 valid gate（area / y 范围）产生。**只看 detected 成功率会严重高估可用数据量**：真实数据三份 track CSV 的 detected 都是 100%，但 valid 分别为 1050/1961、1192/1984、1766/1766。被拒绝的帧不会被删除，而是位移字段留空、`valid=False`。
+- **源码位置**：`src\displacement.py` 第 175～201、390～431 行；`src\dynamic_displacement.py` 第 183～210、400～454 行；`docs\learning\L20_完整项目复盘.md` 第 6 节。
+
+### 5. 冻结值 ≠ 运行时能力
+
+- **中文名称**：冻结值不等于运行时能力
+- **英文名称**：frozen value vs runtime capability
+- **初学者解释**：写在源码字典 / 报告 / PPT 里的数字，可能只是"已经封板的历史分析结果"，不代表当前代码能在运行时算出它们。
+- **VisionMotion 中的具体作用**：M6 的 f_exp = 1.843003 Hz、f_FFT = 1.875 Hz、df_fft = 0.1875 Hz 是 `FROZEN` 字典里的冻结值（`src\m63_final_visualization.py` 第 112–127 行），第 7 行明确不重算；当前 `src\` / `demo\` 没有可运行的 FFT / 窗函数 / 补零 / 去趋势 / 重采样实现，也没有实际频谱数组。**引用任何数字前，先问"它是运行时算的、只读核对的，还是冻结的"。**
+- **源码位置**：`src\m63_final_visualization.py` 第 7、112–127 行；`src\m73_presentation.py` 第 423 行（PPT 文案）；`docs\M6.3_FINAL_REPORT.md` 第 173–187 行。
+
+### 6. 项目能力边界（能做 / 不能做）
+
+- **中文名称**：项目能力边界
+- **英文名称**：capability boundary
+- **初学者解释**：如实划清项目"当前真实能做到什么、做不到什么"，不夸大也不隐瞒。
+- **VisionMotion 中的具体作用**：能做——检测 / 逐帧 CSV / 标定 / 投影 / 位移 / 转向点与运动段（M5）/ M6 轨迹与 QC / 可视化 / 报告与 PPT；不能做——M6 毫米标定、M5 运行时周期 / 频率、运行时 FFT、真实频谱图、窗函数、zero padding、detrend、自动化 pytest（`tests\` 只有 `.gitkeep`）。这些边界与 L20 的"九条不足"一同登记。
+- **源码位置**：`src\external_oscillation_tracker.py` 第 31～34、611 行；`src\dynamic_displacement.py` 第 28 行；`docs\learning\L20_完整项目复盘.md` 第 11–12 节。
+
+### 7. 文档漂移（documentation drift）
+
+- **中文名称**：文档漂移
+- **英文名称**：documentation drift
+- **初学者解释**：数据 / 代码 / 文档本应描述同一件事，一旦只有一部分更新，后来的人就无法判断"哪个才是真的"。
+- **VisionMotion 中的具体作用**：M2 / M3 数据已于 2026-10-03 替换并重跑（当前 170 帧 / 24 fps、首行 `0,0.000000,618.28,160.56,75863.0,True`），但 `CHANGELOG.md` 最新条目仍为 v0.6.1，v0.3.0 条目仍写 952 帧 / 60.124797 fps，`README.md` 也没有 170 帧 / 24 fps 与替换事件的记录。**处理纪律：以文件本身为准；发现差异就单独记录，不悄悄改旧文档、不假装一致。**
+- **源码位置**：`CHANGELOG.md` 第 133～134、150 行（旧值）；`docs\learning\L20_完整项目复盘.md` 第 13 节（只读记录）。
+
+### 8. 证据边界与五类材料
+
+- **中文名称**：证据边界 / 五类材料
+- **英文名称**：evidence boundary / five material labels
+- **初学者解释**：说清"哪些结论能被源码证明、哪些能被真实数据证明、哪些只是概念解释或教学示例"，并给每段材料贴上正确的标签。
+- **VisionMotion 中的具体作用**：五类标签 = 【项目真实源码】【真实数据】【概念解释】【教学示例】【概念伪代码】。引用项目行为必须给"文件 + 行号"，引用数字必须说清出处；教学示例（如 L19 的 1.900 Hz、L06 的失败行示例）必须显式标注"不是项目数据、不是项目代码"。**"设计上支持"不能写成"实测已发生"。**
+- **源码位置**：无源码实现（记录纪律）；`docs\learning\L20_完整项目复盘.md` 第 0 节与"本课边界与核对声明"；各课笔记的"代码与事实来源说明"。
+
+### 9. 代码阅读六步法（six-step code reading）
+
+- **中文名称**：代码阅读六步法
+- **英文名称**：six-step code reading
+- **初学者解释**：一套与编程语言无关的读代码流程：入口 → 输入 → 核心函数 → 真实数据 → 输出 → 自检与失败处理。
+- **VisionMotion 中的具体作用**：入口看 `demo\` 的无参数脚本；输入看路径与检查（视频 SHA-256 第 261 / 422 行）；核心函数列"输入 → 处理 → 输出"清单；拿真实数据走完整条链（EXP-004 frame 0：`852.81 / 208.63 → 851.987 → −3.215 → −0.5283`）；输出看 `write` / `savefig` / `prs.save()` 与字段规范；最后看自检与失败处理（`check_csv_data()` 第 637～748 行）。**能跟着一个数字走完整条链，才算真的读懂了代码。**
+- **源码位置**：`docs\learning\L20_完整项目复盘.md` 第 15 节；`src\video_tracker.py` 第 637～748 行；`src\displacement.py` 第 568～761 行。
+
+---
+
 ## 后续课程术语（尚未学习）
 
 以下术语在 L01 中只作为"后续要学的内容"登记名称；其中 BGR / HSV / Mask / Morphology（形态学）/ Contour / Moments / Centroid 以及 `marker_detector.py` 源码已在 **L02** 学完并补入正文，视频逐帧追踪（`video_tracker.py`）已在 **L05** 学完并补入正文，逐帧结果写入 CSV 的字段设计与自检（`CSV_FIELDNAMES`、`build_csv_row`、`records`、`check_csv_data`）已在 **L06** 学完并补入正文，检测失败判定、失败表达、质量检查与鲁棒性（`marker_detector.py` 三道失败判定、`detect_marker()` 失败返回、`DETECTION FAILED`、九项自检、M6 独立质量检查、证据边界）已在 **L07** 学完并补入正文，Calibration（像素尺度标定、px/mm、mm/px、`compute_scale()`、`unit_direction()`、`project_point()`、`ds_px → ds_mm`、M4 / M5 冻结标定常量、无标定原则）已在 **L08** 学完并补入正文，标定的六步逐行讲解、原始方向向量与单位方向向量（归一化的三条理由）、点积与一维投影（`project_point()` 的"再次归一化"）、M4 / M5 方向常量（`U` / `U_004`）、六类材料与真实 CSV 的只读核对已在 **L09** 学完并补入正文，valid gate（第二道数据筛选）、位移基线 `s0`（`compute_s0()`、窗口与最少有效帧）、`ds_px` / `ds_mm` 的完整位移流程与三份真实 ds CSV 的只读复核已在 **L10** 学完并补入正文，位移符号语义（ds 的正负 / 大小）、运动方向判据（Δds）、正方向约定（P1 → P2）与 `MIN_TURN_TRAVEL_PX` 的最小认识已在 **L11** 学完并补入正文，转向点检测与运动段切分（`detect_turning_points()`、peak / valley、分析序列、状态机、direction、extreme_index、turn_indexes、20 px 反向行程阈值、确认帧、turns、describe、direction_before / direction_after、运动段、boundary_indexes、travel_px、below_min_travel、原始数据原则、冻结与可复现）已在 **L12** 学完并补入正文，往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期稳定性判据思想（以及 M6 冻结值 T_exp / f_exp 的对照记录）已在 **L13** 学完并补入正文（**注意：周期 / 频率在项目中仍未实现计算**），本清单只保留仍未学习的部分：
@@ -1788,6 +1998,8 @@
 周期 / 频率（L13 已建立概念与判据思想，并记录 M6 外部公开视频的冻结值；但项目代码仍未实现周期 / 频率计算）
 
 FFT / 频谱、简谐振动（仍未学习，L13 只登记名称，不展开）
+（L19 更新：采样、采样率 fs 与采样间隔 dt、帧率（采样口径）、奈奎斯特频率（采样口径）、频率格点 f_k = k · df、频率分辨率 df = fs / N、记录长度 T_record、频谱泄漏、整周期 / 非整数周期截断、窗函数、zero padding、FFT 交叉验证已在 **L19** 学完并补入正文——见上方"## L19 采样、频率格点与频谱泄漏——真实视频里的 FFT 为什么不会完美"小节。当前 `src\` / `demo\` 仍没有任何运行时 FFT / 窗函数 / 补零实现，f_FFT / df_fft 仍是冻结值。）
+（L20 更新：完整工程流水线、两条数据路线、检测 vs 测量、detected vs valid、冻结值 ≠ 运行时能力、项目能力边界、文档漂移、证据边界与五类材料、代码阅读六步法已在 **L20** 学完并补入正文——见上方"## L20 完整项目复盘——从视频到运动参数，我到底真正做了什么"小节。L20 只做课程记录与只读核对，未修改 `src\` / `demo\` / `results\`、未运行 demo、未重算 FFT。）
 
 ---
 
@@ -1801,11 +2013,11 @@ FFT / 频谱、简谐振动（仍未学习，L13 只登记名称，不展开）
 - L03 词条（Pixel 补充视角、NumPy Array、Image、BGR 补充视角、RGB、HSV 补充视角、Hue / Saturation / Value 补充视角、Color Space、Threshold 补充视角、Mask 补充视角、Binary Image 补充视角、cv2.cvtColor、cv2.inRange、bitwise_or、Contour 补充视角）的事实来自 `src\marker_detector.py` 第 22～27、48、51～52、55、73、110 行附近；未重新运行任何程序。
 - L04 词条（Contour 补充视角、findContours、RETR_EXTERNAL、CHAIN_APPROX_SIMPLE、Contour Area、Moments 补充视角、m00、m10、m01、Centroid 补充视角、Bounding Rectangle 补充视角、MIN_AREA）的事实来自 `src\marker_detector.py` 第 33、73、75～76、78～80、82～84、95、97～98、100～102、140、141 行附近（按 2026-09-29 当前源码逐行核对）；未重新运行任何程序。
 - L05 词条（Video、Frame 补充视角、FPS 补充视角、VideoCapture、cap.read、ret、current_frame、VideoWriter、Overlay Video、release、Frame Loop、Function Reuse、Module）的事实来自 `src\video_tracker.py` 第 15～23、34、44、47、119～125、147、169～201、236～252、365、431～435、438、474～475、482～491、507～515、521～526、530～538 行附近与 `demo\run_video_tracking.py` 第 35、38、43、52～58 行（按 2026-09-29 当前源码逐行核对，`src\video_tracker.py` 共 760 行）；未重新运行任何程序。
-- L06 词条（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、np.genfromtxt、csv.DictWriter、y_px、_track.csv / _trajectory.csv，以及 Frame / time_s / x_px / area_px / detected / CSV 六个补充视角）的事实来自 `src\video_tracker.py` 第 26、40～41、124、387～404、470、477～479、488、491、493～504、637～748 行与 `src\external_oscillation_tracker.py` 第 86～96、220～221、302～304、337～377、494～500 行；产物数据（只读核对，未重新生成）来自 `results\EXP-002-VIDEO-001_track.csv`（表头 6 列、952 行数据）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行数据）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
-- L07 词条（Detection Failure、success、DETECTION FAILED、失败返回结构、空字段、`(0,0)` 伪数据、detection_rate、longest_miss_run、Quality Check、Robustness、Evidence Boundary）的事实来自 `src\marker_detector.py` 第 33、75～76、83～84、97～98、129、132～133、136～137、143～151 行与 `src\video_tracker.py` 第 190～201、387～404、470、483～526、556～580、585～598、606～629、637～748 行，M6 对照来自 `src\external_oscillation_tracker.py` 第 422～505 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-002-VIDEO-001_track.csv`（952 行、952/952 全 True、0 失败行、0 空字段、area 4673.0 / 5265.0 / 6061.5）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（160 行、160/160 全 True、0 失败行、0 空字段、area 226 / 508.5 / 658）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
+- L06 词条（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、np.genfromtxt、csv.DictWriter、y_px、_track.csv / _trajectory.csv，以及 Frame / time_s / x_px / area_px / detected / CSV 六个补充视角）的事实来自 `src\video_tracker.py` 第 26、40～41、124、387～404、470、477～479、488、491、493～504、637～748 行与 `src\external_oscillation_tracker.py` 第 86～96、220～221、302～304、337～377、494～500 行；产物数据（只读核对，未重新生成）来自 `results\EXP-002-VIDEO-001_track.csv`（表头 6 列、170 行数据）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行数据）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
+- L07 词条（Detection Failure、success、DETECTION FAILED、失败返回结构、空字段、`(0,0)` 伪数据、detection_rate、longest_miss_run、Quality Check、Robustness、Evidence Boundary）的事实来自 `src\marker_detector.py` 第 33、75～76、83～84、97～98、129、132～133、136～137、143～151 行与 `src\video_tracker.py` 第 190～201、387～404、470、483～526、556～580、585～598、606～629、637～748 行，M6 对照来自 `src\external_oscillation_tracker.py` 第 422～505 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-002-VIDEO-001_track.csv`（170 行、170/170 全 True、0 失败行、0 空字段、area 24409.0 / 64846.25 / 105163.5）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（160 行、160/160 全 True、0 失败行、0 空字段、area 226 / 508.5 / 658）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
 - L08 词条（Calibration、图像坐标系 / 物理世界坐标系、px/mm、mm/px、pixel_distance、compute_scale、已知真实长度、M4 冻结标定常量、M5 冻结标定常量、unit_direction、project_point、s_px、ds_px、ds_mm、无标定原则、y0_px 字段名读法）的事实来自 `src\calibration.py` 第 1～22、24、32～43、46～70、73～92、100～144（第 125～126、128～131、134～135、137～138、140～144 行）、147～173、176～204 行，`src\displacement.py` 第 23、41～55（第 48～50、52～53、55 行）、57～64、72～90、98～150、277～340（第 339～340 行）、348～382、725～740 行，`src\dynamic_displacement.py` 第 20～23、40、59～66（第 60～62、64～65、66 行）、68～76、78～80、91～109、121～174、338～350（第 349～350 行）、1097～1116 行，以及 `src\external_oscillation_tracker.py` 第 31～34、84、87～96 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`（1961 行、valid 1050/911、ds_px -1.249～350.268、ds_mm -0.2170～60.8426）、`results\EXP-003-STATIC-003_ds.csv`（1984 行、valid 1192/792、ds_px -0.311～346.530、ds_mm -0.0540～60.1932）、`results\EXP-004-DYNAMIC-001_ds.csv`（1766 行、valid 1766/0、ds_px -3.215～402.715、ds_mm -0.5283～66.1663）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行、x_px 718.5～728.0、y0_px 508～622）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
 - 新增术语时请保持五字段格式（中文名称 / 英文名称 / 初学者解释 / VisionMotion 中的具体作用 / 源码位置），并在"速查索引"中同步登记。
 
-- 记录日期：2026-09-28；L04 记录日期：2026-09-29；L05 记录日期：2026-09-29；L06 记录日期：2026-10-02；L07 记录日期：2026-10-02；L08 记录日期：2026-10-02；L09 记录日期：2026-10-02；L10 记录日期：2026-10-02；L11 记录日期：2026-10-04；L12 记录日期：2026-10-04；L13 记录日期：2026-10-04；当前已登记课程：L01、L02、L03、L04、L05、L06、L07、L08、L09、L10、L11、L12、L13。
+- 记录日期：2026-09-28；L04 记录日期：2026-09-29；L05 记录日期：2026-09-29；L06 记录日期：2026-10-02；L07 记录日期：2026-10-02；L08 记录日期：2026-10-02；L09 记录日期：2026-10-02；L10 记录日期：2026-10-02；L11 记录日期：2026-10-04；L12 记录日期：2026-10-04；L13 记录日期：2026-10-04；L14 记录日期：2026-10-04；L15 记录日期：2026-10-04；L16 记录日期：2026-10-04；L17 记录日期：2026-10-04；L18 记录日期：2026-10-04；L19 记录日期：2026-10-04；L20 记录日期：2026-10-04；当前已登记课程：L01–L20。
 - L11 词条（Δds、运动方向（正向 / 负向）、正方向约定（P1 → P2）、参考位置与符号侧、符号统计、平台 + 台阶 + 空洞、连续往返、MIN_TURN_TRAVEL_PX 最小认识、五类材料）的事实来自 `src\displacement.py` 第 44～46、55、272～274、284～285、338～340、360～363 行与 `src\dynamic_displacement.py` 第 30、59～66、82～87、111～113、133、462、474～477、480～481 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv` 及对应三份 `_track.csv`（valid 1050/911、1192/792、1766/0；`ds_mm` −0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663；正/负/零 = 1016/34/0、1174/18/0、1605/161/0；M5 f237→f313 与 f963→f1015 两条方向例子；平台 / 空洞统计 180 / 147 帧）（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
 - L13 词条（往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期 T、频率 f、周期稳定性判据、冻结值（T_exp / f_exp）、运动段 ≠ 周期）的事实来自 `src\dynamic_displacement.py` 第 16、28、30、462–593 行（重点：540–547、552–563、565–591、763、765–770、777–792、798–813 行）、`src\m63_final_visualization.py` 第 7、109–110、112–127、202–219 行、`demo\run_m53_plot.py` 第 19、67–74、382 行，旁证 `src\video_tracker.py` 第 17、608–609 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行，M6 对照 `docs\M6.3_FINAL_REPORT.md` 第 154–169 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0–1765；6 个转向点时间 f491 8.166327 / f602 10.012483 / f838 13.937642 / f1063 17.679849 / f1254 20.856567 / f1513 25.164263 s；5 个半周期候选 1.846156 / 3.925159 / 3.742207 / 3.176718 / 4.307696 s，最小 1.846156、最大 4.307696、均值 3.399587、最大 / 最小 ≈ 2.33；peak→peak 5.771315 / 6.918925 s，均值 6.345120；valley→valley 7.667366 / 7.484414 s，均值 7.575890；2 × 半周期均值 6.799174 s；偏差 ≈ −6.68% / +11.42%）；上述间隔数字均为只读分析结果（内存中读取与计算，未写任何文件），不是当前项目代码已经实现的功能；只读检索显示全项目 M5.4 / M5.5 命中 0 条（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。

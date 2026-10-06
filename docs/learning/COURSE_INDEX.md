@@ -485,7 +485,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
 | 数据记录模块（本节源码主角） | `src\video_tracker.py` | `CSV_FIELDNAMES`（第 41 行）、`build_csv_row()`（第 387～404 行）、`track_video()`（第 407 行起）、`records`（第 470、493～504 行）、`compute_longest_miss_run()`（第 585～598 行）、`check_csv_data()`（第 637～748 行） |
-| M3 数据产物（只读引用，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 `frame,time_s,x_px,y_px,area_px,detected`；952 行数据（frame 0～951）；时间步 0.016632 s（≈ 60.12 fps）；952/952 全 True |
+| M3 数据产物（只读引用，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 `frame,time_s,x_px,y_px,area_px,detected`；170 行数据（frame 0～169）；时间步 0.041667 s（24 fps）；170/170 全 True |
 | M6 字段设计对比对象 | `src\external_oscillation_tracker.py` | `CSV_FIELDNAMES`（第 87～96 行）、`write_trajectory_csv()`（第 337～377 行）；本课只做字段设计对比，不展开其算法 |
 | M6 数据产物（只读引用，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 `frame,time_s,detected,x_px,y0_px,bbox_w_px,bbox_h_px,area_px`；160 行数据（frame 76～235）；时间步 0.033333 s（30 fps）；160/160 全 True |
 | 检测结果来源（被复用，未修改） | `src\marker_detector.py` | `detect_marker()`（第 105 行）返回 `success` / `cx` / `cy` / `area` / `bbox`（第 143～150 行）；`cx` / `cy` 公式（第 100～102 行） |
@@ -601,7 +601,7 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 | 记录与检查模块（本节第二主角） | `src\video_tracker.py` | `draw_tracking_frame()`（第 169～233 行；DETECTION FAILED 第 190～201 行）、`build_csv_row()`（第 387～404 行；原则第 393 行、失败行第 404 行）、`records`（第 470、493～504 行）、`summary`（第 556～580 行）、`compute_longest_miss_run()`（第 585～598 行）、`print_statistics()`（第 606～629 行）、`check_csv_data()`（第 637～748 行；NaN 对账第 725～735 行、汇总第 747 行） |
 | 调用方 | `demo\run_video_tracking.py` | 第 49 行 `print_statistics()`；第 52～58 行 `check_csv_data()` 与 `print_check_results()`（传入 `summary["width"]` / `["height"]`） |
 | M6 质量门槛对照 | `src\external_oscillation_tracker.py` | `check_trajectory_csv()`（第 422～505 行；100% 检出第 452～455 行、空值第 457～459 行、突跳第 480～483 行、歧义第 485～492 行、时间第 494～501 行）；本课不展开其检测算法 |
-| M3 数据产物（只读核对，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 6 列；952 行（frame 0～951）；952/952 全 True、0 失败行、0 空字段、0 NaN；时间 0.000000～15.817101 s（≈ 60.12 fps）；x 97.89～1000.09、y 421.88～1085.03；area 4673.0 / 5265.0 / 6061.5 |
+| M3 数据产物（只读核对，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 6 列；170 行（frame 0～169）；170/170 全 True、0 失败行、0 空字段、0 NaN；时间 0.000000～7.041667 s（24 fps）；x 618.28～1195.0、y 91.74～351.89；area 24409.0 / 64846.25 / 105163.5 |
 | M6 数据产物（只读核对，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 8 列；160 行（frame 76～235）；160/160 全 True、0 失败行、0 空字段、0 NaN；时间 2.533333～7.833333 s（≈ 30 fps）；x 718.5～728.0、y0_px 508.0～622.0；area 226 / 508.5 / 658 |
 | 本节课笔记 | [`L07_检测失败与鲁棒性.md`](L07_检测失败与鲁棒性.md) | 24 节完整笔记（含自测题 18 道，均不附答案；文末另附"代码与事实来源说明"） |
 

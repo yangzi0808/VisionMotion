@@ -13,6 +13,7 @@ VisionMotion —— M4 / M5 位移规则测试（Phase 2B-2，TEST 08 ~ TEST 11�
       Phase 2B-5A：M4 / M5 都锁定，且不得误伤有限值 / detected=False + None）。
 """
 
+import csv
 import math
 from pathlib import Path
 
@@ -21,7 +22,7 @@ import pytest
 from src import displacement as m4
 from src import dynamic_displacement as m5
 from src.calibration import project_point
-from src.video_tracker import check_csv_data
+from src.video_tracker import CSV_FIELDNAMES, build_csv_row, check_csv_data
 
 
 def _track_rows(xs, *, valid_y, valid_area, invalid_y, missed=(), invalid=()):
@@ -602,3 +603,148 @@ def test_m3_csv_time_axis_without_fps_is_unverifiable(write_track_csv):
     assert _time_axis_check(checks) is False
     labels = [description for description, _ in checks if "时间轴一致" in description]
     assert "无法验证" in labels[0]
+
+
+# ============================================================
+# M3 生产 CSV 协议往返回归（Phase 2B-5C，TEST 21）
+# 保护对象：src/video_tracker.py —— build_csv_row() 的真实输出协议。
+# 此前所有 M3 CSV 测试都由 tests/conftest.py::write_track_csv 在测试侧重新写了一遍
+# 文本格式（"%.6f" / "%.2f" / "%.1f" / "True" / "False"），因此生产 writer 即使改了
+# 字段顺序、True/False 表示、空值写法或 time_s 小数格式，下游 reader / QC 测试也发现不了。
+# 本测试改为真正调用生产 build_csv_row()，把它的原样输出落盘，再喂给 M4 / M5 reader 与
+# M3 check_csv_data()，锁定"生产 writer 与 CSV reader / QC 之间的格式契约"。
+# ============================================================
+
+
+def _m3_writer_result(detected, x_px=None, y_px=None, area_px=None):
+    """构造 build_csv_row() 需要的 result 字典（字段名与 detect_marker() 返回结构一致）。"""
+    if not detected:
+        return {"success": False}
+    return {"success": True, "cx": x_px, "cy": y_px, "area": area_px}
+
+
+def _write_m3_writer_csv(path, rows):
+    """把 build_csv_row() 的原样输出落盘（表头用生产 CSV_FIELDNAMES，写法与 track_video 一致）。"""
+    with open(path, "w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.writer(csv_file, lineterminator="\n")
+        writer.writerow(CSV_FIELDNAMES)
+        for row in rows:
+            writer.writerow(row)
+    return Path(path)
+
+
+def test_m3_production_csv_writer_roundtrip(tmp_path):
+    """TEST 21 —— 生产 build_csv_row() -> 真实 CSV -> M4/M5 reader + M3 QC 全链路一致。
+
+    Case A：detected=True + 合法有限值 -> 两个 reader 数值 / 布尔恢复正确，QC 通过（passed=True）；
+    Case B：detected=False + x/y/area 全空 -> 两个 reader 读到 None，不被严格 detected 修复误伤。
+    并直接锁定生产 writer 的字段数量 / True-False 文本 / 空字段位置 / time_s 小数格式，
+    使任何对 build_csv_row() CSV 协议的改动都能被本测试尽早发现。
+    """
+    fps = 24.0
+    frame_width, frame_height = 1920, 1080
+
+    # ------------------------------------------------------------------
+    # 协议锁定：直接断言生产 writer 对单行的原始输出（不经过任何测试侧重格式化）
+    # ------------------------------------------------------------------
+    true_row = build_csv_row(1, 1 / fps, _m3_writer_result(True, 1001.0, 450.0, 3000.0))
+    false_row = build_csv_row(3, 3 / fps, _m3_writer_result(False))
+    # 字段数量与 CSV_FIELDNAMES 对应
+    assert len(true_row) == len(false_row) == len(CSV_FIELDNAMES) == 6
+    # detected=True：x / y 两位小数、area 一位小数、detected 文本为 "True"
+    assert true_row == [1, "%.6f" % (1 / fps), "1001.00", "450.00", "3000.0", "True"]
+    assert true_row[5] == "True"
+    # detected=False：x / y / area 三个位置必须是空字符串（不是 0 / -1 / nan / "None"），detected 文本为 "False"
+    assert false_row == [3, "%.6f" % (3 / fps), "", "", "", "False"]
+    assert false_row[2] == false_row[3] == false_row[4] == ""
+    assert false_row[5] == "False"
+    # time_s 小数格式：固定 6 位小数（frame=1 @24fps -> "0.041667"）
+    assert true_row[1] == "0.041667"
+
+    # ------------------------------------------------------------------
+    # Case A：detected=True + 合法有限值
+    #   build_csv_row() -> 临时 CSV -> M4 reader -> M5 reader -> check_csv_data(fps) -> passed
+    # 说明：Case A 只放 detected=True 行。M3 check_csv_data() 的 np.genfromtxt 子检查
+    #       对含 detected=False 的混合 CSV 目前无法判过（见文件末尾"其他发现"），
+    #       与本测试"锁定 writer/reader/QC 契约"的目标无关，故按规范用干净的 True CSV 验证 QC。
+    # ------------------------------------------------------------------
+    case_a_specs = [
+        (0, 1000.0, 450.0, 3000.0),
+        (1, 1001.0, 450.0, 3000.0),
+        (2, 1002.0, 450.0, 3000.0),
+    ]
+    case_a_rows = [
+        build_csv_row(fi, fi / fps, _m3_writer_result(True, x, y, a))
+        for fi, x, y, a in case_a_specs
+    ]
+    case_a_path = _write_m3_writer_csv(
+        Path(tmp_path) / "m3_writer_caseA_true.csv", case_a_rows
+    )
+
+    for name, module in (("M4", m4), ("M5", m5)):
+        read_rows = module.read_track_csv(case_a_path)
+        assert len(read_rows) == len(case_a_rows), name
+        assert read_rows[0]["frame"] == 0, name
+        assert read_rows[0]["detected"] is True, name
+        assert read_rows[0]["x_px"] == 1000.0, name
+        assert read_rows[0]["y_px"] == 450.0, name
+        assert read_rows[0]["area_px"] == 3000.0, name
+        assert read_rows[0]["time_s"] == pytest.approx(0.0, abs=1e-6), name
+        assert read_rows[1]["detected"] is True, name
+        assert read_rows[1]["x_px"] == 1001.0, name
+        assert read_rows[1]["time_s"] == pytest.approx(1 / fps, abs=1e-6), name
+        assert read_rows[2]["detected"] is True, name
+        assert read_rows[2]["x_px"] == 1002.0, name
+
+
+# ============================================================
+# 其他发现（Phase 2B-5C，仅记录，本阶段不修改生产源码）
+# ------------------------------------------------------------
+# 在把生产 build_csv_row() 的混合输出（同时含 detected=True / False 行）喂给
+# M3 check_csv_data() 时，其 np.genfromtxt(delimiter=",", names=True) 子检查会判为未通过：
+#     np.genfromtxt 无法把 "True" / "False" 列解析成布尔，而是整列读成 float64 的 NaN；
+#     np.count_nonzero(NaN) 恒为真，于是 true_count 恒等于数据行数、miss_count 恒为 0，
+#     而 x_px 的 NaN 数恰等于 detected=False 行数（>=1），两者永远不相等。
+# 结论：只要 CSV 里存在任何 detected=False 行，这一子检查就会失败；当前正式基线
+# results/EXP-002-VIDEO-001_track.csv 恰好 170 行全为 detected=True，所以从未暴露。
+# 属既有生产代码行为，按本阶段约束（禁止改动 src/*.py）只记录、不修复。
+# ============================================================
+        assert read_rows[2]["time_s"] == pytest.approx(2 / fps, abs=1e-6), name
+
+    checks, passed = check_csv_data(
+        case_a_path,
+        expected_rows=len(case_a_rows),
+        frame_width=frame_width,
+        frame_height=frame_height,
+        fps=fps,
+    )
+    assert passed is True, checks
+    assert _time_axis_check(checks) is True
+
+    # ------------------------------------------------------------------
+    # Case B：detected=False + x/y/area 全空（读者侧回归）
+    #   build_csv_row() -> 临时 CSV -> M4 reader -> M5 reader
+    # 只为证明严格 detected 解析不误伤合法未检测行，不在此 CSV 上跑 check_csv_data()。
+    # ------------------------------------------------------------------
+    case_b_rows = [
+        build_csv_row(0, 0.0, _m3_writer_result(True, 1000.0, 450.0, 3000.0)),
+        build_csv_row(1, 1 / fps, _m3_writer_result(False)),
+        build_csv_row(2, 2 / fps, _m3_writer_result(True, 1002.0, 450.0, 3000.0)),
+    ]
+    case_b_path = _write_m3_writer_csv(
+        Path(tmp_path) / "m3_writer_caseB_false.csv", case_b_rows
+    )
+
+    for name, module in (("M4", m4), ("M5", m5)):
+        read_rows = module.read_track_csv(case_b_path)
+        assert len(read_rows) == len(case_b_rows), name
+        assert read_rows[0]["detected"] is True, name
+        assert read_rows[0]["x_px"] == 1000.0, name
+        # detected=False 行 x / y / area 保持 None（严格 detected 解析不误伤空字段）
+        assert read_rows[1]["detected"] is False, name
+        assert read_rows[1]["x_px"] is None, name
+        assert read_rows[1]["y_px"] is None, name
+        assert read_rows[1]["area_px"] is None, name
+        assert read_rows[1]["time_s"] == pytest.approx(1 / fps, abs=1e-6), name
+        assert read_rows[2]["detected"] is True, name
+        assert read_rows[2]["x_px"] == 1002.0, name

@@ -172,24 +172,27 @@ def rules_snapshot():
 # ============================================================
 
 
-def is_valid_frame(detected, area_px, y_px):
+def is_valid_frame(detected, x_px, y_px, area_px):
     """
     M4 valid gate（唯一判据）。
 
     valid = True 当且仅当：
         detected == True
+        且 x_px / y_px / area_px 三个必要数值字段都存在（都不为 None）
         且 AREA_MIN_PX <= area_px <= AREA_MAX_PX
         且 Y_MIN_PX <= y_px <= Y_MAX_PX
 
     说明：
         - 绝不修改原始 detected，只在这里判断“这一帧能不能用”
+        - detected=True 却缺少 x_px / y_px / area_px 中任何一个：属于数据缺失，
+          直接判 invalid（不填 0、不插值）；detected=False 时允许这些字段为空
         - 阈值是本次 EXP-003 拍摄几何专属参数，不做任何自适应
     """
     if not detected:
         return False
 
     # 检测成功却缺少坐标或面积，同样不能用（数据缺失，不填 0）
-    if area_px is None or y_px is None:
+    if x_px is None or y_px is None or area_px is None:
         return False
 
     if not (AREA_MIN_PX <= area_px <= AREA_MAX_PX):
@@ -284,7 +287,7 @@ def add_valid_flags(rows):
     """
     for row in rows:
         row["valid"] = is_valid_frame(
-            row["detected"], row["area_px"], row["y_px"]
+            row["detected"], row["x_px"], row["y_px"], row["area_px"]
         )
         row["s_px"] = None
         row["ds_px"] = None
@@ -591,7 +594,7 @@ def check_ds_csv(report):
         2. 第一行是标准表头
         3. ds CSV 行数 == track CSV 行数
         4. frame 列逐行完全一致
-        5. valid 列与 M4 valid gate 逐行一致（用 track CSV 的 detected / area_px / y_px 复算）
+        5. valid 列与 M4 valid gate 逐行一致（用 track CSV 的 detected / x_px / y_px / area_px 复算）
         6. valid=False 的行：s_px / ds_px / ds_mm 全为空
         7. valid=True 的行：s_px / ds_px / ds_mm 都是有限数值
         8. detected=False 的行 area_px 为空；detected=True 的行 area_px 有值
@@ -671,7 +674,10 @@ def check_ds_csv(report):
 
             # valid 列必须与 valid gate 复算结果一致
             expected_valid = is_valid_frame(
-                track_row["detected"], track_row["area_px"], track_row["y_px"]
+                track_row["detected"],
+                track_row["x_px"],
+                track_row["y_px"],
+                track_row["area_px"],
             )
             if ("True" if expected_valid else "False") != valid:
                 gate_ok = False
@@ -698,7 +704,10 @@ def check_ds_csv(report):
                 bad_area_rows.append(frame_text)
 
     checks.append(
-        ("valid 列与 M4 valid gate 逐行一致（detected / area_px / y_px 复算）", gate_ok)
+        (
+            "valid 列与 M4 valid gate 逐行一致（detected / x_px / y_px / area_px 复算）",
+            gate_ok,
+        )
     )
     checks.append(
         ("valid=False 的行 s_px / ds_px / ds_mm 全部为空（没有填 0 / -1 / nan）",

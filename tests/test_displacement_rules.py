@@ -7,7 +7,8 @@ VisionMotion —— M4 / M5 位移规则测试（Phase 2B-2，TEST 08 ~ TEST 11�
 
 覆盖：gate 真值表与两套 gate 不混用 / s0 窗口与帧数下限 / ds 行格式与端到端产出 /
       畸形 / 截断 CSV 的防护（M3 check_csv_data 已做防御性最小修复，TEST 11A 必须通过）/
-      非法 detected 文本必须被拒绝（TEST 11B：M4 / M5 两个读取器都已修复）。
+      非法 detected 文本必须被拒绝（TEST 11B：M4 / M5 两个读取器都已修复）/
+      detected=True 但 x_px / y_px / area_px 缺任一必须判 invalid（TEST 17，M4 / M5 都锁定）。
 """
 
 import math
@@ -46,36 +47,40 @@ def _track_rows(xs, *, valid_y, valid_area, invalid_y, missed=(), invalid=()):
 
 
 def test_valid_gates_m4_m5_truth_table_and_isolation():
-    """TEST 08 —— M4 / M5 gate 真值表：边界含端点、缺数据不可用、两套阈值不得混用。"""
+    """TEST 08 —— M4 / M5 gate 真值表：边界含端点、缺任一必要字段不可用、两套阈值不得混用。"""
     # M4（EXP-003）：area 2000~15000、y 400~540，边界含端点
-    assert m4.is_valid_frame(True, m4.AREA_MIN_PX, m4.Y_MIN_PX) is True
-    assert m4.is_valid_frame(True, m4.AREA_MAX_PX, m4.Y_MAX_PX) is True
-    assert m4.is_valid_frame(True, 3000.0, 450.0) is True
-    assert m4.is_valid_frame(False, 3000.0, 450.0) is False
-    assert m4.is_valid_frame(True, m4.AREA_MIN_PX - 1.0, 450.0) is False
-    assert m4.is_valid_frame(True, m4.AREA_MAX_PX + 1.0, 450.0) is False
-    assert m4.is_valid_frame(True, 3000.0, m4.Y_MIN_PX - 1.0) is False
-    assert m4.is_valid_frame(True, 3000.0, m4.Y_MAX_PX + 1.0) is False
-    assert m4.is_valid_frame(True, None, 450.0) is False
-    assert m4.is_valid_frame(True, 3000.0, None) is False
+    assert m4.is_valid_frame(True, 1000.0, m4.Y_MIN_PX, m4.AREA_MIN_PX) is True
+    assert m4.is_valid_frame(True, 1000.0, m4.Y_MAX_PX, m4.AREA_MAX_PX) is True
+    assert m4.is_valid_frame(True, 1000.0, 450.0, 3000.0) is True
+    assert m4.is_valid_frame(False, 1000.0, 450.0, 3000.0) is False
+    assert m4.is_valid_frame(True, 1000.0, 450.0, m4.AREA_MIN_PX - 1.0) is False
+    assert m4.is_valid_frame(True, 1000.0, 450.0, m4.AREA_MAX_PX + 1.0) is False
+    assert m4.is_valid_frame(True, 1000.0, m4.Y_MIN_PX - 1.0, 3000.0) is False
+    assert m4.is_valid_frame(True, 1000.0, m4.Y_MAX_PX + 1.0, 3000.0) is False
+    # 三个必要数值字段缺任何一个都不可用（x_px / y_px / area_px）
+    assert m4.is_valid_frame(True, None, 450.0, 3000.0) is False
+    assert m4.is_valid_frame(True, 1000.0, None, 3000.0) is False
+    assert m4.is_valid_frame(True, 1000.0, 450.0, None) is False
 
     # M5（EXP-004）：area 4500~6500、y 200~250，边界含端点
-    assert m5.is_valid_frame(True, m5.AREA_MIN_PX_004, m5.Y_MIN_PX_004) is True
-    assert m5.is_valid_frame(True, m5.AREA_MAX_PX_004, m5.Y_MAX_PX_004) is True
-    assert m5.is_valid_frame(True, 5000.0, 220.0) is True
-    assert m5.is_valid_frame(False, 5000.0, 220.0) is False
-    assert m5.is_valid_frame(True, m5.AREA_MIN_PX_004 - 1.0, 220.0) is False
-    assert m5.is_valid_frame(True, m5.AREA_MAX_PX_004 + 1.0, 220.0) is False
-    assert m5.is_valid_frame(True, 5000.0, m5.Y_MIN_PX_004 - 1.0) is False
-    assert m5.is_valid_frame(True, 5000.0, m5.Y_MAX_PX_004 + 1.0) is False
-    assert m5.is_valid_frame(True, None, 220.0) is False
-    assert m5.is_valid_frame(True, 5000.0, None) is False
+    assert m5.is_valid_frame(True, 1000.0, m5.Y_MIN_PX_004, m5.AREA_MIN_PX_004) is True
+    assert m5.is_valid_frame(True, 1000.0, m5.Y_MAX_PX_004, m5.AREA_MAX_PX_004) is True
+    assert m5.is_valid_frame(True, 1000.0, 220.0, 5000.0) is True
+    assert m5.is_valid_frame(False, 1000.0, 220.0, 5000.0) is False
+    assert m5.is_valid_frame(True, 1000.0, 220.0, m5.AREA_MIN_PX_004 - 1.0) is False
+    assert m5.is_valid_frame(True, 1000.0, 220.0, m5.AREA_MAX_PX_004 + 1.0) is False
+    assert m5.is_valid_frame(True, 1000.0, m5.Y_MIN_PX_004 - 1.0, 5000.0) is False
+    assert m5.is_valid_frame(True, 1000.0, m5.Y_MAX_PX_004 + 1.0, 5000.0) is False
+    # 三个必要数值字段缺任何一个都不可用（x_px / y_px / area_px）
+    assert m5.is_valid_frame(True, None, 220.0, 5000.0) is False
+    assert m5.is_valid_frame(True, 1000.0, None, 5000.0) is False
+    assert m5.is_valid_frame(True, 1000.0, 220.0, None) is False
 
-    # 两套 gate 不混用：同一个 (area, y) 在 M4 有效、在 M5 无效，反之亦然
-    assert m4.is_valid_frame(True, 3000.0, 450.0) is True
-    assert m5.is_valid_frame(True, 3000.0, 450.0) is False
-    assert m4.is_valid_frame(True, 6000.0, 220.0) is False
-    assert m5.is_valid_frame(True, 6000.0, 220.0) is True
+    # 两套 gate 不混用：同一个 (x, y, area) 在 M4 有效、在 M5 无效，反之亦然
+    assert m4.is_valid_frame(True, 1000.0, 450.0, 3000.0) is True
+    assert m5.is_valid_frame(True, 1000.0, 450.0, 3000.0) is False
+    assert m4.is_valid_frame(True, 1000.0, 220.0, 6000.0) is False
+    assert m5.is_valid_frame(True, 1000.0, 220.0, 6000.0) is True
 
 
 def test_s0_window_rules_for_m4_and_m5(write_track_csv, tmp_path):
@@ -327,3 +332,48 @@ def test_illegal_detected_values_are_rejected(tmp_path):
             m4.read_track_csv(illegal)
         with pytest.raises(ValueError):
             m5.read_track_csv(illegal)
+
+
+def test_detected_true_with_missing_required_field_is_invalid(write_track_csv):
+    """TEST 17 —— detected=True 但 x_px / y_px / area_px 缺任一：判 invalid（M4 与 M5 都锁定）。
+
+    Case A：detected=True 且 x_px 缺失（y / area 正常）-> valid=False，且投影不崩溃；
+    Case B：detected=True 且 y_px 缺失（x / area 正常）-> valid=False；
+    Case C：detected=True 且 area_px 缺失（x / y 正常）-> valid=False；
+    Case D：detected=False 且 x / y / area 全缺失 -> 仍属合法输入（读取不报错），valid=False；
+    对照组：detected=True 且 x / y / area 全齐 -> valid=True（合法输入行为不变）。
+
+    说明：detected=True 时“缺字段”属于数据缺失，必须判 invalid（不填 0、不插值）；
+    这里连同 add_projection 一起跑，证明该行不会再被当成 valid 送进投影。
+    """
+    cases = {
+        "A_true_missing_x": (True, False, True, True),
+        "B_true_missing_y": (True, True, False, True),
+        "C_true_missing_area": (True, True, True, False),
+        "D_false_missing_all": (False, False, False, False),
+        "E_true_complete": (True, True, True, True),
+    }
+
+    for tag, (detected, has_x, has_y, has_area) in cases.items():
+        for name, module, valid_y, valid_area in (
+            ("M4", m4, 450.0, 3000.0),
+            ("M5", m5, 220.0, 5000.0),
+        ):
+            row = {
+                "frame": 0,
+                "time_s": 0.0,
+                "x_px": 1000.0 if (detected and has_x) else None,
+                "y_px": valid_y if (detected and has_y) else None,
+                "area_px": valid_area if (detected and has_area) else None,
+                "detected": detected,
+            }
+            track_path = write_track_csv([row], name="%s_%s.csv" % (tag, name))
+
+            rows = module.read_track_csv(track_path)
+            module.add_valid_flags(rows)
+            # 缺字段的行若仍被误判 valid，这里会在 project_point() 处抛 TypeError
+            module.add_projection(rows)
+
+            expected_valid = detected and has_x and has_y and has_area
+            assert rows[0]["valid"] is expected_valid, (tag, name)
+            assert (rows[0]["s_px"] is not None) is expected_valid, (tag, name)

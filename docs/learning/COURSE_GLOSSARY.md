@@ -1494,7 +1494,7 @@
 - **中文名称**：转向点检测函数
 - **英文名称**：detect_turning_points
 - **初学者解释**：输入逐帧数据、输出"转向点列表 + 运动段列表"的函数；它只处理原始 `x_px`，不做平滑 / 滤波 / 插值 / 补帧 / 预测。
-- **VisionMotion 中的具体作用**：定义在 `src\dynamic_displacement.py` 第 462 行，函数体到第 593 行（第 458–594 行是"八、原始 x_px 转向点 / 运动段检测"小节）。第 495–497 行构造分析序列：`row["detected"] and row["x_px"] is not None`；第 498 行统计其中 `valid=False` 的行数（只统计，不删除）；第 512–538 行是 zigzag 状态机；返回 `turns` 与 `segments`。它由 `build_ds_from_track_csv()` 调用（第 1183 行）。
+- **VisionMotion 中的具体作用**：定义在 `src\dynamic_displacement.py` 第 491 行，函数体到第 622 行（第 487–623 行是"八、原始 x_px 转向点 / 运动段检测"小节）。第 524–526 行构造分析序列：`row["detected"] and row["x_px"] is not None`；第 527 行统计其中 `valid=False` 的行数（只统计，不删除）；第 541–567 行是 zigzag 状态机；返回 `turns` 与 `segments`。它由 `build_ds_from_track_csv()` 调用（第 1218 行）。
 - **源码位置**：`src\dynamic_displacement.py` 第 491–622 行（docstring 第 492–522 行；关键行 524–527、541–567、569–576、581–592、594–620）；调用点第 1218 行。
 
 ### 3. 分析序列（analysis_rows / analysis_invalid_rows）
@@ -1502,7 +1502,7 @@
 - **中文名称**：分析序列与其中无效行数
 - **英文名称**：analysis series / analysis_rows / analysis_invalid_rows
 - **初学者解释**：真正参与转向检测的行集合叫分析序列；报告里同时记录"一共用了多少行"和"其中有多少行 `valid=False`"，后者只统计、不删除。
-- **VisionMotion 中的具体作用**：第 524–526 行用 `detected=True` 且有 `x_px` 的行构造 `series`；第 527 行 `analysis_invalid_rows = sum(1 for row in series if not row["valid"])`；第 501–502 行写进 report；第 514 行 docstring 原文"其中 valid=False 的行数（只统计，不删除）"；第 770–773 行把它打印为"17. 转向点分析使用行数：%d（其中 valid=False 行：%d，只统计不删除）"。注意：`series` 的筛选条件不含 `valid`，所以 `valid=False` 的行仍留在序列里参与状态机。真实数据：EXP-004 的 `analysis_rows = 1766`、`analysis_invalid_rows = 0`。
+- **VisionMotion 中的具体作用**：第 524–526 行用 `detected=True` 且有 `x_px` 的行构造 `series`；第 527 行 `analysis_invalid_rows = sum(1 for row in series if not row["valid"])`；第 530–531 行写进 report；第 514 行 docstring 原文"其中 valid=False 的行数（只统计，不删除）"；第 770–773 行把它打印为"17. 转向点分析使用行数：%d（其中 valid=False 行：%d，只统计不删除）"。注意：`series` 的筛选条件不含 `valid`，所以 `valid=False` 的行仍留在序列里参与状态机。真实数据：EXP-004 的 `analysis_rows = 1766`、`analysis_invalid_rows = 0`。
 - **源码位置**：`src\dynamic_displacement.py` 第 514、524–527、501–502、770–773 行。
 
 ### 4. 原始 x_px 序列（raw x_px series）
@@ -1518,7 +1518,7 @@
 - **中文名称**：zigzag 状态机
 - **英文名称**：zigzag state machine
 - **初学者解释**：用"当前极值 + 当前方向"两个状态逐帧推进的检测流程：顺着方向走就更新极值，反向走满 20 px 就确认一次转向。
-- **VisionMotion 中的具体作用**：第 541–544 行初始化 `turn_indexes = []`、`direction = 0`、`extreme_index = 0`；第 517–538 行逐帧循环：`direction == 0` 时先确定方向（第 550–553 行，`abs(x_i - x_extreme) >= 20`）；`direction == +1` 时更新峰值并在反向 20 px 时确认 peak（第 554–560 行）；`direction == -1` 时镜像确认 valley（第 561–567 行）。确认后方向翻转、`extreme_index` 重置为确认帧 `i`。全程只用当前与历史帧，不使用未来信息。
+- **VisionMotion 中的具体作用**：第 541–544 行初始化 `turn_indexes = []`、`direction = 0`、`extreme_index = 0`；第 546–567 行逐帧循环：`direction == 0` 时先确定方向（第 550–553 行，`abs(x_i - x_extreme) >= 20`）；`direction == +1` 时更新峰值并在反向 20 px 时确认 peak（第 554–560 行）；`direction == -1` 时镜像确认 valley（第 561–567 行）。确认后方向翻转、`extreme_index` 重置为确认帧 `i`。全程只用当前与历史帧，不使用未来信息。
 - **源码位置**：`src\dynamic_displacement.py` 第 541–567 行。
 
 ### 6. direction（0 / +1 / −1）
@@ -1526,7 +1526,7 @@
 - **中文名称**：当前已确认方向
 - **英文名称**：direction
 - **初学者解释**：状态机里的方向变量：`0` = 还没确定方向；`+1` = 正在沿 +x（正向）走；`-1` = 正在沿 −x（负向）走。
-- **VisionMotion 中的具体作用**：第 543 行初始化为 0；第 523 行在 `|x_i - x_extreme| >= 20` 后设为 `1 if x_i > x_extreme else -1`，同时把 `extreme_index` 移到 `i`（第 553 行）；第 559 行 peak 确认后置为 `-1`；第 566 行 valley 确认后置为 `+1`。因为 `U_004` 的 `ux > 0`，`+1` 就是"正向 = ds 增大"、`-1` 就是"负向 = ds 减小"（第 83–84、509–510 行）。只读内存复算：EXP-004 的 `direction` 首次在 frame 246 确定为 `+1`（x0 852.81 → x246 873.27，差 20.46 px）。
+- **VisionMotion 中的具体作用**：第 543 行初始化为 0；第 552 行在 `|x_i - x_extreme| >= 20` 后设为 `1 if x_i > x_extreme else -1`，同时把 `extreme_index` 移到 `i`（第 553 行）；第 559 行 peak 确认后置为 `-1`；第 566 行 valley 确认后置为 `+1`。因为 `U_004` 的 `ux > 0`，`+1` 就是"正向 = ds 增大"、`-1` 就是"负向 = ds 减小"（第 83–84、509–510 行）。只读内存复算：EXP-004 的 `direction` 首次在 frame 246 确定为 `+1`（x0 852.81 → x246 873.27，差 20.46 px）。
 - **源码位置**：`src\dynamic_displacement.py` 第 83–84、509–510、543、550–553、559、566 行。
 
 ### 7. extreme_index
@@ -1534,7 +1534,7 @@
 - **中文名称**：当前方向上的极值下标
 - **英文名称**：extreme_index
 - **初学者解释**：当前这一轮运动里"最远走到哪里"的位置记账；顺着方向走就不断把它更新为最新帧，反向走满 20 px 时它就作为转向点被写入列表。
-- **VisionMotion 中的具体作用**：第 544 行初始化为 0；第 526–527 行（正向）当 `x_i > x_extreme` 时 `extreme_index = i`；第 533–534 行（负向）当 `x_i < x_extreme` 时 `extreme_index = i`；第 558、565 行把 `extreme_index`（而不是确认帧 `i`）写入 `turn_indexes`；第 560、567 行在确认后把 `extreme_index` 重置为 `i`，开始跟踪新方向的极值。注意它是 `series` 的下标，不是 frame；输出时通过 `series[index]["frame"]` 取真实 frame（`describe()` 第 572 行）。EXP-004 恰好 1766 行全部进入 series，所以下标数值与 frame 相同。
+- **VisionMotion 中的具体作用**：第 544 行初始化为 0；第 555–556 行（正向）当 `x_i > x_extreme` 时 `extreme_index = i`；第 562–563 行（负向）当 `x_i < x_extreme` 时 `extreme_index = i`；第 558、565 行把 `extreme_index`（而不是确认帧 `i`）写入 `turn_indexes`；第 560、567 行在确认后把 `extreme_index` 重置为 `i`，开始跟踪新方向的极值。注意它是 `series` 的下标，不是 frame；输出时通过 `series[index]["frame"]` 取真实 frame（`describe()` 第 572 行）。EXP-004 恰好 1766 行全部进入 series，所以下标数值与 frame 相同。
 - **源码位置**：`src\dynamic_displacement.py` 第 544、526–527、558、560、533–534、565、567、572、583 行。
 
 ### 8. turn_indexes
@@ -1542,7 +1542,7 @@
 - **中文名称**：已确认转向点列表
 - **英文名称**：turn_indexes
 - **初学者解释**：状态机确认过的转向点清单，每一项是"极值下标 + 类型（peak / valley）"。
-- **VisionMotion 中的具体作用**：第 542 行初始化为 `[]`；第 558 行追加 `(extreme_index, "peak")`；第 565 行追加 `(extreme_index, "valley")`；第 553–563 行遍历它生成 `turns`；第 595 行用它的下标组成运动段边界。它只包含确认过的转向点，不含起点 / 终点。真实数据：EXP-004 的 `turn_indexes` 长度为 6，依次为 f491 peak、f602 valley、f838 peak、f1063 valley、f1254 peak、f1513 valley（frame 由 `series[index]["frame"]` 得到）。
+- **VisionMotion 中的具体作用**：第 542 行初始化为 `[]`；第 558 行追加 `(extreme_index, "peak")`；第 565 行追加 `(extreme_index, "valley")`；第 581–592 行遍历它生成 `turns`；第 595 行用它的下标组成运动段边界。它只包含确认过的转向点，不含起点 / 终点。真实数据：EXP-004 的 `turn_indexes` 长度为 6，依次为 f491 peak、f602 valley、f838 peak、f1063 valley、f1254 peak、f1513 valley（frame 由 `series[index]["frame"]` 得到）。
 - **源码位置**：`src\dynamic_displacement.py` 第 542、558、565、581–592、595 行。
 
 ### 9. MIN_TURN_TRAVEL_PX = 20.0（反向行程阈值）
@@ -1574,7 +1574,7 @@
 - **中文名称**：转向点报告与字段整理函数
 - **英文名称**：turns report / describe()
 - **初学者解释**：`turns` 是每个转向点一条记录的列表；`describe()` 负责把一行数据整理成报告需要的四个基本字段。
-- **VisionMotion 中的具体作用**：`describe(row)`（第 569–576 行）返回 `frame` / `time_s` / `x_px` / `ds_mm`（第 546 行注释：`ds_mm` 在 `valid=False` 时为 `None`，打印"无"，不伪造数值）；第 578–579 行用它生成起点 / 终点；第 581–592 行用它生成每个转向点并加上 `kind` / `direction_before` / `direction_after`。最终 `turns` 的七个字段是 `frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；第 803–821 行把每个转向点打印出来。
+- **VisionMotion 中的具体作用**：`describe(row)`（第 569–576 行）返回 `frame` / `time_s` / `x_px` / `ds_mm`（第 575 行注释：`ds_mm` 在 `valid=False` 时为 `None`，打印"无"，不伪造数值）；第 578–579 行用它生成起点 / 终点；第 581–592 行用它生成每个转向点并加上 `kind` / `direction_before` / `direction_after`。最终 `turns` 的七个字段是 `frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；第 803–821 行把每个转向点打印出来。
 - **源码位置**：`src\dynamic_displacement.py` 第 569–576、578–579、581–592、803–821 行。
 
 ### 13. direction_before / direction_after
@@ -1582,7 +1582,7 @@
 - **中文名称**：转向前后的运动方向
 - **英文名称**：direction_before / direction_after
 - **初学者解释**：转向点之前的运动方向与之后的运动方向；它们由转向类型直接决定，不需要再测一次。
-- **VisionMotion 中的具体作用**：第 556–558 行：`kind == "peak"` → `direction_before = DIRECTION_POSITIVE`（正向）、`direction_after = DIRECTION_NEGATIVE`（负向）；第 559–561 行：`else`（valley）→ 负向 → 正向。`DIRECTION_POSITIVE = "正向"`、`DIRECTION_NEGATIVE = "负向"` 在第 111–113 行定义（注释"只允许这两种说法"）。因此这两个字段是由 `kind` **推导**得到的，不是从 Δds 重新测量出来的；真实数据里 f491 的这两个字段就是"正向 → 负向"。
+- **VisionMotion 中的具体作用**：第 585–587 行：`kind == "peak"` → `direction_before = DIRECTION_POSITIVE`（正向）、`direction_after = DIRECTION_NEGATIVE`（负向）；第 588–590 行：`else`（valley）→ 负向 → 正向。`DIRECTION_POSITIVE = "正向"`、`DIRECTION_NEGATIVE = "负向"` 在第 111–113 行定义（注释"只允许这两种说法"）。因此这两个字段是由 `kind` **推导**得到的，不是从 Δds 重新测量出来的；真实数据里 f491 的这两个字段就是"正向 → 负向"。
 - **源码位置**：`src\dynamic_displacement.py` 第 111–113、585–590 行。
 
 ### 14. 运动段（motion segment）与 boundary_indexes
@@ -1622,8 +1622,8 @@
 - **中文名称**：原始数据原则
 - **英文名称**：raw-data principle（no smoothing / filtering / interpolation / padding / prediction）
 - **初学者解释**：测量数据就是证据，不能为了让曲线"好看"去改数据；噪声要用明确规则处理，而不是抹掉。
-- **VisionMotion 中的具体作用**：第 467–468 行"只使用原始 x_px 序列……不平滑、不滤波、不插值、不补帧、不预测"；模块第 27 行"不删除任何 track CSV 行；valid=False 的位移字段一律留空（不写 0 / -1 / nan）"；第 28 行"不做平滑 / 滤波 / 插值 / 补帧 / 补零 / 预测 / FFT / 频率 / 周期 / 振幅分析"；第 30 行"转向点只使用原始 x_px 数据"；第 16 行数据链也写明"最小反向行程 20 px，不平滑、不滤波"。这样每个转向点、每段行程都能追溯回原始 CSV 行。
-- **源码位置**：`src\dynamic_displacement.py` 第 16、27–28、30、467–468 行。
+- **VisionMotion 中的具体作用**：第 496–497 行"只使用原始 x_px 序列……不平滑、不滤波、不插值、不补帧、不预测"；模块第 27 行"不删除任何 track CSV 行；valid=False 的位移字段一律留空（不写 0 / -1 / nan）"；第 28 行"不做平滑 / 滤波 / 插值 / 补帧 / 补零 / 预测 / FFT / 频率 / 周期 / 振幅分析"；第 30 行"转向点只使用原始 x_px 数据"；第 16 行数据链也写明"最小反向行程 20 px，不平滑、不滤波"。这样每个转向点、每段行程都能追溯回原始 CSV 行。
+- **源码位置**：`src\dynamic_displacement.py` 第 16、27–28、30、496–497 行。
 
 ### 19. 冻结规则与可复现性
 
@@ -1731,7 +1731,7 @@
 - **中文名称**：事件序列
 - **英文名称**：event sequence
 - **初学者解释**：把连续运动整理成一串"在什么时间、发生了什么类型的事件"的记录，例如"8.166327 s 发生 peak、10.012483 s 发生 valley"。
-- **VisionMotion 中的具体作用**：turns 的每条记录都带 `time_s`（第 544 行）与 `kind`（第 584 行），因此 turns 天然构成事件序列；L13 的时间分析就只有一步——把两个 `time_s` 相减。**注意：`detect_turning_points()` 只产出这个序列，不负责对序列做间隔统计。**
+- **VisionMotion 中的具体作用**：turns 的每条记录都带 `time_s`（第 573 行）与 `kind`（第 584 行），因此 turns 天然构成事件序列；L13 的时间分析就只有一步——把两个 `time_s` 相减。**注意：`detect_turning_points()` 只产出这个序列，不负责对序列做间隔统计。**
 - **源码位置**：`src\dynamic_displacement.py` 第 569–576、581–592 行。
 
 ### 3. 事件间隔

@@ -1005,7 +1005,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 5. **运动方向由 Δds 决定**：`Δds = ds[i+1] − ds[i]`；Δds > 0 = 向正方向运动、Δds < 0 = 向负方向运动、Δds = 0 = 该相邻间隔读数不变；
 6. **Δds 的两个前提**：两端都 valid（`ds` 非空）才能相减；空洞处 Δds 断开（M4 的平台之间就是空洞）；
 7. **Δds 不是速度**：速度 = Δds / Δt（30 fps 时 Δt ≈ 0.033333 s）；本项目没有速度字段，本课也不算速度；
-8. **源码里没有 Δds 字段**：源码把规则写成文字"正向 = ds 增大 / 负向 = ds 减小"（M5 第 83～84、480 行）；Δds 是本课引入的概念量；转向点算法用的是原始 `x_px`（第 496、524～526 行）；`ux > 0 ⇒ 正向对应原始 x 增大`（第 481 行）；
+8. **源码里没有 Δds 字段**：源码把规则写成文字"正向 = ds 增大 / 负向 = ds 减小"（M5 第 83～84、480 行）；Δds 是本课引入的概念量；转向点算法用的是原始 `x_px`（第 496、524～526 行）；`ux > 0 ⇒ 正向对应原始 x 增大`（第 510 行）；
 9. **M4 静态形态 = 平台 + 台阶 + 空洞**：STATIC-002 / STATIC-003 各有 7 个平台（约 0、10、20、30、40、50、60 mm；台阶间隔约 10 mm），平台之间是长段 valid=False 的空洞；
 10. **M5 动态形态 = 连续往返**：1766/1766 全部 valid、无空洞；`ds_mm` −0.5283（frame 0）～66.1663（frame 1701）；数值多次上升、下降；
 11. **真实例子（负侧向正）**：M5 f237 → f313，`ds_mm` 从 −0.0046 增大到 +27.1660（Δds = +27.1706 mm）；
@@ -1020,7 +1020,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
 | M4 位移模块（源码主角） | `src\displacement.py` | 第 46 行正方向约定；第 55 行 `U`；第 301～303 行初始化位移字段；第 313～314 行仅 valid 算 `s_px`；第 367～369 行仅 valid 算 `ds_px` / `ds_mm`；第 389～392 行无效值写空 |
-| M5 位移模块（源码主角） | `src\dynamic_displacement.py` | 第 66 行 `U_004`；第 83～84 行正向 / 负向定义；第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 111～113 行方向文字常量；第 133 行 `U_004` 方向说明；第 462 行起 `detect_turning_points()`（本课只做最小介绍） |
+| M5 位移模块（源码主角） | `src\dynamic_displacement.py` | 第 66 行 `U_004`；第 83～84 行正向 / 负向定义；第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 111～113 行方向文字常量；第 133 行 `U_004` 方向说明；第 491 行起 `detect_turning_points()`（本课只做最小介绍） |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-002_track.csv` | 各 1961 行；valid 1050 / invalid 911；`ds_mm` −0.2170～60.8426；正/负/零 = 1016/34/0；形态：平台 + 台阶 + 空洞 |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-003_ds.csv`、`results\EXP-003-STATIC-003_track.csv` | 各 1984 行；valid 1192 / invalid 792；`ds_mm` −0.0540～60.1932；正/负/零 = 1174/18/0；形态：平台 + 台阶 + 空洞 |
 | 真实数据（只读核对，未重新生成） | `results\EXP-004-DYNAMIC-001_ds.csv`、`results\EXP-004-DYNAMIC-001_track.csv` | 各 1766 行；valid 1766 / invalid 0；`ds_mm` −0.5283～66.1663；正/负/零 = 1605/161/0；形态：连续往返 |
@@ -1038,7 +1038,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 第 87 行：`MIN_TURN_TRAVEL_PX = 20.0`；第 85～86 行说明："只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；
 - 第 111～113 行：`DIRECTION_POSITIVE = "正向"`、`DIRECTION_NEGATIVE = "负向"`（注释："只允许这两种说法"）；
 - 第 133 行："U_004 指向 10 cm -> 20 cm（ux > 0，即"ds 增大"为正向）"；
-- 第 462 行起 `detect_turning_points()`（docstring 第 503～506、509～510 行；内部算法第 512～594 行属于 L12，本课不展开）。
+- 第 491 行起 `detect_turning_points()`（docstring 第 503～506、509～510 行；内部算法第 541～623 行属于 L12，本课不展开）。
 
 ### L11 源码地图
 
@@ -1057,7 +1057,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 第 82～87 行 | 运动方向统计规则（第 83～84 行正向 / 负向；第 87 行阈值） |
 | 第 111～113 行 | `DIRECTION_POSITIVE` / `DIRECTION_NEGATIVE` |
 | 第 121～175 行 | 冻结常量自检（第 133 行 `U_004` 方向说明） |
-| 第 487～623 行 | 转向点 / 运动段检测（第 462 行定义；本课只登记，不展开） |
+| 第 487～623 行 | 转向点 / 运动段检测（第 491 行定义；本课只登记，不展开） |
 
 （行号按 2026-10-04 当前源码逐行核对；如果实际源码行号发生变化，以当前真实源码为准。全部数据为只读核对，未重新生成。）
 
@@ -1103,19 +1103,19 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 ### 核心概念
 
 1. **转向点检测 = 用冻结规则确定"哪一帧是转向点"**：不能靠"这一帧比上一帧小"这种一帧判据；
-2. **一帧判据不成立的三条原因**：噪声（静止段相邻帧 \|dx\| 中位数约 0.13 px、最大约 1.25 px，第 476 行）、极值平台、可复现性要求；
+2. **一帧判据不成立的三条原因**：噪声（静止段相邻帧 \|dx\| 中位数约 0.13 px、最大约 1.25 px，第 505 行）、极值平台、可复现性要求；
 3. **输入是原始 `x_px` 序列**（`detected=True` 且 `x_px` 非空、按 frame 升序；第 467、524–526 行）；不使用 `s_px` / `ds`，不读平滑曲线；
 4. **不平滑、不滤波、不插值、不补帧、不预测**（第 497 行；模块第 28 行）；
 5. **`valid=False` 的行只统计、不删除**（第 527 行；第 514 行"只统计，不删除"）；它们仍留在分析序列里参与检测；
-6. **状态机三个变量**：`turn_indexes`（第 542 行）、`direction`（第 514 行：0 / +1 / −1）、`extreme_index`（第 544 行）；
+6. **状态机三个变量**：`turn_indexes`（第 542 行）、`direction`（`detect_turning_points()` 中 `direction = 0`，当前约第 543 行：0 / +1 / −1）、`extreme_index`（第 544 行）；
 7. **`direction == 0`**：`|x_i − x_extreme| ≥ 20` 时确定方向（谁大往谁的方向），并把 `extreme_index` 移到 `i`（第 550–553 行）；
 8. **`direction == +1`**：`x_i > x_extreme` 时更新峰值；`x_extreme − x_i ≥ 20` 时确认 peak 并翻转到 −1（第 554–560 行）；
 9. **`direction == −1`**：镜像处理，`x_i < x_extreme` 时更新谷值；`x_i − x_extreme ≥ 20` 时确认 valley 并翻转到 +1（第 561–567 行）；
 10. **`MIN_TURN_TRAVEL_PX = 20.0` 是反向行程阈值**（第 87、503–506 行）：只有从当前极值反向走满至少 20 px，该极值才算转向点；
-11. **`turn_indexes` 存的是 `extreme_index`（转向点 / 极值帧），不是确认帧 `i`**（第 558、536 行）；确认帧只触发确认，随后 `extreme_index` 被重置为 `i`（第 531、567 行）；
+11. **`turn_indexes` 存的是 `extreme_index`（转向点 / 极值帧），不是确认帧 `i`**（第 558、565 行）；确认帧只触发确认，随后 `extreme_index` 被重置为 `i`（第 560、567 行）；
 12. **确认滞后是正常的**：peak f491 → f505 确认、valley f602 → f732 确认、peak f838 → f971 确认；这是抗噪与可复现的代价；
-13. **peak = 正向 → 负向**（第 558 行），**valley = 负向 → 正向**（第 536 行）；因为 `ux > 0`，peak 也是 `ds` 的局部极大、valley 也是 `ds` 的局部极小（第 509–510 行）；
-14. **`turns` 七个字段**：`frame` / `time_s` / `x_px` / `ds_mm`（`describe()` 第 569–576 行）+ `kind` / `direction_before` / `direction_after`（第 555–561 行）；后两个由 `kind` 推导；
+13. **peak = 正向 → 负向**（第 558 行），**valley = 负向 → 正向**（`detect_turning_points()` 中 valley 写入逻辑，当前约第 565 行）；因为 `ux > 0`，peak 也是 `ds` 的局部极大、valley 也是 `ds` 的局部极小（第 509–510 行）；
+14. **`turns` 七个字段**：`frame` / `time_s` / `x_px` / `ds_mm`（`describe()` 第 569–576 行）+ `kind` / `direction_before` / `direction_after`（第 584–590 行）；后两个由 `kind` 推导；
 15. **`segments` 用 `boundary_indexes = [0] + 所有转向点 + [len(series) − 1]` 切分**（第 595 行）；每段记录 start/end frame、time、x、direction、`travel_px`（第 600 行）、`below_min_travel`（第 617 行）；
 16. **段数 = 转向点数 + 1**（第 479 行）；首帧和末帧只作为边界，不是转向点（第 507–508 行）；
 17. **两种 20 px 比较对象不同**：转向确认比较"从极值反向的行程"（第 557、564 行）；`below_min_travel` 比较"整段两端之间的行程"（第 600、617 行）；
@@ -1135,14 +1135,14 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 - 第 87 行：`MIN_TURN_TRAVEL_PX = 20.0`；第 85–86 行注释："只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；
 - 第 503–506 行 docstring："MIN_TURN_TRAVEL_PX = 20.0 是'反向行程阈值'：只有当原始 x 从当前极值反向走了至少 20 px，该极值才算转向点。本视频静止段的噪声（相邻帧 |dx| 中位数约 0.13 px、静止段最大约 1.25 px）远达不到 20 px，因此不会制造假转向 —— 这条规则在这里真正起作用"；
-- 第 467–468 行：只使用原始 `x_px` 序列（`detected=True` 且有 x 的行，按 frame 升序），不平滑、不滤波、不插值、不补帧、不预测；第 507–508 行：首末帧只作为边界；段数 = 转向点数 + 1；第 509–510 行：正向 = ds 增大、负向 = ds 减小，`ux > 0` 使正向对应原始 x 增大；
+- 第 496–497 行：只使用原始 `x_px` 序列（`detected=True` 且有 x 的行，按 frame 升序），不平滑、不滤波、不插值、不补帧、不预测；第 507–508 行：首末帧只作为边界；段数 = 转向点数 + 1；第 509–510 行：正向 = ds 增大、负向 = ds 减小，`ux > 0` 使正向对应原始 x 增大；
 - 第 524–526 行：`series = [row for row in rows if row["detected"] and row["x_px"] is not None]`；第 527 行：`analysis_invalid_rows = sum(1 for row in series if not row["valid"])`（只统计、不删除；第 514 行）；
-- 第 529–539 行 report 骨架（analysis_rows / analysis_invalid_rows / start / end / turns / segments / min_turn_travel_px）；第 509–510 行 series 少于 2 行时提前返回；
+- 第 529–539 行 report 骨架（analysis_rows / analysis_invalid_rows / start / end / turns / segments / min_turn_travel_px）；第 538–539 行 series 少于 2 行时提前返回；
 - 第 541–544 行：`turn_indexes = []`、`direction = 0`、`extreme_index = 0`；
 - 第 550–553 行（direction == 0）：`abs(x_i - x_extreme) >= MIN_TURN_TRAVEL_PX` → `direction = 1 if x_i > x_extreme else -1`，`extreme_index = i`；
-- 第 554–560 行（direction == 1）：`x_i > x_extreme` → `extreme_index = i`；否则 `x_extreme - x_i >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "peak"))`（第 558 行）、`direction = -1`（第 530 行）、`extreme_index = i`（第 531 行）；
-- 第 561–567 行（direction == −1）：`x_i < x_extreme` → `extreme_index = i`；否则 `x_i - x_extreme >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "valley"))`（第 536 行）、`direction = 1`（第 537 行）、`extreme_index = i`（第 567 行）；
-- 第 569–576 行 `describe()`：返回 frame / time_s / x_px / ds_mm；第 546 行注释：ds_mm 在 valid=False 时为 None（打印"无"，不伪造数值）；第 578–579 行用它生成 start / end；
+- 第 554–560 行（direction == 1）：`x_i > x_extreme` → `extreme_index = i`；否则 `x_extreme - x_i >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "peak"))`（第 558 行）、`direction = -1`（当前约第 559 行）、`extreme_index = i`（当前约第 560 行）；
+- 第 561–567 行（direction == −1）：`x_i < x_extreme` → `extreme_index = i`；否则 `x_i - x_extreme >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "valley"))`（第 565 行）、`direction = 1`（当前约第 566 行）、`extreme_index = i`（第 567 行）；
+- 第 569–576 行 `describe()`：返回 frame / time_s / x_px / ds_mm；第 575 行注释：ds_mm 在 valid=False 时为 None（打印"无"，不伪造数值）；第 578–579 行用它生成 start / end；
 - 第 581–592 行 turns：`item = describe(series[index])`；`item["kind"] = kind`；peak → `direction_before = DIRECTION_POSITIVE`、`direction_after = DIRECTION_NEGATIVE`；否则 valley → 负向 → 正向（第 585–590 行）；报告写入 `report["turns"]`；
 - 第 594–620 行 segments：第 595 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 600 行 `travel_px = abs(tail["x_px"] - head["x_px"])`；第 601–606 行按 tail/head 比较给出方向（正向 / 负向 / "无位移"）；第 609–618 行每段字段；第 617 行 `below_min_travel = travel_px < MIN_TURN_TRAVEL_PX`；
 - 第 769–843 行打印：分析行数 / invalid 数（770–773）、起点（774–782）、终点（783–790）、转向点数量（763）、运动段数与 below_min 计数（793–800）、每个转向点（803–821）、每个运动段（824–843）；
@@ -1272,7 +1272,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 - `src\dynamic_displacement.py` 第 28 行：不做平滑 / 滤波 / 插值 / 补帧 / 补零 / 预测 / FFT / 频率 / 周期 / 振幅分析；
 - `detect_turning_points()`（第 491–622 行）：输入原始 `x_px` 序列，输出 turns / segments；第 507–508 行声明首末帧只是边界、段数 = 转向点数 + 1；
-- turns 第 569–592 行：七个字段，`time_s` 第 544 行、`kind` 第 584 行、`direction_before` / `direction_after` 第 585–590 行；
+- turns 第 569–592 行：七个字段，`time_s` 第 573 行、`kind` 第 584 行、`direction_before` / `direction_after` 第 585–590 行；
 - segments 第 594–620 行：`boundary_indexes` 第 595 行、`travel_px` 第 600 / 616 行、`below_min_travel` 第 617 行；
 - 打印部分：第 792 行转向点数量、第 794–799 行运动段数量、第 806–821 行每个转向点、第 827–842 行每个运动段；没有时间间隔 / 周期 / 频率打印；
 - 只读检索：全项目 `M5.4` / `M5.5` 命中 0 条；`src\` / `demo\` 中"周期 / 频率 / FFT"命中均为边界声明或 M6 冻结值引用；

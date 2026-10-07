@@ -13,7 +13,7 @@ VisionMotion —— M7.3A 最终项目展示材料生成脚本（PPTX）
     - 不使用“算法精度 / 真值 / 标准答案 / 准确率”等措辞；
     - 色盲友好配色（蓝 / 橙 / 绿 / 灰），与三张成果图语义一致。
 
-依赖：python-pptx（仅本脚本使用的构建期依赖，不加入项目运行期 requirements.txt）。
+依赖：python-pptx（本脚本直接 import 并使用，已列入项目运行期 requirements.txt 的 python-pptx==1.0.2）。
 PDF 导出：本脚本只生成 PPTX；如需 PDF，请使用本机 PowerPoint COM 导出（见项目报告说明）。
 
 运行方式（在项目根目录下）：

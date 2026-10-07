@@ -950,7 +950,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 第 59～80 行 | EXP-004 标定、专属 gate、s0 规则 |
 | 第 91～109 行 | `DS_FIELDNAMES` / `FIELD_PATTERNS` |
 | 第 183～222 行 | `is_valid_frame()` |
-| 第 270～294 行 | `add_valid_flags()` / `add_projection()` |
+| 第 299～313、315～323 行 | `add_valid_flags()` / `add_projection()` |
 | 第 326～364 行 | `compute_s0()`（第 343～344、357、361～362 行） |
 | 第 367～379、387～405 行 | `add_displacement()` / `build_ds_row()` |
 | 第 429～483 行 | `summarize_dynamic()` |

@@ -693,7 +693,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 9. **M4 标定**（`src\displacement.py` 第 41～55 行）：来源 EXP-003-STATIC-002 frame 900 的 1920×1080 坐标系；P1 (1036.23, 490.58)、P2 (1381.64, 488.20)、60.0 mm；`PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`、`U = (0.999976, -0.006894)`；
 10. **M5 标定**（`src\dynamic_displacement.py` 第 59～66 行）：EXP-004 专属（人工点击 + 独立核验）；P1 (813.50, 296.49)、P2 (1422.13, 294.11)、100.0 mm；`PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`、`U_004 = (0.999992, -0.003913)`；
 11. **M4 与 M5 必须分开**：两次拍摄几何不同；`src\dynamic_displacement.py` 第 20～23 行禁止把 M4 常量搬进来、禁止 `import src.displacement`；第 68～76 行专属 gate 写明"与 M4 gate 完全不同，不得混用"；
-12. **ds_px → ds_mm**：`src\displacement.py` 第 339～340 行、`src\dynamic_displacement.py` 第 349～350 行；`ds_mm` 是换算结果，不是另一次测量；
+12. **ds_px → ds_mm**：`src\displacement.py` 第 368～369 行、`src\dynamic_displacement.py` 第 349～350 行；`ds_mm` 是换算结果，不是另一次测量；
 13. **双重舍入**：文件里的 `ds_mm` 由未舍入的 `ds_px` 算出再舍入；用已舍入的 `ds_px` 反算可能出现 ±0.0001 的差（自检容差 0.0005 mm，第 736 / 1108 行）；
 14. **M6 无 mm 列**：`src\external_oscillation_tracker.py` 第 31～34 行明文禁止标定与位移换算；8 列表头（第 87～96 行）没有 `s_px` / `ds_px` / `ds_mm`；
 15. **原则**：没有有效标定就只能停留在像素层面；有标定也要说清是哪一次拍摄；
@@ -705,7 +705,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
 | 标定模块（本课主角，纯数学） | `src\calibration.py` | 第 1～22 行模块说明与公式；第 24 行 `import math`；第 32～43 行 `_to_float()`；第 46～70 行 `_check_point()`；第 73～92 行 `_check_direction()`；第 100～144 行 `compute_scale()`（第 125～126 行真实距离 > 0；第 128～131 行 `dx` / `dy` / `pixel_distance`；第 134～135 行两点重合；第 137～138 行两个尺度；第 140～144 行返回）；第 147～173 行 `unit_direction()`；第 176～204 行 `project_point()`（第 180 行公式说明；第 204 行 `return x * ux + y * uy`） |
-| M4 常量与 mm 换算 | `src\displacement.py` | 第 41～47 行标定来源说明（第 44～46 行 P1 / P2 / 真实距离）；第 48～50 行常量；第 52～53 行 `PX_PER_MM` / `MM_PER_PX`；第 55 行 `U`；第 57～64 行 M4 gate；第 72～81 行 `DS_FIELDNAMES`；第 98～150 行冻结常量自检；第 328～340 行 `add_displacement()`（第 339～340 行换算公式）；第 725～740 行 ds 公式复算 |
+| M4 常量与 mm 换算 | `src\displacement.py` | 第 41～47 行标定来源说明（第 44～46 行 P1 / P2 / 真实距离）；第 48～50 行常量；第 52～53 行 `PX_PER_MM` / `MM_PER_PX`；第 55 行 `U`；第 57～64 行 M4 gate；第 72～81 行 `DS_FIELDNAMES`；第 98～150 行冻结常量自检；第 357～369 行 `add_displacement()`（第 368～369 行换算公式）；第 759～777 行 ds 公式复算 |
 | M5 常量与 mm 换算 | `src\dynamic_displacement.py` | 第 20～23 行 EXP-004 专属与"不得 import src.displacement"；第 40 行只 import `project_point`；第 59 行冻结说明；第 60～62 行 P1 / P2 / 100.0 mm；第 64～66 行常量；第 68～76 行专属 gate；第 121～174 行冻结常量自检；第 338～350 行 `add_displacement()`（第 349～350 行换算公式）；第 1097～1116 行 ds 公式复算 |
 | M6 边界对照（无 mm 列的原因） | `src\external_oscillation_tracker.py` | 第 4～9 行外部数据集标注；第 19～20 行正式位置特征与帧区间；第 31～34 行"不做：标定（px/mm）、位移换算…"；第 84 行 `POSITION_FEATURE_NAME`；第 87～96 行 8 列表头；第 337～377 行写 CSV |
 | 调用方 | `demo\run_m43_displacement.py`、`demo\run_m52_dynamic_displacement.py` | 第 63～67、146～158、215～222 行（M4 三视频共用常量与冻结自检）；第 72～98、165～166 行（M5 冻结常量打印与运行） |
@@ -724,7 +724,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 第 147～173 行 `unit_direction()`：第 149 行方向约定 10 cm → 16 cm；第 151 行定义式 `u = (P2 - P1) / |P2 - P1|`；第 170～171 行重合报错；第 173 行返回 `{"ux", "uy"}`；
 - 第 176～204 行 `project_point()`：第 180 行公式说明；第 193～198 行参数与零长度检查；第 200～202 行归一化；**第 204 行 `return x * ux + y * uy`（实现上面第 180 行的公式 `s = x * ux + y * uy`）**；
 - `src\displacement.py` 第 41～47 行标定来源说明（第 42～43 行来源视频 / frame 900 / `1920 x 1080` 坐标系；第 44～46 行 P1 / P2 / 真实距离；第 47 行"不做任何重新标定"）；第 48～50 行 `CALIB_P1_PX` / `CALIB_P2_PX` / `CALIB_REAL_DISTANCE_MM`；**第 52～53 行 `PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`**；第 55 行 `U = (0.999976, -0.006894)`；第 57～64 行 M4 gate；
-- `src\displacement.py` 第 72～81 行 `DS_FIELDNAMES`（含 `s_px` / `ds_px` / `ds_mm`）；第 84～90 行格式规范；第 98～150 行 `check_calibration_constants()`（第 142～147 行互为倒数自检）；第 277～285 行 `add_projection()`；第 288～325 行 `compute_s0()`；**第 328～340 行 `add_displacement()`（第 339～340 行 `ds_px = s_px - s0`、`ds_mm = ds_px / PX_PER_MM`）**；第 348～382 行 `build_ds_row()` / `write_ds_csv()`；
+- `src\displacement.py` 第 72～81 行 `DS_FIELDNAMES`（含 `s_px` / `ds_px` / `ds_mm`）；第 84～90 行格式规范；第 98～150 行 `check_calibration_constants()`（第 142～147 行互为倒数自检）；第 306～314 行 `add_projection()`；第 317～354 行 `compute_s0()`；**第 357～369 行 `add_displacement()`（第 368～369 行 `ds_px = s_px - s0`、`ds_mm = ds_px / PX_PER_MM`）**；第 377～411 行 `build_ds_row()` / `write_ds_csv()`；
 - `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 26 行"不重新实现投影公式"；第 40 行只 `from src.calibration import project_point`；**第 59 行 EXP-004 标定冻结说明**；第 60～62 行 P1 (813.50, 296.49) / P2 (1422.13, 294.11) / 100.0 mm；**第 64～65 行 `PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`**；第 66 行 `U_004`；第 68～76 行专属 gate（第 68 行"与 M4 gate 完全不同，不得混用"；阈值 4500 / 6500 / 200 / 250）；**第 338～350 行 `add_displacement()`（第 349～350 行公式，除数用 `PX_PER_MM_004`）**；第 1097～1116 行 ds 公式复算；
 - `src\external_oscillation_tracker.py` 第 31～34 行"本模块不做：标定（px/mm）、位移换算…"；第 84 行 `POSITION_FEATURE_NAME`；第 87～96 行 `CSV_FIELDNAMES`（8 列，无 mm 列）；
 - 只读复算（不重新标定）：M4 用冻结 P1 / P2 复算 `pixel_distance ≈ 345.418199 px`、`px_per_mm ≈ 5.7569700`（与冻结 5.756961 差 ≈ 9.0e-6）、`mm_per_px ≈ 0.1737025`（差 ≈ 5.1e-7），均在自检容差 1e-4 内；M5 复算 `hypot ≈ 608.634653 px`、投影法 `s(P2) - s(P1) ≈ 608.634444 px`，除以 100.0 得 ≈ 6.086347 / 6.086344（与冻结 6.086399 差 ≈ 5.2e-5 / 5.5e-5），在容差内。
@@ -740,7 +740,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | `src\calibration.py` 第 147～173 行 | `unit_direction()` |
 | `src\calibration.py` 第 176～204 行 | `project_point()`（第 180 行公式说明；第 204 行 `return x * ux + y * uy`） |
 | `src\displacement.py` 第 41～55 行 | M4 标定来源、P1 / P2 / 60.0 mm、`PX_PER_MM` / `MM_PER_PX` / `U` |
-| `src\displacement.py` 第 328～340 行 | `add_displacement()`（第 339～340 行 `ds_mm = ds_px / PX_PER_MM`） |
+| `src\displacement.py` 第 357～369 行 | `add_displacement()`（第 368～369 行 `ds_mm = ds_px / PX_PER_MM`） |
 | `src\dynamic_displacement.py` 第 20～23、68～76 行 | EXP-004 专属边界与专属 gate（不得与 M4 混用） |
 | `src\dynamic_displacement.py` 第 59～66 行 | M5 标定来源、P1 / P2 / 100.0 mm、`PX_PER_MM_004` / `MM_PER_PX_004` / `U_004` |
 | `src\dynamic_displacement.py` 第 338～350 行 | `add_displacement()`（第 349～350 行 `ds_mm = ds_px / PX_PER_MM_004`） |
@@ -803,7 +803,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 15. **真实数据验证（只读）**：`results\EXP-003-STATIC-002_track.csv` 与 `_ds.csv` 各 1961 行、`s_px` 非空 1050 行（= `valid=True`，911 行为空）；`results\EXP-004-DYNAMIC-001_track.csv` 与 `_ds.csv` 各 1766 行、`s_px` 全部有值；最小二乘反推的系数与 `U / |U|` 一致到 `1e-7` 量级（M4 差 `(-2.54e-8, +9.61e-8)`，M5 差 `(-9.56e-8, +4.89e-7)`）；
 16. **末位差来自文本舍入**：`s_px` 写 3 位小数（上界 `5e-4 px`）、`x_px` / `y_px` 写 2 位小数；偏差不是算法差异，也不是数据错误；
 17. **与 L08、L10 的分工**：L08 = 尺度（`px/mm`、`mm/px`、`L_pixel`）；L09 = 方向 + 一维坐标（`v`、`u`、`ux` / `uy`、`s_px`）；L10 = 基线与位移（`s0`、valid gate、`ds_px`、`ds_mm`）；
-18. **本课边界**：`s0` 如何选（`src\displacement.py` 第 288 行起 `compute_s0()`）、valid gate 的完整规则（第 57～64 行 / `src\dynamic_displacement.py` 第 68～76 行）、`ds_px` / `ds_mm` 流程（第 328～340 行 / 第 338～350 行）本课只登记名称与位置，不展开；
+18. **本课边界**：`s0` 如何选（`src\displacement.py` 第 317 行起 `compute_s0()`）、valid gate 的完整规则（第 57～64 行 / `src\dynamic_displacement.py` 第 68～76 行）、`ds_px` / `ds_mm` 流程（第 357～369 行 / 第 338～350 行）本课只登记名称与位置，不展开；
 19. **六类材料**：VisionMotion 真实源码 / 真实项目常数 / 真实数据 / 数学公式 / 教学示例 / 概念伪代码；引用项目事实必须能指出文件 + 函数 + 行号。
 
 ### 对应的项目文件
@@ -811,7 +811,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
 | 标定模块（本课主角，纯数学） | `src\calibration.py` | 第 100～144 行 `compute_scale()`（第 118～120 行参数检查；第 122～126 行真实距离合法性；第 128～131 行 `dx` / `dy` / `pixel_distance`；第 134～135 行两点重合；第 137～138 行两个尺度；第 140～144 行返回）；第 147～173 行 `unit_direction()`（第 166～168 行 `dx` / `dy` / `length`；第 170～171 行零长度；第 173 行返回单位向量）；第 176～204 行 `project_point()`（第 193～194 行读取参数；第 196～202 行零方向检查与再次归一化；第 204 行 `return x * ux + y * uy`） |
-| M4 方向常量与投影调用 | `src\displacement.py` | 第 48～50 行标定点与真实长度；第 52～53 行 `PX_PER_MM` / `MM_PER_PX`；**第 55 行 `U = (0.999976, -0.006894)`**；第 128～141 行冻结常量自检；第 277～285 行 `add_projection()`（第 285 行调用 `project_point((x_px, y_px), U)`） |
+| M4 方向常量与投影调用 | `src\displacement.py` | 第 48～50 行标定点与真实长度；第 52～53 行 `PX_PER_MM` / `MM_PER_PX`；**第 55 行 `U = (0.999976, -0.006894)`**；第 128～141 行冻结常量自检；第 306～314 行 `add_projection()`（第 314 行调用 `project_point((x_px, y_px), U)`） |
 | M5 方向常量与投影调用 | `src\dynamic_displacement.py` | 第 60～62 行标定点与真实长度；第 64～65 行 `PX_PER_MM_004` / `MM_PER_PX_004`；**第 66 行 `U_004 = (0.999992, -0.003913)`**；第 139～144 行单位向量自检；第 147～157 行投影复算；第 167～172 行方向正负自检 |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-002_track.csv`、`results\EXP-003-STATIC-002_ds.csv` | 各 1961 行（frame 0～1960）；表头 6 / 8 列；`s_px` 非空 1050 行（= `valid=True`），911 行为空；第 1 行数据 `0,0.000000,1083.63,464.97,4783.0,True` / `0,0.000000,1080.399,4.335,0.7530,4783.0,True,True`；`s_px` 范围 1074.814～1426.332 |
 | 真实数据（只读核对，未重新生成） | `results\EXP-004-DYNAMIC-001_track.csv`、`results\EXP-004-DYNAMIC-001_ds.csv` | 各 1766 行（frame 0～1765）；表头 6 / 8 列；`s_px` 全部有值；第 1 行数据 `0,0.000000,852.81,208.63,5713.0,True` / `0,0.000000,851.987,-3.215,-0.5283,5713.0,True,True`；`s_px` 范围 851.987～1257.917 |
@@ -822,7 +822,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - `src\calibration.py` 第 100～144 行 `compute_scale()`：第 118～120 行参数检查（`_check_point()` 两次 + `_to_float()`）；第 122～126 行 `real_distance_mm` 必须有限且 > 0（报错信息带当前值 `%g`）；第 128～131 行 `dx = x2 - x1`、`dy = y2 - y1`、`pixel_distance = math.hypot(dx, dy)`；第 134～135 行 `pixel_distance == 0` 报 `ValueError`；第 137～138 行 `px_per_mm` / `mm_per_px`；第 140～144 行返回 `{"pixel_distance", "px_per_mm", "mm_per_px"}`；
 - `src\calibration.py` 第 147～173 行 `unit_direction()`：第 149 行方向约定"从 P1（10 cm）指向 P2（16 cm）"；第 151 行 `u = (P2 - P1) / |P2 - P1|`；第 166～168 行 `dx` / `dy` / `length = math.hypot(dx, dy)`；第 170～171 行 `length == 0` 报 `ValueError`；第 173 行 `return {"ux": dx / length, "uy": dy / length}`；
 - `src\calibration.py` 第 176～204 行 `project_point()`：第 180 行公式说明 `s = x * ux + y * uy`；第 182～185 行 `direction` 可传字典或长度 2 序列；第 187～189 行说明"不是单位向量会先归一化"；第 193～194 行 `_check_point` / `_check_direction`；第 196～198 行 `length = hypot(ux, uy)` 与零长度报错；第 200～202 行"归一化，让 s 的单位和 point 一样是像素"；第 204 行 `return x * ux + y * uy`；
-- `src\displacement.py` 第 48～50 行 `CALIB_P1_PX = (1036.23, 490.58)`、`CALIB_P2_PX = (1381.64, 488.20)`、`CALIB_REAL_DISTANCE_MM = 60.0`；第 52～53 行 `PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`；**第 55 行 `U = (0.999976, -0.006894)`**；第 277～285 行 `add_projection()` 只在 `row["valid"]` 为真时写入 `s_px`；
+- `src\displacement.py` 第 48～50 行 `CALIB_P1_PX = (1036.23, 490.58)`、`CALIB_P2_PX = (1381.64, 488.20)`、`CALIB_REAL_DISTANCE_MM = 60.0`；第 52～53 行 `PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`；**第 55 行 `U = (0.999976, -0.006894)`**；第 306～314 行 `add_projection()` 只在 `row["valid"]` 为真时写入 `s_px`；
 - `src\dynamic_displacement.py` 第 60～62 行 `CALIB_P1_PX = (813.50, 296.49)`、`CALIB_P2_PX = (1422.13, 294.11)`、`CALIB_REAL_DISTANCE_MM = 100.0`；第 64～65 行 `PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`；**第 66 行 `U_004 = (0.999992, -0.003913)`**；第 40 行只 `from src.calibration import project_point`；
 - 只读复算（不重新标定）：M4 `L_pixel = hypot(345.41, -2.38) ≈ 345.418199 px`、`u ≈ (0.999976262, -0.006890199)`、`s(P2) - s(P1) ≈ 345.418199 px`；M5 `L_pixel = hypot(608.63, -2.38) ≈ 608.634653 px`、`u ≈ (0.999992354, -0.003910392)`、`s(P2) - s(P1) ≈ 608.634653 px`（含再次归一化口径，与 `L_pixel` 一致到 `1e-9 px`）；
 - 只读数据复核（只读读取，未运行任何程序 / demo、未生成或覆盖任何文件）：M4 的 1050 行 `s_px` 与 `(x·ux + y·uy) / |U|` 最大差 `4.974e-4 px`（平均 `2.499e-4`）；M5 的 1766 行最大差 `4.998e-4 px`（平均 `2.500e-4`）；不除模时分别为 `8.299e-4 px` / `9.235e-4 px`——说明 CSV 里实际执行了 `project_point()` 的再次归一化。
@@ -836,7 +836,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | `src\calibration.py` 第 176～204 行 | `project_point()`（第 193～194、196～202、204 行） |
 | `src\displacement.py` 第 48～55 行 | M4 标定点、真实长度、`PX_PER_MM` / `MM_PER_PX`、`U` |
 | `src\displacement.py` 第 128～141 行 | M4 冻结常量自检（u 与标定点一致；u 是单位向量） |
-| `src\displacement.py` 第 277～285 行 | `add_projection()`（第 285 行调用 `project_point`） |
+| `src\displacement.py` 第 306～314 行 | `add_projection()`（第 314 行调用 `project_point`） |
 | `src\dynamic_displacement.py` 第 60～66 行 | M5 标定点、真实长度、`PX_PER_MM_004` / `MM_PER_PX_004`、`U_004` |
 | `src\dynamic_displacement.py` 第 139～157、167～172 行 | M5 自检：单位向量、投影复算、方向正负 |
 
@@ -847,7 +847,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 ### 本节课暂未学习的内容
 
-`s0` 如何选（`src\displacement.py` 第 288 行起 `compute_s0()` 的窗口与最少帧数规则）；valid gate 的完整规则（`src\displacement.py` 第 57～64 行、`src\dynamic_displacement.py` 第 68～76 行）；`ds_px` / `ds_mm` 的完整位移流程（`src\displacement.py` 第 328～340 行、`src\dynamic_displacement.py` 第 338～350 行）；`displacement.py` / `dynamic_displacement.py` 的完整逻辑（统计、报告、自检的其余部分）；周期 / 频率 / FFT 仍属于后续课程。
+`s0` 如何选（`src\displacement.py` 第 317 行起 `compute_s0()` 的窗口与最少帧数规则）；valid gate 的完整规则（`src\displacement.py` 第 57～64 行、`src\dynamic_displacement.py` 第 68～76 行）；`ds_px` / `ds_mm` 的完整位移流程（`src\displacement.py` 第 357～369 行、`src\dynamic_displacement.py` 第 338～350 行）；`displacement.py` / `dynamic_displacement.py` 的完整逻辑（统计、报告、自检的其余部分）；周期 / 频率 / FFT 仍属于后续课程。
 
 （本节学到"两点的像素距离与尺度 → 原始方向向量 → 单位方向向量与归一化 → 点积投影出 s_px → 真实 CSV 复核 → L08 / L09 / L10 分工"这条链；`s0`、valid gate、位移流程只登记名称与位置，留到 L10 展开。）
 
@@ -865,7 +865,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 - 说清 **`s_px` 是一维位置、`ds_px` 是相对 `s0` 的位移**：`s_px` 回答"沿尺方向现在在哪"，`ds_px = s_px - s0` 回答"相对基线走了多少"；
 - 用三条理由解释**为什么 position ≠ displacement**：位置有零点从哪来的问题、`s_px` 绝对值不能跨实验比较、只有差值对应物理位移；
-- 写出 `compute_s0()`（`src\displacement.py` 第 288～325 行）的定义与意义：`s0` = `time_s <= window_s` 且 `valid=True` 的帧的 `s_px` 平均值；
+- 写出 `compute_s0()`（`src\displacement.py` 第 317～354 行）的定义与意义：`s0` = `time_s <= window_s` 且 `valid=True` 的帧的 `s_px` 平均值；
 - 背出 M4 参数：`S0_WINDOW_S = 0.5`、`MIN_S0_VALID_FRAMES = 10`（第 66～68 行）；M5 参数：`S0_WINDOW_S = 2.0`、`MIN_S0_VALID_FRAMES = 60`（`src\dynamic_displacement.py` 第 78～80 行）；
 - 解释为什么 `s0` 不是首帧、也不是标尺 10 cm 位置（源码第 294 行明文"正式禁止：用 10 cm 代替 s0、用首帧代替均值"）；
 - 解释为什么第 0 帧的 `ds_px` 不一定为 0（真实数据：+4.335 / +0.164 / −3.215 px）；
@@ -882,7 +882,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 1. **位置 ≠ 位移**：`s_px` 是沿尺方向的一维位置坐标（零点由图像原点与方向 `u` 共同决定）；`ds_px = s_px - s0` 才是相对基线 `s0` 的位移；
 2. **valid 是第二道数据筛选**：detected（M3）回答"看到没有"，valid（本模块 `is_valid_frame()`）回答"这一帧能不能用"；只有 valid=True 才有 `s_px` / `ds_px` / `ds_mm`；
-3. **M4 valid 门限**（`src\displacement.py` 第 57～64、175～201 行）：`detected=True` 且 `2000 <= area_px <= 15000` 且 `400 <= y_px <= 540`；注释原文"本次 EXP-003 拍摄几何专属参数，不是通用视觉规则"；
+3. **M4 valid 门限**（`src\displacement.py` 第 57～64、175～213 行）：`detected=True` 且 `2000 <= area_px <= 15000` 且 `400 <= y_px <= 540`；注释原文"本次 EXP-003 拍摄几何专属参数，不是通用视觉规则"；
 4. **M5 valid 门限**（`src\dynamic_displacement.py` 第 68～76、183～210 行）：`detected=True` 且 `4500 <= area_px <= 6500` 且 `200 <= y_px <= 250`；标题原文"与 M4 gate 完全不同，不得混用"；
 5. **缺数据也判 False**：detected=True 但 area / y 为 None 时同样 `valid=False`（第 191～193 行）——数据缺失不填 0；
 6. **无效帧不删除**：ds CSV 行数 = track CSV 行数（第 781 行"不删除任何行"）；`s_px` / `ds_px` / `ds_mm` 初始化为 None（第 272～274 行）、写 CSV 时空字符串（第 360～363 行）；绝不写 0 / -1 / nan（第 355 行）；
@@ -906,7 +906,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
-| M4 位移模块（本课主角） | `src\displacement.py` | 第 57～68 行 gate / s0 常量；第 175～201 行 `is_valid_frame()`；第 261～274 行 `add_valid_flags()`；第 277～285 行 `add_projection()`；第 288～325 行 `compute_s0()`；第 328～340 行 `add_displacement()`；第 348～366 行 `build_ds_row()`；第 390～431 行 `summarize()`；第 506～517 行 s0 不足报告；第 769～811 行 `build_ds_from_track_csv()` |
+| M4 位移模块（本课主角） | `src\displacement.py` | 第 57～68 行 gate / s0 常量；第 175～213 行 `is_valid_frame()`（有限值校验约第 204 行）；第 290～303 行 `add_valid_flags()`；第 306～314 行 `add_projection()`；第 317～354 行 `compute_s0()`；第 357～369 行 `add_displacement()`；第 377～395 行 `build_ds_row()`；第 419～460 行 `summarize()`；第 535～546 行 s0 不足报告；第 804～846 行 `build_ds_from_track_csv()` |
 | M5 位移模块 | `src\dynamic_displacement.py` | 第 68～76 行专属 gate；第 78～80 行 s0 规则；第 183～210 行 `is_valid_frame()`；第 286～294 行 `add_projection()`；第 297～335 行 `compute_s0()`；第 338～350 行 `add_displacement()`；第 358～376 行 `build_ds_row()`；第 400～454 行 `summarize_dynamic()`；第 1147～1191 行 `build_ds_from_track_csv()`；第 1194～1224 行 `run_experiment()` |
 | 上游数据链（L05～L09 已学） | `src\calibration.py`、`src\video_tracker.py` | `project_point()`（calibration.py 第 176～204 行）提供 `s_px`；M3 `track_video()` 提供 track CSV 与 detected |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-002_track.csv` | 各 1961 行；valid 1050 / invalid 911；`s0` = 1076.063871 px；frame 0 行 `0,0.000000,1080.399,4.335,0.7530,4783.0,True,True`；frame 52 为 detected=True 但 valid=False 实例 |
@@ -918,31 +918,31 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 ### 本节课确认的源码事实
 
 - `src\displacement.py` 第 57～64 行 M4 gate：`AREA_MIN_PX = 2000.0`、`AREA_MAX_PX = 15000.0`、`Y_MIN_PX = 400.0`、`Y_MAX_PX = 540.0`；第 66～68 行 `S0_WINDOW_S = 0.5`、`MIN_S0_VALID_FRAMES = 10`；
-- 第 175～201 行 `is_valid_frame()`：第 188～189 行 `if not detected: return False`；第 191～193 行 area / y 为 None 返回 False；第 195～199 行两个范围判断；第 185 行注释"绝不修改原始 detected"；
-- 第 261～274 行 `add_valid_flags()`：写过 valid 后把 `s_px` / `ds_px` / `ds_mm` 初始化为 None；第 277～285 行 `add_projection()` 只在 `row["valid"]` 时计算 `s_px`；
-- 第 288～325 行 `compute_s0()`：第 304 行 `window_rows`（`time_s <= window_s`）；第 305 行 `valid_s_values`；第 307～320 行报告字典（`window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `ok` / `s0`）；第 318 行最少帧检查；第 322～323 行平均值；第 294 行"正式禁止：用 10 cm 代替 s0、用首帧代替均值……"；
-- 第 328～340 行 `add_displacement()`：**第 339 行 `row["ds_px"] = row["s_px"] - s0`**；**第 340 行 `row["ds_mm"] = row["ds_px"] / PX_PER_MM`**；
-- 第 348～366 行 `build_ds_row()`：第 360～363 行无效数据写空字符串；第 355 行注释"绝不写 0 / -1 / nan"；第 84～90 行 `FIELD_PATTERNS`（time_s 6 / s_px 3 / ds_px 3 / ds_mm 4 / area_px 1 位小数）；
-- 第 390～431 行 `summarize()`：第 420 行 `valid_rate`；第 421 行 `invalid_count`；第 423 行 `detected_invalid_count`；第 427 行 `longest_invalid_run`（循环第 405～413 行）；
-- 第 506～517 行：s0 窗口有效帧不足时打印问题报告；第 517 行原文"本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"；
-- 第 568～761 行 `check_ds_csv()`：第 686～689 行空值检查；第 703～722 行 s0 复算（容差 0.002 px，第 715 行）；第 724～742 行 ds 公式复算（ds_px 容差 0.002 px、ds_mm 容差 0.0005 mm，第 733、736 行）；
-- 第 769～811 行 `build_ds_from_track_csv()`：第 781 行"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 793 行 `if s0_report["ok"]` 才写；
+- 第 175～213 行 `is_valid_frame()`：第 194～195 行 `if not detected: return False`；第 197～205 行 area / y 为 None 返回 False；第 207～211 行两个范围判断；第 187 行注释"绝不修改原始 detected"；
+- 第 290～303 行 `add_valid_flags()`：写过 valid 后把 `s_px` / `ds_px` / `ds_mm` 初始化为 None；第 306～314 行 `add_projection()` 只在 `row["valid"]` 时计算 `s_px`；
+- 第 317～354 行 `compute_s0()`：第 333 行 `window_rows`（`time_s <= window_s`）；第 334 行 `valid_s_values`；第 336～349 行报告字典（`window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `ok` / `s0`）；第 347 行最少帧检查；第 351～352 行平均值；第 323 行"正式禁止：用 10 cm 代替 s0、用首帧代替均值……"；
+- 第 357～369 行 `add_displacement()`：**第 368 行 `row["ds_px"] = row["s_px"] - s0`**；**第 369 行 `row["ds_mm"] = row["ds_px"] / PX_PER_MM`**；
+- 第 377～395 行 `build_ds_row()`：第 389～392 行无效数据写空字符串；第 384 行注释"绝不写 0 / -1 / nan"；第 84～90 行 `FIELD_PATTERNS`（time_s 6 / s_px 3 / ds_px 3 / ds_mm 4 / area_px 1 位小数）；
+- 第 419～460 行 `summarize()`：第 449 行 `valid_rate`；第 450 行 `invalid_count`；第 452 行 `detected_invalid_count`；第 456 行 `longest_invalid_run`（循环第 434～442 行）；
+- 第 535～546 行：s0 窗口有效帧不足时打印问题报告；第 546 行原文"本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"；
+- 第 597～796 行 `check_ds_csv()`：第 721～724 行空值检查；第 738～757 行 s0 复算（容差 0.002 px，第 750 行）；第 759～777 行 ds 公式复算（ds_px 容差 0.002 px、ds_mm 容差 0.0005 mm，第 768、771 行）；
+- 第 804～846 行 `build_ds_from_track_csv()`：第 816 行"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 828 行 `if s0_report["ok"]` 才写；
 - `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 27 行"不删除任何 track CSV 行；valid=False 的位移字段一律留空（不写 0 / -1 / nan）"；第 68～76 行专属 gate（4500～6500 / 200～250）；第 78～80 行 s0 规则（2.0 s / 60 帧）；第 183～210 行 `is_valid_frame()`；第 297～335 行 `compute_s0()`；第 338～350 行 `add_displacement()`（第 349～350 行公式，除数 `PX_PER_MM_004`）；第 400～454 行 `summarize_dynamic()`（第 437～450 行统计字段）；第 1147～1191 行 `build_ds_from_track_csv()`（第 1159、1171～1174 行）；第 1194～1224 行 `run_experiment()`（第 1215～1217 行常量自检前置）。
 
 ### L10 源码地图
 
-| 位置（`src\displacement.py`，共 831 行） | 内容 |
+| 位置（`src\displacement.py`，共 866 行） | 内容 |
 | --- | --- |
 | 第 21～22、41～68 行 | 边界声明；标定来源与常量；M4 gate；s0 规则 |
 | 第 72～90 行 | `DS_FIELDNAMES` / `FIELD_PATTERNS` |
-| 第 175～201 行 | `is_valid_frame()` |
-| 第 219～253 行 | `read_track_csv()` |
-| 第 261～274、277～285 行 | `add_valid_flags()` / `add_projection()` |
-| 第 288～325 行 | `compute_s0()`（第 304～305、318、322～323 行） |
-| 第 328～340、348～366、369～382 行 | `add_displacement()` / `build_ds_row()` / `write_ds_csv()` |
-| 第 390～431、506～517 行 | `summarize()` / s0 不足报告 |
-| 第 568～761 行 | `check_ds_csv()`（第 686～689、703～722、724～742 行） |
-| 第 769～811、814～831 行 | `build_ds_from_track_csv()` / `run_experiment()` |
+| 第 175～213 行 | `is_valid_frame()` |
+| 第 248～282 行 | `read_track_csv()` |
+| 第 290～303、306～314 行 | `add_valid_flags()` / `add_projection()` |
+| 第 317～354 行 | `compute_s0()`（第 333～334、347、351～352 行） |
+| 第 357～369、377～395、398～411 行 | `add_displacement()` / `build_ds_row()` / `write_ds_csv()` |
+| 第 419～460、535～546 行 | `summarize()` / s0 不足报告 |
+| 第 597～796 行 | `check_ds_csv()`（第 721～724、738～757、759～777 行） |
+| 第 804～846、849～866 行 | `build_ds_from_track_csv()` / `run_experiment()` |
 
 | 位置（`src\dynamic_displacement.py`，共 1224 行） | 内容 |
 | --- | --- |
@@ -1019,7 +1019,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
-| M4 位移模块（源码主角） | `src\displacement.py` | 第 46 行正方向约定；第 55 行 `U`；第 272～274 行初始化位移字段；第 284～285 行仅 valid 算 `s_px`；第 338～340 行仅 valid 算 `ds_px` / `ds_mm`；第 360～363 行无效值写空 |
+| M4 位移模块（源码主角） | `src\displacement.py` | 第 46 行正方向约定；第 55 行 `U`；第 301～303 行初始化位移字段；第 313～314 行仅 valid 算 `s_px`；第 367～369 行仅 valid 算 `ds_px` / `ds_mm`；第 389～392 行无效值写空 |
 | M5 位移模块（源码主角） | `src\dynamic_displacement.py` | 第 66 行 `U_004`；第 83～84 行正向 / 负向定义；第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 111～113 行方向文字常量；第 133 行 `U_004` 方向说明；第 462 行起 `detect_turning_points()`（本课只做最小介绍） |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-002_track.csv` | 各 1961 行；valid 1050 / invalid 911；`ds_mm` −0.2170～60.8426；正/负/零 = 1016/34/0；形态：平台 + 台阶 + 空洞 |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-003_ds.csv`、`results\EXP-003-STATIC-003_track.csv` | 各 1984 行；valid 1192 / invalid 792；`ds_mm` −0.0540～60.1932；正/负/零 = 1174/18/0；形态：平台 + 台阶 + 空洞 |
@@ -1029,10 +1029,10 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 ### 本节课确认的源码事实
 
 - `src\displacement.py` 第 46 行（原文）："两点真实距离：60.0 mm，方向约定 10 cm -> 16 cm"；第 55 行：`U = (0.999976, -0.006894)`（单位方向向量，方向为 10 cm → 16 cm）；
-- 第 272～274 行：`row["s_px"] = None`、`row["ds_px"] = None`、`row["ds_mm"] = None`（无效行保持留空）；
-- 第 284～285 行：`if row["valid"]: row["s_px"] = project_point((row["x_px"], row["y_px"]), U)`；
-- 第 338～340 行：`if row["valid"]: row["ds_px"] = row["s_px"] - s0`（第 339 行）；`row["ds_mm"] = row["ds_px"] / PX_PER_MM`（第 340 行）；
-- 第 360～363 行：`s_px` / `ds_px` / `ds_mm` / `area_px` 为 None 时写成空字符串；第 355 行注释"缺失数据一律写成空字符串（""），绝不写 0 / -1 / nan"；
+- 第 301～303 行：`row["s_px"] = None`、`row["ds_px"] = None`、`row["ds_mm"] = None`（无效行保持留空）；
+- 第 313～314 行：`if row["valid"]: row["s_px"] = project_point((row["x_px"], row["y_px"]), U)`；
+- 第 367～369 行：`if row["valid"]: row["ds_px"] = row["s_px"] - s0`（第 368 行）；`row["ds_mm"] = row["ds_px"] / PX_PER_MM`（第 369 行）；
+- 第 389～392 行：`s_px` / `ds_px` / `ds_mm` / `area_px` 为 None 时写成空字符串；第 384 行注释"缺失数据一律写成空字符串（""），绝不写 0 / -1 / nan"；
 - `src\dynamic_displacement.py` 第 66 行：`U_004 = (0.999992, -0.003913)`（方向 10 cm → 20 cm（正向））；
 - 第 83～84 行："正向 = ds 增大（沿 U_004，即尺子 10 cm -> 20 cm 方向）"；"负向 = ds 减小"；
 - 第 87 行：`MIN_TURN_TRAVEL_PX = 20.0`；第 85～86 行说明："只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；
@@ -1042,13 +1042,13 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 ### L11 源码地图
 
-| 位置（`src\displacement.py`，共 831 行） | 内容 |
+| 位置（`src\displacement.py`，共 866 行） | 内容 |
 | --- | --- |
 | 第 41～55 行 | 标定点 P1 / P2 与"方向约定 10 cm -> 16 cm"（第 44～46 行）；`U`（第 55 行） |
-| 第 261～274 行 | `add_valid_flags()`（第 272～274 行初始化位移字段） |
-| 第 277～285 行 | `add_projection()`（第 284～285 行仅 valid 帧算 `s_px`） |
-| 第 328～340 行 | `add_displacement()`（第 338～340 行仅 valid 帧算 `ds_px` / `ds_mm`；第 339 行 `ds_px = s_px - s0`） |
-| 第 348～366 行 | `build_ds_row()`（第 360～363 行无效值写空） |
+| 第 290～303 行 | `add_valid_flags()`（第 301～303 行初始化位移字段） |
+| 第 306～314 行 | `add_projection()`（第 313～314 行仅 valid 帧算 `s_px`） |
+| 第 357～369 行 | `add_displacement()`（第 367～369 行仅 valid 帧算 `ds_px` / `ds_mm`；第 368 行 `ds_px = s_px - s0`） |
+| 第 377～395 行 | `build_ds_row()`（第 389～392 行无效值写空） |
 
 | 位置（`src\dynamic_displacement.py`，共 1224 行） | 内容 |
 | --- | --- |

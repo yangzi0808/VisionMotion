@@ -27,6 +27,19 @@ VisionMotion —— M5.2-2B EXP-004 动态位移演示脚本
 
 运行方式（在项目根目录下）：
     .venv\\Scripts\\python.exe demo\\run_m52_dynamic_displacement.py
+
+覆盖行为（默认允许重算，只做显式提示）：
+    输出目录固定为 results/（与仓库内冻结结果同目录）。目标文件已存在时，
+    本脚本会在真正写盘之前打印 [警告] 并继续执行——不拒绝覆盖、不做交互、
+    不新增命令行参数。运行前若需要保护本地冻结结果，请先确认 git status。
+
+退出码（供脚本 / 自动化判断；终端输出仍保留全部统计与自检明细）：
+    0 = EXP-004 实验成功完成，且预期生成的 _ds.csv 已落盘
+    1 = 实验失败 / 被阻断 / 预期生成的 _ds.csv 未生成，例如：
+          输入视频不存在 / 视频无法处理 /
+          上游轨迹完整性 not_evaluated（用户主动中断）导致跳过位移计算 /
+          冻结常量自检未通过导致 ds CSV 未生成 /
+          预期生成的 _ds.csv 未落盘
 """
 
 import sys
@@ -67,6 +80,26 @@ VIDEO_PATH = PROJECT_ROOT / "data" / "raw" / ("%s.mp4" % EXPERIMENT_NAME)
 TRACK_CSV_PATH = PROJECT_ROOT / "results" / ("%s_track.csv" % EXPERIMENT_NAME)
 DS_CSV_PATH = PROJECT_ROOT / "results" / ("%s_ds.csv" % EXPERIMENT_NAME)
 OVERLAY_PATH = PROJECT_ROOT / "results" / ("%s_overlay.mp4" % EXPERIMENT_NAME)
+
+
+def warn_if_outputs_exist(targets):
+    """
+    在真正写盘之前，明确提示哪些目标文件已存在、将被重新写入。
+
+    M5 是仓库内冻结实验的"重放入口"，默认允许重算；本函数只把"隐式覆盖"
+    变成"显式提示"，不拒绝覆盖、不做交互（无 input()）、不影响实验流程。
+    返回本次已存在的目标路径列表（没有则返回空列表，且不打印任何内容）。
+    """
+    existing = [Path(target) for target in targets if Path(target).exists()]
+    if not existing:
+        return []
+
+    print("")
+    print("[警告] 输出文件已存在，将重新写入冻结结果：")
+    for path in existing:
+        print("  %s" % path)
+    print("")
+    return existing
 
 
 def print_frozen_constants():
@@ -153,6 +186,27 @@ def print_final_checks(report, track_summary):
     print("=====================================================")
 
 
+def final_exit_code(report):
+    """
+    根据 EXP-004 正式实验的报告判定机器可读退出码。
+
+    返回 (exit_code, 说明文字)。
+
+    规则（本轮最小契约，不新增业务规则）：
+        0 = 实验成功完成，且预期生成的 _ds.csv 已落盘
+        1 = 实验失败 / 被阻断 / 预期生成的 _ds.csv 未生成
+
+    说明：EXP-004 的 _ds.csv 是本阶段唯一允许的正式产物，
+    因此"未生成"在这里按退出码契约判为 1（与 M4 的多实验情形不同——
+    M4 存在"冻结 s0 规则判定不写"的预期情形）。
+    """
+    if not report["ds_written"]:
+        return 1, "预期生成的 _ds.csv 未生成（冻结常量自检未通过或 s0 窗口有效帧不足）"
+    if not Path(report["ds_csv_path"]).is_file():
+        return 1, "ds CSV 未按预期落盘：%s" % report["ds_csv_path"]
+    return 0, "实验成功完成，ds CSV 已落盘"
+
+
 def main():
     print("========== VisionMotion M5.2-2B EXP-004 动态位移实验 ==========")
     print("正式数据链：原始视频 -> M3 track_video() -> *_track.csv -> EXP-004 valid gate")
@@ -172,7 +226,12 @@ def main():
         print("")
         print("错误：原始视频不存在：%s" % VIDEO_PATH)
         print("处理方式：停止运行（不生成任何结果文件）")
-        return
+        print("退出码：1（输入视频不存在，本次未执行任何实验）")
+        return 1
+
+    # 1.5 覆盖提示（只提示，不拒绝、不交互）：在真正写盘之前让用户知道
+    #     results/ 下这三个冻结结果会被重新写入。
+    warn_if_outputs_exist((TRACK_CSV_PATH, OVERLAY_PATH, DS_CSV_PATH))
 
     # 2. M3 负责检测与记录：原始视频 -> track CSV + 叠加视频
     print("")
@@ -181,7 +240,8 @@ def main():
     if track_summary is None:
         print("错误：视频无法处理：%s" % VIDEO_PATH)
         print("处理方式：停止运行（不生成 ds CSV）")
-        return
+        print("退出码：1（视频无法处理）")
+        return 1
 
     # 2.5 上游轨迹完整性：直接使用 M3 在同一进程内给出的结论，不从 _track.csv 反推
     #     （CSV 自洽不等于视频完整）。
@@ -191,7 +251,8 @@ def main():
         print("警告：上游轨迹完整性未评估（用户主动中断），"
               "本次跳过位移计算，不生成 _ds.csv。")
         print("      按规则不伪造任何 displacement metrics，也不把跳过当作 0 位移。")
-        return
+        print("退出码：1（上游轨迹完整性 not_evaluated，本次位移计算被跳过）")
+        return 1
     if integrity == "suspect":
         print("")
         print("警告：上游轨迹完整性存疑，将继续计算位移；使用结果前请人工核对轨迹完整性。")
@@ -216,6 +277,14 @@ def main():
     print_summary(report)
     print_final_checks(report, track_summary)
 
+    # 6. 结果判定（退出码）：只追加机器可读信号，不替代上面任何终端输出
+    exit_code, reason = final_exit_code(report)
+    print("")
+    print("========== 结果判定（退出码） ==========")
+    print("退出码：%d（%s）" % (exit_code, reason))
+    print("")
+    return exit_code
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1234,22 +1234,48 @@ def run_experiment(track_csv_path, ds_csv_path, video_name=""):
         “原始视频 -> track CSV”由 M3 的 track_video() 完成（demo 先调用它），
         本函数不重复检测、不读视频，只负责 valid gate 之后的部分。
 
-    顺序：
-        1. 先做冻结常量自检（只读，不重新标定）；未通过则直接返回、不写 ds CSV
-        2. 建 ds 数据链（track CSV -> ds CSV）；s0 窗口有效帧不足时不写 ds CSV
+    顺序（Phase 5-2 Step 4 修正）：
+        1. 先做冻结常量自检（只读，不重新标定）；
+           未通过时**直接返回，连 build_ds_from_track_csv() 都不调用**，
+           因此目标 _ds.csv 一定不存在（不会"写了文件又声称没写"）
+        2. 只有常量自检通过，才建 ds 数据链（track CSV -> ds CSV）；
+           s0 窗口有效帧不足时不写 ds CSV
         3. ds CSV 写出后，重新从磁盘读取并逐行自检
 
     返回 report 字典；ds CSV 未生成时 checks 为空、passed=False。
     """
     constant_checks, constant_passed = check_calibration_constants()
 
+    # 常量自检未通过：立即返回，不进入 ds 数据链，绝不产生任何 ds CSV。
+    # 这里只做只读读取，保证返回的 report 与正常路径具备相同的字段
+    # （demo 的 print_summary 依赖这些字段），并显式声明 ds_written=False。
+    if not constant_passed:
+        print("冻结常量自检未通过，按规则停止（不生成 ds CSV，不修改任何常量）")
+        track_csv_path = Path(track_csv_path)
+        ds_csv_path = Path(ds_csv_path)
+        rows = read_track_csv(track_csv_path)
+        add_valid_flags(rows)
+        add_projection(rows)
+        s0_report = compute_s0(rows)
+        return {
+            "video_name": video_name if video_name else track_csv_path.stem,
+            "track_csv_path": track_csv_path,
+            "ds_csv_path": ds_csv_path,
+            "track_frame_count": len(rows),
+            "s0_report": s0_report,
+            "summary": summarize_dynamic(rows),
+            "turning": detect_turning_points(rows),
+            "rows": rows,
+            "ds_written": False,
+            "constant_checks": constant_checks,
+            "constant_passed": constant_passed,
+            "checks": [],
+            "passed": False,
+        }
+
     report = build_ds_from_track_csv(track_csv_path, ds_csv_path, video_name)
     report["constant_checks"] = constant_checks
     report["constant_passed"] = constant_passed
-
-    if not constant_passed:
-        print("冻结常量自检未通过，按规则停止（不生成 ds CSV，不修改任何常量）")
-        return report
 
     if report["ds_written"]:
         checks, passed = check_ds_csv(report)

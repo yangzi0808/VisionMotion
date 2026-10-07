@@ -41,6 +41,8 @@ VisionMotion 是一个**基于计算机视觉的低成本、非接触式位移�
 | 生成成果 PPT | M7.3（仅提示：运行 `src\m73_presentation.py`，本文不展开） |
 
 > M4 / M5 / M6.2 涉及标定与冻结规则，属于**科研 / 开发用户**流程；本轮不把它们展开成操作教程。
+>
+> 关于编号：M0–M7 是项目内部的实验 / 里程碑编号，**不是软件版本号**；编号允许跳号（例如没有单独的 M6.1），这里只列出与使用者相关的里程碑。
 
 ## 2. 使用前准备
 
@@ -79,7 +81,7 @@ VisionMotion/
 
 ## 3. 安装 Python 与创建虚拟环境
 
-在 PowerShell 中先进入项目根目录（例如 `cd "C:\Users\杨千贤\Desktop\VisionMotion"`），然后逐条执行：
+在 PowerShell 中先进入项目根目录（`cd <项目根目录>`），然后逐条执行：
 
 ```powershell
 python --version
@@ -92,7 +94,7 @@ pip install -r requirements.txt
 
 - `python --version` 输出 `Python 3.14.x` 之类的版本号（本项目在 3.14.1 验证）。
 - 激活成功后，命令提示符前会出现 `(.venv)` 前缀，例如：
-  `(.venv) PS C:\Users\杨千贤\Desktop\VisionMotion>`
+  `(.venv) PS <项目根目录>`
 - `pip install ...` 最后出现 `Successfully installed ...`，或提示依赖已满足。
 
 **为什么用 `.venv`：** 把本项目的依赖装进一个独立环境，不污染你电脑上其它 Python 项目。
@@ -103,7 +105,7 @@ pip install -r requirements.txt
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
 
-不要放宽到 `Unrestricted`，也不要改计算机级策略。还原命令见 README §17。
+不要放宽到 `Unrestricted`，也不要改计算机级策略。恢复默认值用 `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Undefined`。
 
 > 依赖清单见 [`requirements.txt`](../requirements.txt)（共 5 项：opencv-python / numpy / matplotlib / Pillow / python-pptx）。普通用户不需要逐个理解，装完即可。
 

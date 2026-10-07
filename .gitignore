@@ -59,6 +59,9 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
+# `.data/` 是目录映射（junction → data/），用于让文档中的示例命令 `.\.data\raw\` 直接可用。
+.data/
+
 # ---------- results/ 不整体忽略 ----------
 # 最终实验结果、分析图与少量示例数据需要提交到 GitHub；
 # 其中可能出现的视频仍由下面的视频格式规则统一忽略。

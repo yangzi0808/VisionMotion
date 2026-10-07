@@ -52,7 +52,7 @@
    ```powershell
    chcp 65001
    Clear-Host
-   Set-Location 'C:\Users\杨千贤\Desktop\VisionMotion'
+   cd <项目根目录>
    ```
 
 3. 把 S5 的演示命令预输入或复制到剪贴板，**不要在镜头前逐字敲长路径**。
@@ -178,7 +178,7 @@
 - **终端命令**：无（可先在终端执行 `git log --oneline -5` 作为"提交历史"补镜，再切浏览器）。
 - **需要展示的文件**：README.md、`docs/M6.3_FINAL_REPORT.md`、`docs/VisionMotion_Final_Presentation.pptx`、`docs/ATTRIBUTION.md`。
 - **旁白**：代码、文档与成果图都已发布在 GitHub，采用 MIT 许可。README 可复现完整流程，docs 下有最终报告、答辩 PPT 与数据来源说明。
-- **录制提示**：**录制前请确认 GitHub 页面状态**（当前 `master` 已与 `origin/master` 同步，HEAD 与 `origin/master` 指向同一提交，详见附录 C）；浏览器提前打开好标签页，避免现场加载等待。
+- **录制提示**：**录制前请确认 GitHub 页面状态**——用 `git status` 与 `git log origin/master..HEAD --oneline` 核对本地 `master` 与 GitHub 上的内容是否一致（本演示脚本**不把 GitHub push 状态作为项目运行前提**）；浏览器提前打开好标签页，避免现场加载等待。
 
 ### S9 结论、局限与收尾｜2:14–2:30（16 s）
 
@@ -197,7 +197,7 @@
 ```powershell
 chcp 65001
 Clear-Host
-Set-Location 'C:\Users\杨千贤\Desktop\VisionMotion'
+cd <项目根目录>
 git status --short --untracked-files=no   # 预期：无输出（已跟踪文件零改动）
 git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 ```
@@ -346,15 +346,15 @@ git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 
 ---
 
-## 附录 C　录制前检查事项状态（截至 2026-09-26 已全部完成）
+## 附录 C　录制前检查事项状态
 
 | # | 检查事项 | 状态 | 证据 |
 | --- | --- | --- | --- |
-| 1 | README License 更新已推送到 GitHub | ✅ 已完成 | 推送记录 `5a81b67..3e41ff9  master -> master`；本地 `master` 与 `origin/master` 一致（ahead 0 / behind 0） |
+| 1 | README 的 License 章节与根目录 `LICENSE` 一致（MIT） | ✅ 已完成 | README §15、根目录 `LICENSE`（MIT）、`docs/ATTRIBUTION.md` 三处口径一致 |
 | 2 | `docs/ATTRIBUTION.md` 的许可文案已与 README / LICENSE 统一 | ✅ 已完成 | 末条已改为"本项目代码采用 MIT License，详见仓库根目录 `LICENSE` 文件。"，与 README §15、根目录 `LICENSE`（MIT）一致 |
-| 3 | 本录制脚本已归档到 `docs/` | ✅ 已完成 | `git mv demo_video_script.md docs/DEMO_VIDEO_SCRIPT.md`，正文内容未改动（移动前后 SHA-256 一致），随提交 `411d634` 发布 |
+| 3 | 本录制脚本已归档到 `docs/` | ✅ 已完成 | 脚本位于 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程 |
 
-- 涉及提交：`3e41ff9 docs: update license reference`、`411d634 docs: finalize demo documentation`，均已 push 到 `origin/master`。
-- 结论：录制时 S8 镜头可直接展示 GitHub 页面与 `docs/ATTRIBUTION.md`，无需额外准备或口径回避。
+- **GitHub 同步状态与本文档无关**：发布前请检查本地 `master` 与 GitHub `origin/master` 是否一致；本演示脚本**不把 GitHub push 状态作为项目运行前提**，也不在此记录某一次推送的具体 ahead / behind 数字。
+- 结论：录制时 S8 镜头可展示 GitHub 页面与 `docs/ATTRIBUTION.md`，前提是录制前已按上一条确认过仓库页面状态。
 
 > 备注（未完成事项）：发布 ZIP `VisionMotion_v1.0.zip` 仍为早期打包版本，不含本录制脚本；如需随包分发请重新打包。

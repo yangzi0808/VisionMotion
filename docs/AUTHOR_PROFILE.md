@@ -15,5 +15,5 @@
 ## 说明
 
 - 本文件只记录当前已经确认的信息；未编入任何未获确认的个人信息（如荣誉、成绩、经历、联络方式等）。
-- 项目代码许可尚未声明；第三方公开数据的来源与许可见 `docs/ATTRIBUTION.md`。
+- 项目代码采用 **MIT License**（全文见仓库根目录 `LICENSE`）；第三方公开数据的来源与许可（CC BY-NC-SA 3.0）见 `docs/ATTRIBUTION.md`。
 - 项目最终报告见 `docs/M6.3_FINAL_REPORT.md`。

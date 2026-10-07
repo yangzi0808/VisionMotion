@@ -4,6 +4,8 @@
 
 ## 1. 项目简介
 
+**一句话：基于 OpenCV 的视频目标检测、轨迹提取、标定、位移分析与振动频率分析项目。**
+
 VisionMotion 是一个基于计算机视觉的低成本、非接触式位移与振动监测项目：用普通摄像设备拍摄机械目标的运动视频，通过可解释的图像处理得到目标位置的时间序列，并据此测量振动周期与频率、做频域交叉验证，最后与基础物理模型作条件性对照。
 
 核心链路：
@@ -13,6 +15,38 @@ VisionMotion 是一个基于计算机视觉的低成本、非接触式位移与�
 ```
 
 本项目**不使用深度学习或复杂跟踪算法**，重点在于：整条测量链路能够跑通、每一步都能解释清楚、结果可以复现。
+
+### 30 秒速览：输入 → 运行 → 输出
+
+```text
+输入
+图片 / 视频
+  ↓
+OpenCV 目标检测（颜色阈值 + 几何规则，不使用深度学习）
+  ↓
+轨迹 CSV（逐帧像素坐标时间序列）
+  ↓
+标定 + 位移计算（px/mm；静态 / 动态）
+  ↓
+时域 / 频域分析（峰谷 → 周期 T → 频率 f → FFT 交叉验证）
+  ↓
+成果图与实验报告
+```
+
+**最小演示命令**（约 3 秒，只读仓库内已有结果数据）：
+
+```powershell
+.\.venv\Scripts\python.exe demo\run_m63_final_visualization.py
+```
+
+- 不需要外部视频、不需要硬件、不需要 GUI 窗口；
+- 使用仓库内已有结果数据 `results/EXP-EXT-LAB67-V1_trajectory.csv`；
+- 终端逐条打印自检，并给出 `自检结论：全部通过`；
+- 最后得到三张成果图：`fig_A`（到底测到了什么）、`fig_B`（与物理模型参考值的对照）、`fig_C`（完整技术链）。
+
+![VisionMotion 技术流程总览（fig_C）](results/EXP-EXT-LAB67-V1_fig_C_pipeline.png)
+
+![频率对照结果（fig_B：实验测量 / FFT 交叉验证 / 标准模型参考）](results/EXP-EXT-LAB67-V1_fig_B_frequency_comparison.png)
 
 📖 [正式用户使用指南](docs/USER_GUIDE.md)（面向第一次使用的普通用户）
 🛠️ [开发者 / 科研使用指南](docs/DEVELOPER_GUIDE.md)（面向替换数据、复现实验与二次开发）
@@ -27,16 +61,20 @@ VisionMotion 是一个基于计算机视觉的低成本、非接触式位移与�
 
 ## 3. 当前项目状态
 
-**M0–M6.3 已完成**，当前处于最终交付整理阶段。
+**M0–M7 已完成**，当前处于最终交付与展示打磨阶段。
+
+> **关于编号**：M0–M7 是项目内部的实验 / 里程碑编号，**不是软件版本号**；编号允许跳号（例如下表中没有 M6.1），这里只列出有正式结果或正式结论的里程碑。
 
 | 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
+| M1 | 开发环境搭建与依赖验证 | 已完成 |
 | M2 | 单张图片视觉目标检测 | 已完成 |
 | M3 | 视频目标逐帧跟踪与时序坐标提取 | 已完成 |
 | M4 | 静态 px/mm 标定与静态位移测量 | 已完成 |
 | M5 | 动态位移与运动轨迹实验 | 已完成 |
 | M6.2 | 外部公开教育视频的视觉特征选择与正式轨迹提取 | 已完成 |
 | M6.3 | 周期 / 频率测量、FFT 交叉验证、标准 SHM 条件性参考、不确定度与证据边界、最终可视化 | 已完成 |
+| M7 | 交付整理：最终报告、README、答辩 PPT 与文档一致性 | 已完成 |
 
 ## 4. 数据来源
 
@@ -99,12 +137,12 @@ VisionMotion 是一个基于计算机视觉的低成本、非接触式位移与�
 
 ## 8. 如何运行
 
-全部 demo 均为**无命令行参数**脚本（输入输出路径在各脚本内部定义）。在项目根目录下执行：
+在项目根目录下执行。**M2 与 M3 已支持命令行参数**（`--input` / `--out-dir` / `--overwrite`），用法见下方「M2 / M3 的命令行参数（推荐用法）」；其余 demo 仍是**无命令行参数**脚本（输入输出路径写在脚本内部）。
 
 | 阶段 | 命令 | 是否需要仓库之外的本地数据 |
 | --- | --- | --- |
-| M2 | `.venv\Scripts\python.exe demo\run_single_image_detection.py` | 是（`data/raw/EXP-001-IMAGE-001.jpg`） |
-| M3 | `.venv\Scripts\python.exe demo\run_video_tracking.py` | 是（`data/raw/EXP-002-VIDEO-001.mp4`） |
+| M2 | **推荐**：`.venv\Scripts\python.exe demo\run_single_image_detection.py --input data\raw\my_image.jpg --out-dir results\my_image`<br>兼容旧流程：`.venv\Scripts\python.exe demo\run_single_image_detection.py` | 是（`--input` 指定的图片；无参数时用 `data/raw/EXP-001-IMAGE-001.jpg`） |
+| M3 | **推荐**：`.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\my_video.mp4 --out-dir results\my_video`<br>兼容旧流程：`.venv\Scripts\python.exe demo\run_video_tracking.py` | 是（`--input` 指定的视频；无参数时用 `data/raw/EXP-002-VIDEO-001.mp4`） |
 | M4 | `.venv\Scripts\python.exe demo\pick_calibration_points.py`（交互式取点）<br>`.venv\Scripts\python.exe demo\run_m43_displacement.py` | 是（`data/raw/EXP-003-*.mp4`） |
 | M5 | `.venv\Scripts\python.exe demo\run_m52_dynamic_displacement.py`<br>`.venv\Scripts\python.exe demo\run_m53_plot.py` | 前者需要 `data/raw/EXP-004-DYNAMIC-001.mp4`；后者只需仓库内已有的 `results/EXP-004-DYNAMIC-001_ds.csv` |
 | M6.2 | `.venv\Scripts\python.exe demo\run_m62_external_tracking.py` | 是（`_external/_candidates/candidate_comPADRE_Lab67_01_Video1_51p5g.mp4`） |
@@ -117,6 +155,84 @@ VisionMotion 是一个基于计算机视觉的低成本、非接触式位移与�
 - 在已激活虚拟环境的终端中，上述命令亦可简写为 `python demo\run_xxx.py`。
 - `M7.3` 的入口是 `src/m73_presentation.py`（**不在 `demo/` 下**），用于生成最终展示材料 `docs/VisionMotion_Final_Presentation.pptx`；本表其余条目均为 `demo/` 下的脚本。
 - M4 的 `run_m43_displacement.py` 会按冻结规则为每个视频生成 `_ds.csv`；若某段视频起始窗口（`S0_WINDOW_S`）内的有效帧不足 `MIN_S0_VALID_FRAMES`，则**不会写出该视频的 `_ds.csv`**——这是正常的冻结行为，不代表程序失败（例如当前 `EXP-003-STATIC-001` 只有 `_track.csv` 与 overlay，没有 `_ds.csv`）。
+- M4 / M5 还会先看上游 M3 的轨迹完整性：`suspect` / `unverified` 时**继续计算但给出警告**，`not_evaluated`（用户主动中断）时**跳过该视频的位移计算、不生成 `_ds.csv`**（详见 [USER_GUIDE §9](docs/USER_GUIDE.md) 与 [DEVELOPER_GUIDE §7](docs/DEVELOPER_GUIDE.md)）。
+
+### 克隆仓库后：可以直接做什么 / 不能直接做什么
+
+**可以直接做：**
+
+- 运行 **M6.3 最终可视化**（`demo\run_m63_final_visualization.py`）——只用仓库内已有的封板轨迹 CSV，即可重新生成三张成果图；
+- 查看仓库附带的**最终实验结果**：`results/EXP-EXT-LAB67-V1_*` 成果图与轨迹 CSV、早期实验的 `_track.csv` / `_ds.csv`；
+- 安装依赖后运行项目自带测试（`pip install -r requirements-dev.txt` 后 `pytest`）。
+
+**不能直接做（需要你自己补素材）：**
+
+- `data/raw/` 中的**原始实验图片 / 视频不随仓库分发**（体积大），因此 M2 / M3 / M4 / M5 的 demo 需要你本地提供输入文件；
+- `_external/` 中的**第三方公开视频不随仓库分发**，因此 M6.2 需要你自行准备该视频；
+- 被 `.gitignore` 排除的 **overlay MP4 不保证存在**（`EXP-003-*`、`EXP-004-*` 的叠加视频只在生成本机上有）。
+
+### M2 / M3 的命令行参数（推荐用法）
+
+M2（`demo/run_single_image_detection.py`）与 M3（`demo/run_video_tracking.py`）使用**完全一致**的命令行接口：`--input` / `--out-dir` / `--overwrite`。
+
+**M2（图片）**：
+
+```powershell
+.\.venv\Scripts\python.exe demo\run_single_image_detection.py `
+  --input data\raw\my_image.jpg `
+  --out-dir results\my_image
+```
+
+```text
+results\my_image\my_image_overlay.png
+results\my_image\my_image_mask.png
+```
+
+**M3（视频）**：
+
+```powershell
+.\.venv\Scripts\python.exe demo\run_video_tracking.py `
+  --input data\raw\my_video.mp4 `
+  --out-dir results\my_video
+```
+
+```text
+results\my_video\my_video_track.csv
+results\my_video\my_video_overlay.mp4
+```
+
+两者共同的规则：
+
+- `--input`：输入图片 / 视频路径（用户输入）；`--out-dir`：输出目录（用户输入；目录不存在时自动创建）；
+- 输出文件名由输入文件名（`Path.stem`）**自动派生**，不需要手工命名，也不会再借用 `EXP-001-…` / `EXP-002-…` 这类历史实验名；
+- **默认不覆盖已有输出**：只要显式用了 `--input` 或 `--out-dir`，目标文件已存在时程序会**停止并提示**，不会静默覆盖上一次的结果；
+- 确认要覆盖时，显式加 `--overwrite`——它只是**文件管理行为**，不会关闭任何检测 / QC / SHA 检查；
+- 相对路径一律按**项目根目录**解析（不是当前 shell 的工作目录）；绝对路径原样使用；
+- CLI 只负责**用户输入与输出管理**：M2 的 HSV / `MIN_AREA` 等检测参数，M3 的检测参数 / FPS / QC / SHA，都**不是**命令行参数。
+
+**退出码（供脚本 / 自动化判断，摘要）**：
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 处理完成（M3 还要求轨迹完整且 CSV 自检通过） |
+| `1` | 输入 / 处理 / 写入错误，或 CSV 自检未通过 |
+| `2` | 输出文件冲突（未加 `--overwrite`）；argparse 用法错误默认也是 `2` |
+| `3` | 流程正常完成，但没有检测到目标（零检出） |
+| `4` | 用户按 `Ctrl+C` 中断逐帧处理（仅 M3） |
+| `5` | 轨迹完整性存疑或未验证（`suspect` / `unverified`，仅 M3） |
+
+退出码只是机器可读信号，不替代终端输出；**部分漏检（例如 170 帧中检出 80 帧）仍然是 `0`**，只有全程零检出才是 `3`。完整表格与逐条解释见 [USER_GUIDE §5 / §6](docs/USER_GUIDE.md) 与 [DEVELOPER_GUIDE §4 / §5](docs/DEVELOPER_GUIDE.md)。
+
+**无参数兼容（旧教程仍然有效）**：
+
+```powershell
+.\.venv\Scripts\python.exe demo\run_single_image_detection.py
+.\.venv\Scripts\python.exe demo\run_video_tracking.py
+```
+
+不带参数时，它们分别固定使用 `data/raw/EXP-001-IMAGE-001.jpg` 与 `data/raw/EXP-002-VIDEO-001.mp4`，输出写回 `results/` 里的旧历史文件名。**这是为兼容旧教程保留的默认行为，不启用覆盖保护，也不是推荐用来处理自己数据的方式**；处理自己的数据请使用 `--input` / `--out-dir`。
+
+> M2 得到的是像素中心坐标，M3 得到的是**像素坐标时间序列**（`x_px` / `y_px`），都不是毫米位移；毫米位移要经过 M4 标定。
 
 ### 标定说明（重要）
 
@@ -155,7 +271,7 @@ Windows CMD 用户把中间一行换成：
 .venv\Scripts\activate.bat
 ```
 
-说明：PowerShell 的激活脚本是 `Activate.ps1`，必须带 `.\` 前缀；若提示"禁止运行脚本"，属于执行策略限制，本项目的既有做法是把**当前用户**执行策略设为 `RemoteSigned`（还原命令见 §17），不要为此放宽到 `Unrestricted`，也不要改动计算机级策略。
+说明：PowerShell 的激活脚本是 `Activate.ps1`，必须带 `.\` 前缀；若提示"禁止运行脚本"，属于执行策略限制，本项目只把**当前用户**执行策略设为 `RemoteSigned`（`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`；恢复默认值用 `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Undefined`），不要为此放宽到 `Unrestricted`，也不要改动计算机级策略。
 
 本项目在 Python 3.14.1 + opencv-python 5.0.0.93 + numpy 2.5.3 + matplotlib 3.11.2 环境下验证通过（M1）。
 
@@ -191,7 +307,7 @@ Windows CMD 用户把中间一行换成：
 
 ## 14. 作者
 
-深圳大学 光电信息科学与工程专业本科生（个人简介将在最终交付阶段单独完善）。
+深圳大学 光电信息科学与工程专业本科生。个人简介见 [`docs/AUTHOR_PROFILE.md`](docs/AUTHOR_PROFILE.md)。
 
 ## 15. License
 
@@ -203,13 +319,48 @@ Windows CMD 用户把中间一行换成：
 
 （项目内容位于该仓库的 `master` 分支；仓库默认分支如需切换，请在 GitHub 仓库设置中手动将默认分支设为 `master`。）
 
+> 注意：这是个人项目仓库，**本地 `master` 可能领先于 GitHub 上已发布的内容**。如果要以最新版本对外展示，请先确认本地与 `origin/master` 的推送状态是否一致。
+
+## 17. 如何放入自己的图片 / 视频
+
+把素材放进**项目根目录**下的 `data/raw/`（该目录不随仓库分发，需要你自己准备）：
+
+```powershell
+Copy-Item ".\your_video.mp4" ".\data\raw\"
+Copy-Item ".\your_image.jpg" ".\data\raw\"
+```
+
+> **`.data` 不是项目运行依赖。** 项目所有脚本只认项目根目录下的 `data/`；本文档中的路径一律以 **`<项目根目录>`** 为基准。
+
+**M3（视频）与 M2（图片）支持直接指定输入，不需要改名成 `EXP-002-VIDEO-001.mp4` / `EXP-001-IMAGE-001.jpg`：**
+
+```powershell
+.\.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\your_video.mp4 --out-dir results\your_video
+.\.venv\Scripts\python.exe demo\run_single_image_detection.py --input data\raw\your_image.jpg --out-dir results\your_image
+```
+
+输出文件名自动跟随输入文件名：`results\your_video\your_video_track.csv`、`your_video_overlay.mp4`；`results\your_image\your_image_overlay.png`、`your_image_mask.png`。
+
+其余 demo（M4 / M5 / M6.2 / M6.3 / M7.3）暂无命令行参数，输入路径写在脚本内部；要换成自己的数据，请把文件按脚本期望的路径与文件名放好，或直接修改脚本内的路径常量（例如 M4 的标定工具固定读 `data/raw/EXP-003-STATIC-002.mp4`）。
+
+### 终端位置
+
+本文档所有命令都假设**当前工作目录是项目根目录**：
+
+```powershell
+cd <项目根目录>
+```
+
+`--input` / `--out-dir` 的相对路径按**项目根目录**解析；如果从其它目录执行，请改用指向项目根目录的绝对路径。
+
 ## 18. 常见问题 / FAQ（排错入口）
 
 ### 1. 提示"原始图片 / 视频不存在"，找不到输入文件
 
 - 自采实验素材放在 `data/raw/`（图片与视频均可），例如 `data/raw/EXP-002-VIDEO-001.mp4`。
 - 外部公开视频放在当前实际使用的 `_external/_candidates/` 下，例如 M6.2 读取的 `_external/_candidates/candidate_comPADRE_Lab67_01_Video1_51p5g.mp4`。
-- 当前所有 demo 都是**无命令行参数**脚本，输入路径**硬编码在脚本内部**（例如 `demo/run_video_tracking.py` 固定读 `data/raw/EXP-002-VIDEO-001.mp4`）。文件缺失时脚本会打印"错误：原始视频不存在"并停止。若要换成自己的文件，需按 §17 放到对应路径并改成脚本期望的文件名，或直接修改脚本内的路径常量。
+- **M2 / M3 已支持命令行参数**：`demo/run_single_image_detection.py` 与 `demo/run_video_tracking.py` 都可以用 `--input` / `--out-dir` / `--overwrite` 换输入文件，不必改源码（见 §8「M2 / M3 的命令行参数（推荐用法）」）。输入不存在时分别给出 `错误：输入图片不存在：<绝对路径>` 与 `错误：输入视频不存在：<绝对路径>`。
+- 其余 demo（M4 / M5 / M6.2 / M6.3 / M7.3）仍是**无命令行参数**脚本，输入路径写在脚本内部（例如 M4 的标定工具固定读 `data/raw/EXP-003-STATIC-002.mp4`）。文件缺失时脚本会打印清晰错误并停止；若要换成自己的文件，需按 §17 放到对应路径、改成脚本期望的文件名，或直接修改脚本内的路径常量。
 
 ### 2. 中文字体缺失导致出图失败
 
@@ -233,6 +384,8 @@ Windows CMD 用户把中间一行换成：
 
 ### 5. 叠加视频失败、输出回退为代表性 PNG（`demo/run_video_tracking.py`）
 
-- 正常情况下，M3 会生成叠加视频 `results/EXP-002-VIDEO-001_overlay.mp4`。
+> 下文的 `EXP-002-VIDEO-001_*` 指**无参数默认运行**的输出名。若用 `--input` 指定了别的视频，输出名会随输入视频的文件名变化（例如 `my_video_track.csv`）。
+
+- 正常情况下，M3 会生成叠加视频 `results/EXP-002-VIDEO-001_overlay.mp4`（默认运行；`--input` 运行时对应 `<输入文件名>_overlay.mp4`）。
 - 若所有候选编码器（`mp4v`、`avc1`）都无法打开 VideoWriter，程序会**回退**为保存最多 5 张代表性 PNG，命名形如 `results/EXP-002-VIDEO-001_overlay_frame%04d_<tag>.png`（`tag` 为 `start` / `middle` / `end` / `fastest_motion` / `blurriest`）。
-- 判断是否仍然成功：只要 `results/EXP-002-VIDEO-001_track.csv` 正常生成、终端打印"叠加视频是否成功：否（…已回退保存 N 张代表性 PNG）"、且 CSV 自检通过，这次追踪即算成功完成——回退只影响叠加可视化，不影响时序坐标 CSV。
+- 判断是否仍然成功：只要 `results/EXP-002-VIDEO-001_track.csv` 正常生成、终端打印"叠加视频是否成功：否（…已回退保存 N 张代表性 PNG）"、且 CSV 自检通过，这次追踪即算成功完成——回退只影响叠加可视化，不影响时序坐标 CSV。这里的"成功"指**流程正常跑完**（CSV 已生成、格式自检通过），不等于"目标每一帧都被检出"；检出情况请看 CSV 的 `detected` 列与终端统计。

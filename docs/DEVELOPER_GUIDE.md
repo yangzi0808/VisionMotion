@@ -31,6 +31,8 @@
 | M7.3 · `src/m73_presentation.py` | 生成最终展示 PPT | 三张成果图 + 冻结数值 | `docs/VisionMotion_Final_Presentation.pptx` | **直接运行**（位于 `src/`，不是 demo） |
 
 > 说明：M2 的 `marker_detector.py` 是**唯一检测实现来源**，M3 只调用它，不重复实现检测；M4/M5 也不重新实现投影公式（统一调用 `src/calibration.py` 的 `project_point()`）。
+>
+> 关于编号：M0–M7 是项目内部的实验 / 里程碑编号，**不是软件版本号**；编号允许跳号（例如没有单独的 M6.1），本表只列出用户可直接操作的模块。
 
 ## 3. 推荐科研工作流
 

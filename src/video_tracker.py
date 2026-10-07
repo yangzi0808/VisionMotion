@@ -410,6 +410,43 @@ def build_csv_row(frame_index, time_s, result):
     return [frame_index, "%.6f" % time_s, "", "", "", "False"]
 
 
+def evaluate_track_integrity(cap, processed_frames, declared_frame_count):
+    """
+    在逐帧循环正常结束之后，对本次轨迹的完整性做一次保守评估。
+
+    只使用三种证据（不把 frame_index / CAP_PROP_POS_FRAMES 当作额外独立证据）：
+        1. processed_frames      —— 程序实际成功处理的帧数（程序计数）
+        2. declared_frame_count  —— 容器声明的帧数（容器声明）
+        3. seek 到声明末帧后再次 read() —— 独立的一次解码尝试
+
+    返回 "complete" / "suspect" / "unverified" 三态之一。
+    （"not_evaluated" 只用于用户主动中断，不由本函数产生。）
+
+    注意：本函数不修改逐帧读取逻辑，也不改动 ret=False 的原有退出条件；
+    它只回答一个问题：本次运行结束后，能否确认轨迹覆盖到声明的结尾。
+    调用者必须保证在 cap.release() 之前调用。
+    """
+    # 声明值不可用：没有任何可对照的基准 -> 判据不可用
+    if declared_frame_count <= 0:
+        return "unverified"
+
+    # 独立证据：再解码一次"声明中的最后一帧"
+    last_index = declared_frame_count - 1
+    seek_ok = False
+    if cap.set(cv2.CAP_PROP_POS_FRAMES, last_index):
+        ret_last, last_frame = cap.read()
+        seek_ok = bool(ret_last) and (last_frame is not None)
+
+    reached_declared = processed_frames >= declared_frame_count
+
+    if reached_declared and seek_ok:
+        return "complete"
+    if (not reached_declared) and (not seek_ok):
+        return "suspect"
+    # 数量与末帧可读性互相矛盾：证据不足以支持任何一种结论
+    return "unverified"
+
+
 def track_video(video_path, csv_path, overlay_path):
     """
     逐帧追踪主流程：读取完整视频 -> 每帧 detect_marker -> 写 CSV -> 生成可视化。
@@ -485,6 +522,9 @@ def track_video(video_path, csv_path, overlay_path):
     csv_writer.writerow(CSV_FIELDNAMES)
 
     interrupted = False
+    # 完整性评估结果；只有逐帧循环正常结束（读到 ret=False）后才会被重新计算。
+    # 用户中断（KeyboardInterrupt）保持 "not_evaluated"，不尝试 seek。
+    track_integrity = "not_evaluated"
     try:
         while True:
             # ---- 调用现有检测器（检测参数唯一来源：src/marker_detector.py）----
@@ -533,8 +573,15 @@ def track_video(video_path, csv_path, overlay_path):
 
             if frame_index % 200 == 0:
                 print("已处理 %d 帧 ..." % frame_index)
+
+        # 循环正常结束（读到视频末尾）后，在 finally 释放 cap 之前做一次完整性评估。
+        # 只在未中断的路径上执行：中断会直接跳到 except，保持 "not_evaluated"。
+        track_integrity = evaluate_track_integrity(
+            cap, len(records), video_info["frame_count"]
+        )
     except KeyboardInterrupt:
         interrupted = True
+        track_integrity = "not_evaluated"
         print("")
         print("警告：收到中断信号，已处理的帧数据仍然保留在 CSV 与叠加视频中")
     finally:
@@ -581,6 +628,7 @@ def track_video(video_path, csv_path, overlay_path):
         "overlay_ok": writer is not None,
         "fallback_pngs": fallback_pngs,
         "interrupted": interrupted,
+        "track_integrity": track_integrity,
         "sha256_before": sha256_before,
         "sha256_after": compute_sha256(video_path),
     }

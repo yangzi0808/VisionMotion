@@ -106,6 +106,8 @@ def print_final_checks(report, track_summary):
     print("")
     print("========== 运行完整性自检（命令行整体核对） ==========")
 
+    print("  上游轨迹完整性（来自 M3 track_video()）：%s" % report["track_integrity"])
+
     print(
         "[%s] 冻结常量自检通过（P1/P2/100mm 复算 PX_PER_MM_004 与 U_004，只读，不重新标定）"
         % ("通过" if report["constant_passed"] else "未通过")
@@ -181,6 +183,22 @@ def main():
         print("处理方式：停止运行（不生成 ds CSV）")
         return
 
+    # 2.5 上游轨迹完整性：直接使用 M3 在同一进程内给出的结论，不从 _track.csv 反推
+    #     （CSV 自洽不等于视频完整）。
+    integrity = track_summary["track_integrity"]
+    if integrity == "not_evaluated":
+        print("")
+        print("警告：上游轨迹完整性未评估（用户主动中断），"
+              "本次跳过位移计算，不生成 _ds.csv。")
+        print("      按规则不伪造任何 displacement metrics，也不把跳过当作 0 位移。")
+        return
+    if integrity == "suspect":
+        print("")
+        print("警告：上游轨迹完整性存疑，将继续计算位移；使用结果前请人工核对轨迹完整性。")
+    elif integrity == "unverified":
+        print("")
+        print("警告：上游轨迹完整性未验证，将继续计算位移；使用结果前请人工核对。")
+
     # 3. dynamic_displacement 模块负责 valid gate / 投影 / s0 / ds / 转向点：track CSV -> ds CSV
     print("")
     print("========== 第 2 步：EXP-004 动态位移（track CSV -> ds CSV + 统计 + 自检） ==========")
@@ -190,6 +208,7 @@ def main():
     report["video_path"] = VIDEO_PATH
     report["overlay_path"] = OVERLAY_PATH
     report["track_frames_processed"] = track_summary["processed_frames"]
+    report["track_integrity"] = integrity
     report["sha256_before"] = track_summary["sha256_before"]
     report["sha256_after"] = track_summary["sha256_after"]
 

@@ -72,6 +72,8 @@ def run_one_experiment(video_name):
     处理一个视频：原始视频 -> track CSV -> ds CSV。
 
     原始视频不存在或无法处理时返回 None。
+    上游轨迹完整性未评估（用户主动中断）时返回跳过标记字典（含 "skipped": True），
+    不调用 run_experiment()、不生成 _ds.csv。
     """
     video_path = DATA_DIR / ("%s.mp4" % video_name)
     track_csv_path = RESULT_DIR / ("%s_track.csv" % video_name)
@@ -89,6 +91,21 @@ def run_one_experiment(video_name):
         print("错误：视频无法处理：%s" % video_path)
         return None
 
+    # 3.5 上游轨迹完整性：M3 的 track_video() 已在同一进程内给出结论，直接使用，
+    #     不从 _track.csv 反推（CSV 自洽不等于视频完整）。
+    integrity = track_summary["track_integrity"]
+    if integrity == "not_evaluated":
+        print("")
+        print("警告：上游轨迹完整性未评估（用户主动中断），"
+              "本次跳过位移计算，不生成 _ds.csv：%s" % video_name)
+        return {"video_name": video_name, "track_integrity": integrity, "skipped": True}
+    if integrity == "suspect":
+        print("")
+        print("警告：上游轨迹完整性存疑，将继续计算位移；使用结果前请人工核对轨迹完整性。")
+    elif integrity == "unverified":
+        print("")
+        print("警告：上游轨迹完整性未验证，将继续计算位移；使用结果前请人工核对。")
+
     # 4. displacement 模块负责 valid gate / 投影 / s0 / ds：track CSV -> ds CSV
     report = run_experiment(track_csv_path, ds_csv_path, video_name)
 
@@ -96,6 +113,7 @@ def run_one_experiment(video_name):
     report["video_path"] = video_path
     report["overlay_path"] = overlay_path
     report["track_frames_processed"] = track_summary["processed_frames"]
+    report["track_integrity"] = integrity
     report["sha256_before"] = track_summary["sha256_before"]
     report["sha256_after"] = track_summary["sha256_after"]
     report["video_untouched"] = (
@@ -105,19 +123,32 @@ def run_one_experiment(video_name):
     return report
 
 
-def print_final_summary(reports):
+def print_final_summary(reports, skipped):
     """
     6. 打印三个视频的汇总表，并确认三个视频共用同一套常量与规则。
+
+    reports     —— 正常完成位移计算的视频报告
+    skipped     —— 因上游轨迹完整性未评估而被跳过的视频（未生成 ds CSV）
     """
     print("")
     print("========== 三视频汇总 ==========")
+
+    if skipped:
+        print("")
+        print("以下视频因上游轨迹完整性未评估而被跳过（未调用位移计算，未生成 ds CSV）：")
+        for entry in skipped:
+            print(
+                "  %-20s track_integrity=%-14s 跳过=是"
+                % (entry["video_name"], entry["track_integrity"])
+            )
+
     if not reports:
         print("没有任何视频被成功处理。")
         return
 
     print(
-        "%-20s %8s %13s %13s %12s %s"
-        % ("视频", "帧数", "detected率", "valid率", "s0(px)", "ds_mm 范围")
+        "%-20s %8s %13s %13s %12s %-11s %s"
+        % ("视频", "帧数", "detected率", "valid率", "s0(px)", "完整性", "ds_mm 范围")
     )
     for report in reports:
         summary = report["summary"]
@@ -132,13 +163,14 @@ def print_final_summary(reports):
                 summary["ds_span_mm"],
             )
         print(
-            "%-20s %8d %12.4f%% %12.4f%% %12s %s"
+            "%-20s %8d %12.4f%% %12.4f%% %12s %-11s %s"
             % (
                 report["video_name"],
                 summary["frame_count"],
                 summary["detected_rate"] * 100.0,
                 summary["valid_rate"] * 100.0,
                 s0_text,
+                report["track_integrity"],
                 ds_text,
             )
         )
@@ -222,6 +254,7 @@ def main():
         return
 
     reports = []
+    skipped = []
     for video_name in EXPERIMENT_NAMES:
         print("")
         print("############################################################")
@@ -231,14 +264,17 @@ def main():
         report = run_one_experiment(video_name)
         if report is None:
             continue
+        if report.get("skipped"):
+            skipped.append(report)
+            continue
 
         reports.append(report)
 
         # 5. 打印每个视频的统计信息（含 s0 报告与 ds CSV 自检结果）
         print_summary(report)
 
-    # 6. 打印三视频汇总
-    print_final_summary(reports)
+    # 6. 打印三视频汇总（含被跳过的视频）
+    print_final_summary(reports, skipped)
 
 
 if __name__ == "__main__":

@@ -21,8 +21,8 @@
 
 | 模块 | 作用 | 输入 | 输出 | 用户是否直接操作 |
 | --- | --- | --- | --- | --- |
-| M2 · `src/marker_detector.py` | 红色标记检测（HSV 掩膜 → 轮廓 → 质心） | BGR 图像 | 检测结果字典（中心 `cx/cy`、面积、外接矩形、掩膜） | 否（由 demo 调用） |
-| M3 · `src/video_tracker.py` | 视频逐帧检测、记录时序坐标、生成叠加可视化 | 视频 + 输出路径 | `_track.csv`（像素坐标时序）+ overlay 视频 | 通过 `demo/run_video_tracking.py` |
+| M2 · `src/marker_detector.py` | 红色标记检测（HSV 掩膜 → 轮廓 → 质心） | BGR 图像 | 检测结果字典（中心 `cx/cy`、面积、外接矩形、掩膜） | 通过 `demo/run_single_image_detection.py`（支持 `--input` / `--out-dir`） |
+| M3 · `src/video_tracker.py` | 视频逐帧检测、记录时序坐标、生成叠加可视化 | 视频 + 输出路径 | `_track.csv`（像素坐标时序）+ overlay 视频 | 通过 `demo/run_video_tracking.py`（支持 `--input` / `--out-dir`） |
 | M4 · `src/calibration.py` | 纯数学标定（两点 + 真实距离 → 尺度与方向） | 两个像素点 + 真实距离 | `k`（px/mm）、`u`（单位方向）、`project_point()` 一维投影 | 否（被标定脚本与 M4/M5 调用） |
 | M4 · `src/displacement.py` | 静态位移链：track CSV → 位移 CSV（含 QC） | `_track.csv` | `_ds.csv`（`s_px / ds_px / ds_mm`） | 通过 `demo/run_m43_displacement.py` |
 | M5 · `src/dynamic_displacement.py` | 动态位移链：track CSV → 位移 CSV + 转向点 / 运动段 | `_track.csv` | `_ds.csv` + 转向点与运动段统计 | 通过 `demo/run_m52_dynamic_displacement.py` |
@@ -60,39 +60,139 @@ M6.3 展示 / 冻结结果
 
 ## 4. 如何替换自己的实验图片（M2）
 
-1. **放到哪里**：把图片放进 `data/raw/`。
-2. **改哪个路径**：`demo/run_single_image_detection.py` 的 `IMAGE_PATH` 常量（当前固定读 `data/raw/EXP-001-IMAGE-001.jpg`）。
-3. **怎么运行**：
+M2 与 M3 使用**同一套命令行接口**；真正的检测仍然全部在 `src/marker_detector.py` 里。
 
-   ```powershell
-   .\.venv\Scripts\python.exe demo\run_single_image_detection.py
-   ```
+### 1. 用户可输入（命令行参数）
 
-4. **怎么判断结果**：终端打印中心坐标 / 面积 / 外接矩形；`results/` 下生成 `..._overlay.png`（叠加图）与 `..._mask.png`（掩膜图）。看到掩膜里目标区域是连通的白色块、叠加图方框套住目标，即视为检测合理。
-5. **什么时候需要改源码**：一般**不需要**——只改 demo 里的输入路径即可。只有在你要改**检测逻辑**（例如目标不是红色、阈值需要调整）时，才需要改 `src/marker_detector.py` 里的检测参数（HSV 双区间、最小面积等）。
+```powershell
+.\.venv\Scripts\python.exe demo\run_single_image_detection.py --input data\raw\my_image.jpg --out-dir results\my_image
+```
 
-> 本项目**没有命令行参数系统**，也不需要为了换一张图去新增参数系统；直接改 demo 中的路径常量即可。
+| 参数 | 含义 | 说明 |
+| --- | --- | --- |
+| `--input` | 输入图片路径 | 不给则用默认 `data/raw/EXP-001-IMAGE-001.jpg` |
+| `--out-dir` | 输出目录 | 不给则用默认 `results/`；目录不存在时自动创建 |
+| `--overwrite` | 允许覆盖已存在的输出文件 | 属**文件管理行为**，不是实验参数；默认不覆盖 |
+
+- **输出名由输入图片的 `stem` 派生**：`my_image.jpg` → `my_image_overlay.png` + `my_image_mask.png`。
+  这样换图片时输出名会自动跟着变，不会再出现"换了图片却仍写成 `EXP-001-IMAGE-001_*`"的错位。
+- **相对路径按项目根目录解析**（不是当前工作目录）；绝对路径原样使用。
+- 不给 `--input` / `--out-dir` 时，行为与旧版完全一致：`EXP-001-IMAGE-001.jpg` → `results/EXP-001-IMAGE-001_overlay.png` / `_mask.png`。
+  这是为兼容旧教程保留的默认行为；它**不启用**覆盖保护。
+- `--overwrite` **只决定输出文件是否被覆盖**，与检测参数 / 检测逻辑无关。项目**没有**、也不应新增 `--no-verify` 之类的开关。
+
+### 2. 冻结内容（不是命令行参数）
+
+M2 的检测参数全部留在 `src/marker_detector.py`，**不通过 CLI 暴露**：
+
+| 内容 | 位置 |
+| --- | --- |
+| HSV 双区间（`RED_LOWER_1/2`、`RED_UPPER_1/2`） | `src/marker_detector.py` |
+| `MORPH_KERNEL_SIZE`、`MIN_AREA` | `src/marker_detector.py` |
+| 最大轮廓策略（`RETR_EXTERNAL` + 按面积取最大） | `src/marker_detector.py` |
+| 轮廓矩质心计算 | `src/marker_detector.py` |
+
+CLI 只负责**输入与输出管理**。
+
+### 3. 怎么判断结果
+
+终端打印中心坐标 / 面积 / 外接矩形；输出目录下生成 `..._overlay.png`（叠加图）与 `..._mask.png`（掩膜图）。看到掩膜里目标区域是连通的白色块、叠加图方框套住目标，即视为检测合理。
+
+> 只有在你要改**检测逻辑**（例如目标不是红色、阈值需要调整）时，才需要改 `src/marker_detector.py`。
+> 那属于"换一套实验方案"，不是"换一张图片"。
+
+### 4. 退出码（M2）
+
+| 退出码 | 触发条件 |
+| --- | --- |
+| `0` | 图片处理完成，且 `detect_marker()["success"] is True` |
+| `1` | 输入图片不存在 / `read_image()` 返回 None / `save_image()` 写入失败 |
+| `2` | 目标输出已存在且未加 `--overwrite`；**argparse 参数用法错误默认也是 `2`**（码值重载，非本项目自定义） |
+| `3` | 流程完成、mask 已写出，但 `detect_marker()["success"] is False`（该图未检出红色标记） |
+
+> `save_image()` 的返回值**已被检查**：overlay 或 mask 任一写入失败都会返回 `1`，不再出现"打印成功但实际没写成功"。
+
+> M2 与 M3 的参数语义完全对称，M3 的说明见 §5。
 
 ## 5. 如何替换自己的实验视频：M3
 
-1. **放到哪里**：视频放进 `data/raw/`。
-2. **改哪个路径**：`demo/run_video_tracking.py` 的 `VIDEO_PATH` 常量（当前固定读 `data/raw/EXP-002-VIDEO-001.mp4`）。**输入路径是硬编码的**，脚本没有命令行参数。
-3. **运行**：
+M3 现在**优先通过命令行参数提供用户输入**；真正的视频处理仍然全部在 `src/video_tracker.py` 的 `track_video()` 里，本轮没有改动任何检测 / 时间轴 / QC 逻辑。
 
-   ```powershell
-   .\.venv\Scripts\python.exe demo\run_video_tracking.py
-   ```
+### 1. 用户可输入（命令行参数）
 
-4. **输出**：
-   - `_track.csv`：逐帧的**像素坐标时间序列**（列：`frame, time_s, x_px, y_px, area_px, detected`）。
-   - overlay 视频：在每帧上画出检测到的目标，用于人工核对。
-5. **CSV QC**：脚本调用 `src/video_tracker.py` 的 `check_csv_data()` 做完整性自检（表头、行数 = 实际解码帧数、frame 连续、`time_s` 与 `frame/fps` 一致、坐标/面积数值合理等）。QC 只是**核对**，不会替你修数据。
-6. **SHA 的适用范围（重要）**：
-   - M3 会在运行前后各算一次原始视频的 SHA-256，用来证明**程序没有改动你的原始视频**（前后一致即通过）。
-   - M5.2 / M6.2 等阶段还会把**某个特定冻结视频**的 SHA 写死在源码里作为"身份基准"。
-   - **新视频不能直接套用旧实验的 SHA**：SHA 是**文件身份**，不是"算法精度"。换视频后，你若要沿用冻结校验，就必须用你自己的新视频重新记录其应有的哈希基准（并清楚这属于你自己的新实验），**不要**指望旧脚本的旧哈希对新视频成立。
+```powershell
+.\.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\my_video.mp4 --out-dir results\my_video
+```
+
+| 参数 | 含义 | 说明 |
+| --- | --- | --- |
+| `--input` | 输入视频路径 | 不给则用默认 `data/raw/EXP-002-VIDEO-001.mp4` |
+| `--out-dir` | 输出目录 | 不给则用默认 `results/`；目录不存在时自动创建 |
+| `--overwrite` | 允许覆盖已存在的输出文件 | 属**文件管理行为**，不是实验参数；默认不覆盖 |
+
+- **输出名由输入视频的 `stem` 派生**：`my_video.mp4` → `my_video_track.csv` + `my_video_overlay.mp4`。
+  这样换视频时输出名会自动跟着变，不会再出现"换了视频却仍写成 `EXP-002-VIDEO-001_*`"的错位。
+- **相对路径按项目根目录解析**（不是当前工作目录）；绝对路径原样使用。
+- 不给 `--input` / `--out-dir` 时，行为与旧版完全一致：`EXP-002-VIDEO-001.mp4` → `results/EXP-002-VIDEO-001_*`。
+  这是为兼容旧教程保留的默认行为；它**不启用**覆盖保护。
+- `--overwrite` **只决定输出文件是否被覆盖**，与 SHA / QC / 冻结参数无关。项目**没有**、也不应新增 `--no-verify` 之类的校验开关。
+
+### 2. 冻结内容（不是命令行参数）
+
+| 内容 | 位置 | 为什么不是参数 |
+| --- | --- | --- |
+| 检测器参数（HSV 双区间、`MIN_AREA` 等） | `src/marker_detector.py` | 属检测方案本身；换目标颜色等于换方案，不是配置 |
+| FPS | `src/video_tracker.py`（`cv2.CAP_PROP_FPS`） | 必须从视频文件实读，`time_s = frame_index / fps` |
+| QC | `src/video_tracker.py` 的 `check_csv_data()` 等 | QC 是独立裁判，不能变成可配置项 |
+| SHA | `src/video_tracker.py` 运行前后各自计算 | 证明程序没有改动原始视频；不设绕过开关 |
+
+### 3. 输出
+
+- `_track.csv`：逐帧的**像素坐标时间序列**（列：`frame, time_s, x_px, y_px, area_px, detected`）。
+- overlay 视频：在每帧上画出检测到的目标，用于人工核对（文件名为 `<输入文件名>_overlay.mp4`）。
+
+### 4. CSV QC
+
+脚本调用 `src/video_tracker.py` 的 `check_csv_data()` 做完整性自检（表头、行数 = 实际解码帧数、frame 连续、`time_s` 与 `frame/fps` 一致、坐标/面积数值合理等）。QC 只是**核对**，不会替你修数据。
+
+### 5. SHA 的适用范围（重要）
+
+- M3 会在运行前后各算一次原始视频的 SHA-256，用来证明**程序没有改动你的原始视频**（前后一致即通过）。
+- M5.2 / M6.2 等阶段还会把**某个特定冻结视频**的 SHA 写死在源码里作为"身份基准"。
+- **新视频不能直接套用旧实验的 SHA**：SHA 是**文件身份**，不是"算法精度"。换视频后，你若要沿用冻结校验，就必须用你自己的新视频重新记录其应有的哈希基准（并清楚这属于你自己的新实验），**不要**指望旧脚本的旧哈希对新视频成立。
 
 > **M3 的结果仍然是像素坐标**（`x_px` / `y_px`），**不是毫米位移**。毫米位移要经过 M4 标定与位移计算。
+
+### 6. 退出码（M3）
+
+| 退出码 | 触发条件 |
+| --- | --- |
+| `0` | `track_video()` 正常返回、`summary["track_integrity"] == "complete"`、`check_csv_data()` 通过、且 `summary["detected_frames"] > 0` |
+| `1` | 输入视频不存在 / `track_video()` 返回 None / **`check_csv_data()` 未通过** |
+| `2` | 目标输出已存在且未加 `--overwrite`；**argparse 参数用法错误默认也是 `2`** |
+| `3` | 轨迹 `complete`、CSV 自检通过，但 `summary["detected_frames"] == 0`（全程零检出） |
+| `4` | `summary["interrupted"] is True`：`track_video()` 的逐帧循环被 `KeyboardInterrupt` 中断（用户按 Ctrl+C） |
+| `5` | `summary["track_integrity"]` 为 `"suspect"` 或 `"unverified"`：完整性存疑或未验证 |
+
+判定优先级：**QC 未通过（`1`）> 用户主动中断（`4`）> 完整性未确认（`5`）> 全程零检出（`3`）> 正常成功（`0`）**。五处 `return` 都发生在全部终端输出之后，退出码只是追加的机器可读信号。
+
+`track_integrity` 由 `src/video_tracker.py` 的 `track_video()` 产出，状态机如下（只使用三种证据：程序计数 `processed_frames`、容器声明 `declared_frame_count`、以及"seek 到声明末帧后再次 `read()`"这一次独立解码）：
+
+| `track_integrity` | 条件 | 语义 |
+| --- | --- | --- |
+| `complete` | 非中断 + `processed_frames >= declared_frame_count` + 末帧 seek 成功 | 可按完整轨迹处理 |
+| `suspect` | 非中断 + `processed_frames < declared_frame_count` + 末帧 seek 失败 | 完整性存疑（**不写作"确认不完整"**） |
+| `unverified` | 判据不可用（`declared_frame_count <= 0`）或两个证据互相矛盾 | 完整性未验证 |
+| `not_evaluated` | 用户 Ctrl+C（**不进行 seek**） | 未评估（由 `4` 表达） |
+
+> `5` 只覆盖 `suspect` 与 `unverified` 两种状态；`not_evaluated` 永远走 `4`，不会变成 `5`。
+> **完整性状态与 `detected_frames` 是两个正交维度**：`complete + 零检出` 是"完整视频但没有找到目标"（`3`），不是"视频不完整"；反过来 `suspect/unverified + 有检出` 也不能算成功（`5`）。
+
+> `4` 的精确语义是"**逐帧循环被 Ctrl+C 中断退出**"，**不等同于程序崩溃**，也**不等于"必然少处理了帧"**（存在"最后一帧已处理完、Ctrl+C 恰好在离开 `try` 之前到达"的极窄窗口）。是否完整处理现在由 `track_integrity` 给出结论（见上表），仍可用统计里的"总帧数（文件声明）"与"实际处理帧数"人工复核。
+> `interrupted` 由 `src/video_tracker.py` 的 `track_video()`（`except KeyboardInterrupt`）产生，`demo/run_video_tracking.py` 只读取 `summary["interrupted"]`；`track_video()` 的**中断捕获机制未被修改**，中断路径**不做完整性 seek**（状态固定为 `not_evaluated`，因此不会与 `5` 冲突）。
+
+> 本轮**没有**引入"检出率 ≥ X%"阈值：部分漏检（例如 170 帧中检出 80 帧）仍然是 `0`，只有全程 `0 / N` 才是 `3`。
+> `check_csv_data()` 仍只校验文件结构与字段语义（表头、行数、frame 连续、`time_s` 与 `frame/fps` 一致、空值语义、数值合法），它**不判断检出率**；"全程零检出"是 demo 层依据 `summary["detected_frames"]` 单独判定的。
 
 ## 6. 新视频的标定：M4（本指南最重要的一节）
 
@@ -144,6 +244,8 @@ M6.3 展示 / 冻结结果
 - `check_calibration_constants()`：用你新的 `CALIB_P1_PX / CALIB_P2_PX / CALIB_REAL_DISTANCE_MM` **复算** `PX_PER_MM` / `MM_PER_PX` 并与常量比对，同时检查 `u` 是单位向量——所以如果你只改了标定点却没同步改 `PX_PER_MM` / `U`，自检会**报错并停止**；
 - `check_ds_csv()`：对生成的 `_ds.csv` 做独立复算核对（详见第 11 节 QC 体系）。
 
+> M4 / M5 都会先调用 M3 的 `track_video()`。若上游的 `track_integrity` 不是 `complete`，它们的处理方式（继续并警告 / 跳过）见 §7 末的「上游轨迹完整性如何影响 M4 / M5」。
+
 ### 为什么新数据必须重新标定
 
 因为 `k`（px/mm）取决于**相机到目标的拍摄几何**：换视频、换机位、换焦距、换分辨率、改变拍摄距离，都会让"1 毫米 = 多少像素"发生变化。旧的 px/mm 只在旧拍摄条件下成立。
@@ -177,6 +279,25 @@ M6.3 展示 / 冻结结果
 ```
 
 > 本指南只讲"怎么用"。转向点 / 运动段的原理与教学推导属于学习材料，见 [源码学习课程索引](learning/COURSE_INDEX.md)，此处不重复。
+
+### 上游轨迹完整性如何影响 M4 / M5
+
+M4 / M5 的 demo 都会**自己调用 `track_video()`**，因此上游的完整性结论在**同一进程内已经存在**，直接读取 `track_summary["track_integrity"]` 即可，**不需要**（也不应该）从 `_track.csv` 反推——CSV 自洽不等于视频完整。
+
+| `track_integrity` | M4 / M5 行为 |
+| --- | --- |
+| `complete` | 继续计算，无额外提示 |
+| `suspect` | **继续计算 + warning**（终端提示"上游轨迹完整性存疑，使用结果前请人工核对"），并在 report 中标记 `track_integrity` |
+| `unverified` | **继续计算 + warning**（同上，措辞为"未验证"） |
+| `not_evaluated` | **跳过该视频的位移计算**：不调用 `run_experiment()`、不生成 `_ds.csv`、不伪造任何 displacement 指标，并打印明确原因；M4 的汇总里会单列"跳过" |
+
+三条边界：
+
+1. **本轮不新增 M4 / M5 的 exit code**（它们当前没有统一的退出码契约，`main()` 无返回值、无 `sys.exit`）；
+2. **不修改 CSV 格式**（`_track.csv` 与 `_ds.csv` 表头保持不变）；
+3. **不重新判断上游完整性**，也不把 `EXPECTED_TRACK_ROWS`（EXP-004 专属冻结身份自检）改造成通用完整性机制。
+
+M4 的完整性与检测质量是两个正交维度：`complete + 检出率低` 不等于轨迹可靠，`suspect + 检出率高` 也不能算可靠。
 
 ## 8. M6.2 外部公开视频
 
@@ -311,7 +432,7 @@ M6.3 的定位是：
 ### 可以修改
 
 - 你自己的实验数据（放进 `data/raw/`）；
-- 对应 demo 的**输入路径**（例如 `IMAGE_PATH` / `VIDEO_PATH`）；
+- **M2 / M3 的输入路径请用命令行 `--input` / `--out-dir`，不要改源码**；其余 demo 仍改脚本内的路径常量；
 - 针对**新实验重新标定**得到的常量（在 `src/displacement.py` / `src/dynamic_displacement.py` 中按新实验更新）；
 - 实验专属冻结参数（高级用户，需自行承担"这是新实验"的责任并重跑 QC）。
 

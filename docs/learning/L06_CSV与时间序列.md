@@ -17,7 +17,7 @@
 > Calibration、位移、FFT、频率 / 周期等仍属于后续课程，本笔记不展开；`external_oscillation_tracker.py` 的检测算法细节也不展开。
 >
 > 本笔记中所有 M3 源码事实均来自 `src\video_tracker.py`（共 836 行），行号按 2026-10-07 当前源码逐行核对；
-> M6 对照事实来自 `src\external_oscillation_tracker.py`（共 614 行）与仓库内真实产物 CSV（只读核对，未重新生成）；
+> M6 对照事实来自 `src\external_oscillation_tracker.py`（共 661 行）与仓库内真实产物 CSV（只读核对，未重新生成）；
 > 如果实际源码行号发生变化，以当前真实源码为准（见第 15 节与文末说明）。
 
 ## 1. 本节课学习目标
@@ -90,7 +90,7 @@ frame,time_s,x_px,y_px,area_px,detected
 
 要强调的三件事：
 
-1. **表头就在文件的第一行，它不是数据行。** 项目两份 CSV 的写法完全一致：`src\video_tracker.py` 第 40 行注释与 `src\external_oscillation_tracker.py` 第 86 行注释都写明"CSV 表头：第一行就是真正的表头，前面不加任何 metadata"。所以读文件时第一行要当表头解析，不能当数据。
+1. **表头就在文件的第一行，它不是数据行。** 项目两份 CSV 的写法完全一致：`src\video_tracker.py` 第 40 行注释与 `src\external_oscillation_tracker.py` 第 87 行注释都写明"CSV 表头：第一行就是真正的表头，前面不加任何 metadata"。所以读文件时第一行要当表头解析，不能当数据。
 2. **CSV 里一切都是文本。** `0.000000`、`75863.0`、`True` 都是字符串；`True` / `False` 不是 Python 布尔值本身的存储形式，而是项目约定写入的文本（见第 6 节）。类型是读文件的一方后来解释出来的。
 3. **列名是唯一稳定的定位方式。** 列的顺序由写出方决定（M3 见第 41 行），读的一方应当按表头名字找列，而不是按"第几列"背下来（见第 11 节两份文件的列顺序差异）。
 
@@ -317,7 +317,7 @@ csv_writer.writerow(CSV_FIELDNAMES)
 
 1. `"w"` 模式：每次运行**重新写**一个新的 CSV（覆盖同名旧文件）；
 2. `encoding="utf-8"` 与 `newline=""`：保证文本内容按 UTF-8 写入，并避免 `csv` 模块写出的行尾被文本模式重复转换（`newline=""` 是 `csv` 模块的推荐写法）；
-3. `lineterminator="\n"`：行尾统一用 `\n`，不写 CRLF——M6 的 `external_oscillation_tracker.py` 第 347 行注释说明这是为了"与 results 下已有 CSV 保持一致"。
+3. `lineterminator="\n"`：行尾统一用 `\n`，不写 CRLF——M6 的 `external_oscillation_tracker.py` 第 367 行注释说明这是为了"与 results 下已有 CSV 保持一致"。
 
 ### 7.5 逐帧循环（第 488～535 行）：每一轮的顺序
 
@@ -427,7 +427,7 @@ finally:
 2. **`records` 面向"程序自己"，CSV 面向"文件外面的人与程序"。** 统计只能读 `records`（因为 CSV 里没有 `success` 布尔值这种原始类型），而长期价值全在 CSV 里。
 3. **"内存里有账"不等于"数据已保存"。** 如果只写了 `records` 而没有 CSV，程序一退出数据就没了——这正是本节要解决的核心问题。
 
-M6 里有一个同样的证据：`external_oscillation_tracker.py` 运行期把每帧组装成字典（第 299～312 行），其中包含 `candidate_count`、`accepted_count` 两个"候选人 / 接受人数"统计（第 310～311 行）；但 `write_trajectory_csv()` 写文件时只挑选正式字段组成 8 列（第 352～362 行），这两个内存统计**不会进入 CSV**。这就是"内存记录 ≠ 落盘字段"在 M6 中的又一次体现（该模块检测算法细节不属于本节内容，这里只引用与 CSV 相关的行）。
+M6 里有一个同样的证据：`external_oscillation_tracker.py` 运行期把每帧组装成字典（第 319～332 行），其中包含 `candidate_count`、`accepted_count` 两个"候选人 / 接受人数"统计（第 330～331 行）；但 `write_trajectory_csv()` 写文件时只挑选正式字段组成 8 列（第 372～382 行），这两个内存统计**不会进入 CSV**。这就是"内存记录 ≠ 落盘字段"在 M6 中的又一次体现（该模块检测算法细节不属于本节内容，这里只引用与 CSV 相关的行）。
 
 ## 9. 运行期统计与落盘自检
 
@@ -520,20 +520,20 @@ L01 从"数据使用者的角度"学过两句话：**"一行 CSV = 一个时刻�
 | | M3 `_track.csv` | M6 `_trajectory.csv` |
 | --- | --- | --- |
 | 代表文件 | `results\EXP-002-VIDEO-001_track.csv` | `results\EXP-EXT-LAB67-V1_trajectory.csv` |
-| 生成代码 | `src\video_tracker.py` → `track_video()`（第 413 行起） | `src\external_oscillation_tracker.py` → `write_trajectory_csv()`（第 337 行起），由 `run_external_tracking()`（第 583 行起）调用（第 595 行） |
+| 生成代码 | `src\video_tracker.py` → `track_video()`（第 413 行起） | `src\external_oscillation_tracker.py` → `write_trajectory_csv()`（第 357 行起），由 `run_external_tracking()`（第 627 行起）调用（第 639 行） |
 | 调用入口 | `demo\run_video_tracking.py` 第 43 行 | `demo\run_m62_external_tracking.py` |
 | 真实规模（只读核对） | 表头 + 170 行数据（frame 0～169，全片） | 表头 + 160 行数据（frame 76～235，正式分析区间） |
 | 正式表头 | `frame,time_s,x_px,y_px,area_px,detected` | `frame,time_s,detected,x_px,y0_px,bbox_w_px,bbox_h_px,area_px` |
 
 ### 11.2 共同设计思想（"同一套数据记录规范"）
 
-1. **第一行就是真表头，前面不加任何 metadata。** M3 注释见 `video_tracker.py` 第 40 行；M6 注释见 `external_oscillation_tracker.py` 第 86 行；写表头分别是第 485 行 `writerow(CSV_FIELDNAMES)` 与第 349 行 `writeheader()`。
-2. **都有字段名清单常量。** M3 第 41 行 `CSV_FIELDNAMES`；M6 第 87～96 行 `CSV_FIELDNAMES`（8 项）。
-3. **都有 frame 与 time_s 两列，且 time_s 使用同一条绝对时间轴 `frame / fps`。** M3 第 494 行；M6 第 302～303 行（注释写明"使用原视频绝对时间轴：frame / fps（不重新定义时间零点）"）。时间都写 `"%.6f"`（M3 第 404、410 行；M6 第 355、368 行）。
-4. **都有 detected 标志列，采用同一原则："测不到"不能伪造。** M3 第 399 行"失败时绝不写 0 / -1 / nan / 字符串"；M6 第 341 行"detected=True -> 写全字段；detected=False -> 写 detected=False，其余字段留空"，失败分支在第 364～376 行逐字段写 `""`。
-5. **每帧仍然占一行（在各自记录的区间内），不跳过失败帧。** M3 第 496～497 行；M6 按 rows 顺序遍历逐行写（第 350～376 行）。
-6. **文本编码与行尾约定一致。** 都以 `encoding="utf-8", newline=""` 打开、`lineterminator="\n"`（M3 第 483～484 行；M6 第 346～348 行，第 347 行注释说明与 results 下已有 CSV 保持一致）。
-7. **写完后都要"读回来"做独立核对，而不是写完就信。** M3 用 `csv.reader` + 表头 / 行数 / 连续性 / 留空规则 + `time_s` 时间轴 / 失败字段语义检查（第 643～824 行）；M6 用 `csv.DictReader` 读回（第 380～403 行），再检查表头（第 434～435 行）、行数（第 438～439 行）与 `time_s ≈ frame / fps`（第 494～498 行）等。
+1. **第一行就是真表头，前面不加任何 metadata。** M3 注释见 `video_tracker.py` 第 40 行；M6 注释见 `external_oscillation_tracker.py` 第 87 行；写表头分别是第 485 行 `writerow(CSV_FIELDNAMES)` 与第 369 行 `writeheader()`。
+2. **都有字段名清单常量。** M3 第 41 行 `CSV_FIELDNAMES`；M6 第 88～97 行 `CSV_FIELDNAMES`（8 项）。
+3. **都有 frame 与 time_s 两列，且 time_s 使用同一条绝对时间轴 `frame / fps`。** M3 第 494 行；M6 第 322～323 行（注释写明"使用原视频绝对时间轴：frame / fps（不重新定义时间零点）"）。时间都写 `"%.6f"`（M3 第 404、410 行；M6 第 375、388 行）。
+4. **都有 detected 标志列，采用同一原则："测不到"不能伪造。** M3 第 399 行"失败时绝不写 0 / -1 / nan / 字符串"；M6 第 361 行"detected=True -> 写全字段；detected=False -> 写 detected=False，其余字段留空"，失败分支在第 384～396 行逐字段写 `""`。
+5. **每帧仍然占一行（在各自记录的区间内），不跳过失败帧。** M3 第 496～497 行；M6 按 rows 顺序遍历逐行写（第 370～396 行）。
+6. **文本编码与行尾约定一致。** 都以 `encoding="utf-8", newline=""` 打开、`lineterminator="\n"`（M3 第 483～484 行；M6 第 366～368 行，第 367 行注释说明与 results 下已有 CSV 保持一致）。
+7. **写完后都要"读回来"做独立核对，而不是写完就信。** M3 用 `csv.reader` + 表头 / 行数 / 连续性 / 留空规则 + `time_s` 时间轴 / 失败字段语义检查（第 643～824 行）；M6 用 `csv.DictReader` 读回（第 400～423 行），再检查表头（第 459～460 行）、行数（第 463～464 行）与 `time_s ≈ frame / fps`（第 519～523 行）等。
 
 一句话概括共同思想：
 
@@ -544,16 +544,16 @@ L01 从"数据使用者的角度"学过两句话：**"一行 CSV = 一个时刻�
 | 对比项 | M3 `_track.csv`（6 列） | M6 `_trajectory.csv`（8 列） | 说明 |
 | --- | --- | --- | --- |
 | 列顺序 | `frame, time_s, x_px, y_px, area_px, detected` | `frame, time_s, detected, x_px, y0_px, bbox_w_px, bbox_h_px, area_px` | `detected` 在 M3 排最后、在 M6 排第三；**同一份规范下，列顺序由各自 `CSV_FIELDNAMES` 决定** |
-| 位置特征 | `x_px`, `y_px`：红色标记**质心**（L04 的 `(cx, cy)`） | `y0_px`：**暗带上缘竖直位置**（M6 冻结的正式特征）；`x_px`：暗带 bbox 中心，"仅作为 QC 记录"（第 220～221 行注释） | 每份文件测的是各自场景里"有意义的位置" |
+| 位置特征 | `x_px`, `y_px`：红色标记**质心**（L04 的 `(cx, cy)`） | `y0_px`：**暗带上缘竖直位置**（M6 冻结的正式特征）；`x_px`：暗带 bbox 中心，"仅作为 QC 记录"（第 240～241 行注释） | 每份文件测的是各自场景里"有意义的位置" |
 | 质量字段 | `area_px` | `area_px` + `bbox_w_px` / `bbox_h_px` | M6 需要更多"检测区域是否像一条暗带"的形状信息 |
 | frame 覆盖范围 | 整个视频：frame 0～169，170 行（逐帧全记录） | 正式分析区间：frame 76～235，160 行（第 4 行模块说明与 README / CHANGELOG 登记一致） | M3 是"全程记录"，M6 是"只记录正式区间" |
-| 数字格式 | 坐标 `"%.2f"`、面积 `"%.1f"` | 坐标 `"%.2f"`；`bbox_w_px` / `bbox_h_px` / `area_px` 写整数（第 359～361 行） | 都是"够用即可"的可读格式 |
-| writer 用法 | `csv.writer` + `writerow(CSV_FIELDNAMES)`（第 478～479 行） | `csv.DictWriter` + `writeheader()`（第 348～349 行），每行显式按字段名组装（第 352～375 行） | 两种写法都合法，`DictWriter` 让"字段名 → 值"的对应更显式 |
+| 数字格式 | 坐标 `"%.2f"`、面积 `"%.1f"` | 坐标 `"%.2f"`；`bbox_w_px` / `bbox_h_px` / `area_px` 写整数（第 379～381 行） | 都是"够用即可"的可读格式 |
+| writer 用法 | `csv.writer` + `writerow(CSV_FIELDNAMES)`（第 478～479 行） | `csv.DictWriter` + `writeheader()`（第 368～369 行），每行显式按字段名组装（第 372～395 行） | 两种写法都合法，`DictWriter` 让"字段名 → 值"的对应更显式 |
 | 视频 fps | 该视频文件自己的 fps（CSV 中 frame 1 → 0.041667 s，24 fps） | 外部视频 30 fps（frame 76 → 2.533333 s） | 再次说明 fps 必须从文件读，不能由别的课的数字照搬 |
 
 ### 11.4 两张表带来的两个额外结论
 
-1. **同名字段在不同文件里可能含义不同。** M3 的 `x_px` 是红色标记质心 `cx`（`video_tracker.py` 第 405 行）；M6 的 `x_px` 是暗带 bbox 中心（`external_oscillation_tracker.py` 第 220～221 行）。字段名只是文件内部的通行语言，**要引用字段，必须先找到写它的代码**（这也解释了为什么 L01 词条里的 `x_px` 解释是"暗带外接框中心"——那是 M6 的语境）。
+1. **同名字段在不同文件里可能含义不同。** M3 的 `x_px` 是红色标记质心 `cx`（`video_tracker.py` 第 405 行）；M6 的 `x_px` 是暗带 bbox 中心（`external_oscillation_tracker.py` 第 240～241 行）。字段名只是文件内部的通行语言，**要引用字段，必须先找到写它的代码**（这也解释了为什么 L01 词条里的 `x_px` 解释是"暗带外接框中心"——那是 M6 的语境）。
 2. **"记录区间"本身是设计决策。** M3 把整段视频逐帧全部记录（170 行）；M6 只把冻结后的正式区间写进正式文件（160 行）。两者都不是"随便行数"，而是写代码时明确的选择——CSV 的行数 = 想留下的时刻数。
 
 ## 12. L06 与 L01～L05 的知识连接
@@ -592,7 +592,7 @@ L01 从"数据使用者的角度"学过两句话：**"一行 CSV = 一个时刻�
 
 | 类别 | 是什么 | 本笔记中的例子 | 如何标注 | 能不能当"项目事实"引用 |
 | --- | --- | --- | --- | --- |
-| A. VisionMotion 真实源码 | 仓库里实际存在的代码 | `src\video_tracker.py` 第 41、393～410、483～485 行；`src\external_oscillation_tracker.py` 第 86～96、337～377 行 | 给出"文件路径 + 函数名 + 行号" | 可以（引用前重新核对行号） |
+| A. VisionMotion 真实源码 | 仓库里实际存在的代码 | `src\video_tracker.py` 第 41、393～410、483～485 行；`src\external_oscillation_tracker.py` 第 87～97、357～397 行 | 给出"文件路径 + 函数名 + 行号" | 可以（引用前重新核对行号） |
 | B. 教学伪代码 | 为帮助理解而重写的简化流程，**不是项目源码** | 下面第 13.2 节的伪代码块 | 代码块前明确写"教学伪代码（不是项目源码）" | 不可以 |
 | C. 教学示例 | 为说明机制人为构造的例子 | 第 6.2 节的失败行 `4,0.066667,,,,False`；第 6.3 节的反面写法 | 前后明确写"教学示例（非真实数据）" | 不可以；项目数字实例应改用真实产物文件里的行 |
 
@@ -631,7 +631,7 @@ for 每一帧:
 - **Calibration（相机标定 / px → mm 换算）**：CSV 里的 `_px` 仍是像素单位，本节不做毫米换算；
 - **Displacement（位移计算）**：如何从 `_track.csv` 进一步计算位移序列（项目里有 `_ds.csv` 这类产物）不在本节展开；
 - **FFT、频率、周期（含峰谷与周期测量）**：属于后续分析课程；
-- **`external_oscillation_tracker.py` 的检测算法细节**：本节只引用它与 CSV 相关的部分（字段清单第 86～96 行、写文件第 337～377 行、读回自检第 380～403、422～435 行），暗带检测内部逻辑不展开；
+- **`external_oscillation_tracker.py` 的检测算法细节**：本节只引用它与 CSV 相关的部分（字段清单第 87～97 行、写文件第 357～397 行、读回自检第 400～423、442～460 行），暗带检测内部逻辑不展开；
 - **pandas / 数据库 / 高级数据分析**：本项目 CSV 读写使用 Python 标准库 `csv`（`video_tracker.py` 第 26 行 `import csv`；自检也统一用 `csv.reader`，不再依赖 `np.genfromtxt`）；`video_tracker.py` 第 23 行的代码风格声明明确"不使用 pandas / scipy"，项目依赖清单（`requirements.txt`）里也没有 pandas；数据库、数据仓库等更不在本项目范围内。
 
 ## 15. L06 源码地图
@@ -667,18 +667,18 @@ for 每一帧:
 | 第 643～824 行 | `check_csv_data(csv_path, expected_rows, frame_width, frame_height, fps=None)` | 读回磁盘 CSV 做 **10 项**自检：第 670～671 行表头、第 674～675 行行数、第 678～693 行 frame 合法与连续、第 700～740 行成功 / 失败行内容、第 742～783 行 `time_s` 时间轴一致性（第 9 项）、第 794～818 行 CSV 空测量字段与 `detected=False` 语义对账（第 10 项）；第 823～824 行返回 `(checks, passed)` |
 | 第 827～836 行 | `print_check_results(checks, passed)` | 打印自检结果 |
 
-### 15.2 M6 对照：`src\external_oscillation_tracker.py`（共 614 行，仅列 CSV 相关位置）
+### 15.2 M6 对照：`src\external_oscillation_tracker.py`（共 661 行，仅列 CSV 相关位置）
 
 | 位置 | 函数 / 位置 | 内容与作用 |
 | --- | --- | --- |
 | 第 4、28 行 | 模块 docstring | 说明本模块流程包含"写正式轨迹 CSV"（`frame / time_s / detected / x_px / y0_px / bbox_w_px / bbox_h_px / area_px`） |
-| 第 86～96 行 | 常量区 | 注释"第一行就是真正的表头"；`CSV_FIELDNAMES`（8 项） |
-| 第 299～312 行 | `track_external_oscillation()` | 每帧组装内存行字典：第 301 行 frame、第 302～303 行 `time_s = decoded_index / video_info["fps"]`、第 304 行 `detected`、第 305～309 行各测量字段、第 310～311 行额外的内存统计 `candidate_count` / `accepted_count` |
-| 第 337～377 行 | `write_trajectory_csv(rows, csv_path)` | 写正式轨迹 CSV：第 341 行 docstring 写明"成功写全字段、失败写 False 其余留空"；第 346～349 行打开文件、`csv.DictWriter`、`writeheader()`；第 351～363 行成功行；第 364～376 行失败行（其余字段写 `""`） |
-| 第 380～403 行 | `load_trajectory_csv(csv_path)` | 用 `csv.DictReader` 读回（第 387～389 行）；空字段解析为 `None`（第 397～399 行） |
-| 第 422～435 行 | `check_trajectory_csv(...)` | 读回自检：第 434～435 行校验表头等于 `CSV_FIELDNAMES` |
-| 第 494～498 行 | `check_trajectory_csv(...)` | 校验 `time_s` 严格满足 `frame / fps`（含容差） |
-| 第 595 行 | `run_external_tracking(...)` | 调用 `write_trajectory_csv(...)` 落盘，第 596 行再读回做独立质量检查 |
+| 第 88～97 行 | 常量区 | 注释"第一行就是真正的表头"；`CSV_FIELDNAMES`（8 项） |
+| 第 319～332 行 | `track_external_oscillation()` | 每帧组装内存行字典：第 321 行 frame、第 322～323 行 `time_s = decoded_index / video_info["fps"]`、第 324 行 `detected`、第 325～329 行各测量字段、第 330～331 行额外的内存统计 `candidate_count` / `accepted_count` |
+| 第 357～397 行 | `write_trajectory_csv(rows, csv_path)` | 写正式轨迹 CSV：第 361 行 docstring 写明"成功写全字段、失败写 False 其余留空"；第 366～369 行打开文件、`csv.DictWriter`、`writeheader()`；第 371～383 行成功行；第 384～396 行失败行（其余字段写 `""`） |
+| 第 400～423 行 | `load_trajectory_csv(csv_path)` | 用 `csv.DictReader` 读回（第 407～409 行）；空字段解析为 `None`（第 417～419 行） |
+| 第 442～460 行 | `check_trajectory_csv(...)` | 读回自检：第 459～460 行校验表头等于 `CSV_FIELDNAMES` |
+| 第 519～523 行 | `check_trajectory_csv(...)` | 校验 `time_s` 严格满足 `frame / fps`（含容差） |
+| 第 639 行 | `run_external_tracking(...)` | 调用 `write_trajectory_csv(...)` 落盘，第 640 行再读回做独立质量检查 |
 
 ### 15.3 真实产物（只读登记，本笔记未重新生成）
 
@@ -687,7 +687,7 @@ for 每一帧:
 | `results\EXP-002-VIDEO-001_track.csv` | 表头 `frame,time_s,x_px,y_px,area_px,detected`；170 行数据（frame 0～169）；首行 `0,0.000000,618.28,160.56,75863.0,True` |
 | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 `frame,time_s,detected,x_px,y0_px,bbox_w_px,bbox_h_px,area_px`；160 行数据（frame 76～235）；首行 `76,2.533333,True,724.00,514.00,57,4,226` |
 
-> 以上行号按 **2026-10-07** 的当前源码逐行核对（`src\video_tracker.py` 共 836 行、`src\external_oscillation_tracker.py` 共 614 行）。
+> 以上行号按 **2026-10-07** 的当前源码逐行核对（`src\video_tracker.py` 共 836 行、`src\external_oscillation_tracker.py` 共 661 行）。
 > **如果实际源码行号发生变化，以当前真实源码为准**——知识链与结论不因行号漂移而改变，但引用时应重新核对"文件 + 函数 + 行号"。
 
 ## 16. 本节课最重要的概念
@@ -711,7 +711,7 @@ for 每一帧:
 
 1. **以为 `result` 会一直保存历史。** 它每轮被第 491 行整体替换，循环结束只剩最后一帧；历史在 `records` 与 CSV 里。
 2. **把 CSV 当成"程序内存里的表格"。** CSV 是磁盘上的纯文本；它不能保存 Python 布尔值 / 字典，只保存写出的那些文本字段。
-3. **把表头当装饰、按"第几列"硬读。** 列名与列顺序由 `CSV_FIELDNAMES` 决定（M3 第 41 行、M6 第 87～96 行）；且两份文件列顺序不同（`detected` 一在最后、一在第三），必须按名字找列。
+3. **把表头当装饰、按"第几列"硬读。** 列名与列顺序由 `CSV_FIELDNAMES` 决定（M3 第 41 行、M6 第 88～97 行）；且两份文件列顺序不同（`detected` 一在最后、一在第三），必须按名字找列。
 4. **失败时写 0 / -1 / nan 字符串。** 这些值会被当成"真实数值"，污染统计与曲线；项目用自检专门挡 `(0,0)` 伪数据（第 726～727、738 行）。
 5. **失败时沿用上一帧坐标。** 这是最隐蔽的伪造：数据看起来完整，实际掩盖了丢失、抹平了运动；原则见第 399 行。
 6. **失败帧干脆不写。** 行数与帧号会错位，时间轴断裂；正确做法是"每帧一行、失败也写"（第 496～497 行）。
@@ -760,7 +760,7 @@ for 每一帧:
   - 第 483～485 行：打开 CSV / `csv.writer` / 写表头；第 488 行 `try:`；第 489 行 `while True:`；第 491 行 `detect_marker`；第 494 行 `time_s = frame_index / fps`；第 496～497 行写行；第 499～510 行 `records` 追加；第 513～521 行可视化；第 527～532 行读下一帧与推进；第 534～535 行进度；第 536～539 行 Ctrl+C；第 540～544 行 `finally`（第 541 行 `csv_file.close()`）；
   - 第 546 行计时；第 548～555 行 PNG 回退；第 557～560 行打印；第 562～586 行 `summary`；第 588 行 `return summary`；
   - 第 591～604 行 `compute_longest_miss_run()`；第 643～824 行 `check_csv_data()`（第 670～671、674～675、678～693、700～740、742～783、794～818、823～824 行；第 9 项为 `time_s` 时间轴一致性，第 10 项为失败字段语义对账）；第 827～836 行 `print_check_results()`。
-- M6 对照事实来自 `src\external_oscillation_tracker.py`（共 614 行）：第 4、28 行模块说明；第 86～96 行 `CSV_FIELDNAMES`（8 项）；第 220～221 行 `x_px` 定义注释（暗带 bbox 中心，仅 QC）；第 299～312 行内存行字典（第 302～303 行 `time_s`、第 304 行 `detected`、第 310～311 行额外内存统计）；第 337～377 行 `write_trajectory_csv()`（第 341 行失败留空原则、第 346～349 行打开 / `DictWriter` / `writeheader()`、第 351～363 行成功行、第 364～376 行失败行）；第 380～403 行 `load_trajectory_csv()`（第 387～389 行 `DictReader`、第 397～399 行空字段 → `None`）；第 422～435 行表头自检；第 494～498 行 `time_s` 自检；第 595～597 行落盘与读回调用。该模块的检测算法细节不在本笔记范围内。
+- M6 对照事实来自 `src\external_oscillation_tracker.py`（共 661 行）：第 4、28 行模块说明；第 87～97 行 `CSV_FIELDNAMES`（8 项）；第 240～241 行 `x_px` 定义注释（暗带 bbox 中心，仅 QC）；第 319～332 行内存行字典（第 322～323 行 `time_s`、第 324 行 `detected`、第 330～331 行额外内存统计）；第 357～397 行 `write_trajectory_csv()`（第 361 行失败留空原则、第 366～369 行打开 / `DictWriter` / `writeheader()`、第 371～383 行成功行、第 384～396 行失败行）；第 400～423 行 `load_trajectory_csv()`（第 407～409 行 `DictReader`、第 417～419 行空字段 → `None`）；第 442～460 行表头自检；第 519～523 行 `time_s` 自检；第 639～641 行落盘与读回调用。该模块的检测算法细节不在本笔记范围内。
 - 调用方信息：`demo\run_video_tracking.py` 第 24～29 行导入、第 35～38 行输入输出路径、第 43 行调用 `track_video()`、第 49 行 `print_statistics()`、第 52～58 行 `check_csv_data()` 与 `print_check_results()`。
 - 真实产物（只读核对，未重新生成、未修改）：`results\EXP-002-VIDEO-001_track.csv`（表头 + 170 行数据，frame 0～169）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 + 160 行数据，frame 76～235）；本笔记引用的两行真实数据均来自这两个文件的前几行。
 - 本笔记中的教学伪代码（第 13.2 节流程块）与教学示例（第 6.2 节失败行示例、第 6.3 节反面写法）均为课堂教学材料，**不是项目实际数据、不是项目源码**；项目事实一律以"文件 + 函数 + 行号"定位。

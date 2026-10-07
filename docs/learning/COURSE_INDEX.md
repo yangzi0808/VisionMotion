@@ -458,7 +458,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 - 复述失败检测的 CSV 表达：`frame` / `time_s` 照写，`x_px` / `y_px` / `area_px` 留空，`detected=False`；理解为什么不是 0、-1、nan 或上一帧坐标（第 399 行；自检第 726～727、738、794～818 行）；
 - 区分 `records` 与 CSV（内存工作副本 vs 磁盘正式产物；键名 `success` 第 502 行 vs 列名 `detected` 第 41 行）；
 - 说清 CSV 怎样形成离散时间序列（每帧一行 + frame 连续 + `time_s = frame_index / fps` 均匀步长 + 失败行占位）；
-- 说出 M3 `_track.csv` 与 M6 `_trajectory.csv` 的共同设计思想与字段差异（第 41 行 / 第 393～410 行 vs `src\external_oscillation_tracker.py` 第 87～96 行 / 第 337～377 行）；
+- 说出 M3 `_track.csv` 与 M6 `_trajectory.csv` 的共同设计思想与字段差异（第 41 行 / 第 393～410 行 vs `src\external_oscillation_tracker.py` 第 88～97 行 / 第 357～397 行）；
 - 会区分 VisionMotion 真实源码、教学概念伪代码与教学举例，不把后两者当作项目真实代码。
 
 ### 核心概念
@@ -486,7 +486,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 | --- | --- | --- |
 | 数据记录模块（本节源码主角） | `src\video_tracker.py` | `CSV_FIELDNAMES`（第 41 行）、`build_csv_row()`（第 393～410 行）、`track_video()`（第 413 行起）、`records`（第 476、499～510 行）、`compute_longest_miss_run()`（第 591～604 行）、`check_csv_data()`（第 643～824 行） |
 | M3 数据产物（只读引用，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 `frame,time_s,x_px,y_px,area_px,detected`；170 行数据（frame 0～169）；时间步 0.041667 s（24 fps）；170/170 全 True |
-| M6 字段设计对比对象 | `src\external_oscillation_tracker.py` | `CSV_FIELDNAMES`（第 87～96 行）、`write_trajectory_csv()`（第 337～377 行）；本课只做字段设计对比，不展开其算法 |
+| M6 字段设计对比对象 | `src\external_oscillation_tracker.py` | `CSV_FIELDNAMES`（第 88～97 行）、`write_trajectory_csv()`（第 357～397 行）；本课只做字段设计对比，不展开其算法 |
 | M6 数据产物（只读引用，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 `frame,time_s,detected,x_px,y0_px,bbox_w_px,bbox_h_px,area_px`；160 行数据（frame 76～235）；时间步 0.033333 s（30 fps）；160/160 全 True |
 | 检测结果来源（被复用，未修改） | `src\marker_detector.py` | `detect_marker()`（第 105 行）返回 `success` / `cx` / `cy` / `area` / `bbox`（第 143～150 行）；`cx` / `cy` 公式（第 100～102 行） |
 | 本节课笔记 | [`L06_CSV与时间序列.md`](L06_CSV与时间序列.md) | 19 节完整笔记（含自测题 18 道，均不附答案；文末另附"代码与事实来源说明"） |
@@ -504,7 +504,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 - 第 536～539 行：`except KeyboardInterrupt:`；第 540～544 行：`finally:` 中 `csv_file.close()`（第 541 行）、`cap.release()`（第 542 行）、`writer.release()`（第 544 行）；
 - 第 562～586 行：`summary` 统计（帧数、检出率、最长连续丢失、面积统计、首末时间等）；第 591～604 行：`compute_longest_miss_run()`；
 - 第 643～824 行：`check_csv_data()`（第 666～667 行 header / data_rows、第 670～671 行表头、第 674～675 行行数、第 678～689 行 frame 整数、第 692～693 行 frame 连续、第 700～740 行成功行 / 失败行 / (0,0) 伪数据 / 坐标范围、第 742～783 行 `time_s` 时间轴一致性、第 794～818 行空测量字段与 `detected=False` 语义对账）；
-- M6 对照：`src\external_oscillation_tracker.py` 第 86～96 行表头、第 337～377 行 `write_trajectory_csv()`（第 341 行失败留空说明、第 348～349 行 `DictWriter` / `writeheader()`、第 350～363 行成功行、第 364～376 行失败行）、第 434～435 行表头自检。
+- M6 对照：`src\external_oscillation_tracker.py` 第 87～97 行表头、第 357～397 行 `write_trajectory_csv()`（第 361 行失败留空说明、第 368～369 行 `DictWriter` / `writeheader()`、第 371～383 行成功行、第 384～396 行失败行）、第 459～460 行表头自检。
 
 ### L06 源码地图
 
@@ -564,7 +564,7 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 - 说出 `detection_rate` 的来源（第 570～573 行，打印于第 625 行）与局限：不反映失败分布、不校验数值合理性（要配合 `longest_miss_run` 与十项检查）；
 - 逐条说出 `check_csv_data()` 的十项检查（第 643～824 行）：表头（第 670～671 行）、行数（第 674～675 行）、frame 合法（第 678～689 行）与连续（第 692～693 行）、成功行数值（第 736 行）、失败行留空（第 737 行）、无 (0,0) 伪数据（第 726～727、738 行）、坐标范围（第 728～729、739～740 行）、`time_s` 时间轴一致性（第 742～783 行，第 9 项）、CSV 空测量字段与 `detected=False` 语义对账（第 794～818 行，第 10 项）；第 823 行十项全过才算通过；
 - 解释 `area_px` 的质量意义：`MIN_AREA = 200` 是进门门槛（第 33、83～84 行）；运行期统计 min / median / max（第 575～577 行）并打印（第 629～631 行）；面积异常是"测量可疑"的线索；
-- 说出 M3 与 M6 对失败的不同质量门槛：M3 允许失败但要求诚实（第 730～732、737、794～818 行）；M6 的 `check_trajectory_csv()` 把 "detected 全为 True"（`external_oscillation_tracker.py` 第 452～455 行）、空值 0（第 457～459 行）、无 >30 px 突跳（第 480～483 行）、无候选歧义（第 485～492 行）、时间严格（第 494～501 行）列为硬性门槛；
+- 说出 M3 与 M6 对失败的不同质量门槛：M3 允许失败但要求诚实（第 730～732、737、794～818 行）；M6 的 `check_trajectory_csv()` 把 "detected 全为 True"（`external_oscillation_tracker.py` 第 477～480 行）、空值 0（第 482～484 行）、无 >30 px 突跳（第 505～508 行）、无候选歧义（第 510～517 行）、时间严格（第 519～526 行）列为硬性门槛；
 - 给出"质量检查"与"鲁棒性"的定义；理解本项目"鲁棒 ≠ 检出率 100%"：鲁棒 = 坏情况被如实记录、可被发现、不伪造数据；
 - 解释"证据边界"：哪些结论由源码支持、哪些由真实 CSV 支持、哪些不能声称；养成诚实记录实验数据的习惯；
 - 永远分清五类材料：真实源码、真实 CSV 数据、概念解释、教学示例、概念伪代码。
@@ -588,7 +588,7 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 15. **坐标范围检查（第 728～729 行）**：`0 ≤ x ≤ frame_width` 且 `0 ≤ y ≤ frame_height`；尺寸由调用方传入（`demo\run_video_tracking.py` 第 55～56 行），不是硬编码；
 16. **空测量字段与 detected=False 对应（第 794～818 行）**：`detected=False` 的行测量字段必须全空、空 `x_px` 行数必须等于 `detected=False` 行数（第 817 行判定），否则自检不通过；现行实现不再使用 `np.genfromtxt`；
 17. **area 质量意义**：进门门槛 `MIN_AREA = 200`（第 33、83～84 行）；成功帧面积写入 CSV（第 407 行）；`summary` 统计 min / median / max（第 575～577 行）、第 629～631 行打印；面积偏离平时水平 = 遮挡 / 距离 / 模糊 / 干扰的线索；本课不做自动异常检测，只提示人工核对；
-18. **M3 与 M6 的不同质量门槛**：M3（记录型）= 允许失败但要求诚实（第 730～732、737、794～818 行）；M6（分析型）= 要求 100% 检出 + 无空值 + 无突跳 + 无歧义 + 时间严格（`external_oscillation_tracker.py` 第 452～501 行）；差异来自下游用途不同；
+18. **M3 与 M6 的不同质量门槛**：M3（记录型）= 允许失败但要求诚实（第 730～732、737、794～818 行）；M6（分析型）= 要求 100% 检出 + 无空值 + 无突跳 + 无歧义 + 时间严格（`external_oscillation_tracker.py` 第 477～526 行）；差异来自下游用途不同；
 19. **质量检查定义**：以磁盘上的产物为对象、只读、逐项规则验证、给出显式通过 / 不通过（第 645、662～664、823 行）；
 20. **鲁棒性定义**：坏情况来临时"不崩溃、不伪造、不丢时间轴、不被坏帧拖垮、把问题暴露出来"；鲁棒 ≠ 检出率 100%；
 21. **证据边界**：本课两份真实 CSV 都是 100% 检出、0 失败帧（第 16 节统计），所以失败处理是"设计可核对、实测未触发"；诚实记录 = 不把"设计上支持"写成"实测已发生"。
@@ -600,7 +600,7 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 | 检测器（三道失败判定的源码主角） | `src\marker_detector.py` | `find_target_contour()`（第 66～86 行；第 75～76、83～84 行失败）、`calculate_centroid()`（第 89～102 行；第 97～98 行失败）、`detect_marker()`（第 105～151 行；第 132～133、136～137 行失败返回） |
 | 记录与检查模块（本节第二主角） | `src\video_tracker.py` | `draw_tracking_frame()`（第 175～239 行；DETECTION FAILED 第 196～207 行）、`build_csv_row()`（第 393～410 行；原则第 399 行、失败行第 410 行）、`records`（第 476、499～510 行）、`summary`（第 562～586 行）、`compute_longest_miss_run()`（第 591～604 行）、`print_statistics()`（第 612～635 行）、`check_csv_data()`（第 643～824 行；`time_s` 时间轴第 742～783 行、失败字段语义对账第 794～818 行、汇总第 823 行） |
 | 调用方 | `demo\run_video_tracking.py` | 第 49 行 `print_statistics()`；第 52～58 行 `check_csv_data()` 与 `print_check_results()`（传入 `summary["width"]` / `["height"]`） |
-| M6 质量门槛对照 | `src\external_oscillation_tracker.py` | `check_trajectory_csv()`（第 422～505 行；100% 检出第 452～455 行、空值第 457～459 行、突跳第 480～483 行、歧义第 485～492 行、时间第 494～501 行）；本课不展开其检测算法 |
+| M6 质量门槛对照 | `src\external_oscillation_tracker.py` | `check_trajectory_csv()`（第 442～549 行；100% 检出第 477～480 行、空值第 482～484 行、突跳第 505～508 行、歧义第 510～517 行、时间第 519～526 行）；本课不展开其检测算法 |
 | M3 数据产物（只读核对，未重新生成） | `results\EXP-002-VIDEO-001_track.csv` | 表头 6 列；170 行（frame 0～169）；170/170 全 True、0 失败行、0 空字段；时间 0.000000～7.041667 s（24 fps）；x 618.28～1195.0、y 91.74～351.89；area 24409.0 / 64846.25 / 105163.5 |
 | M6 数据产物（只读核对，未重新生成） | `results\EXP-EXT-LAB67-V1_trajectory.csv` | 表头 8 列；160 行（frame 76～235）；160/160 全 True、0 失败行、0 空字段；时间 2.533333～7.833333 s（≈ 30 fps）；x 718.5～728.0、y0_px 508.0～622.0；area 226 / 508.5 / 658 |
 | 本节课笔记 | [`L07_检测失败与鲁棒性.md`](L07_检测失败与鲁棒性.md) | 24 节完整笔记（含自测题 18 道，均不附答案；文末另附"代码与事实来源说明"） |
@@ -618,7 +618,7 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 - 第 562～586 行：`summary`（第 570～573 行四个帧数 / 率统计；第 574 行 `longest_miss_run`；第 575～577 行 area 统计）；
 - 第 591～604 行：`compute_longest_miss_run()`；第 612～635 行：`print_statistics()`（第 624～627 行检出统计、第 629～631 行 area 统计）；
 - 第 643～824 行：`check_csv_data()` 十项检查（第 670～671、674～675、678～689、692～693 行四项结构与 frame 检查；第 700～740 行成功 / 失败行遍历与第 726～727 行 (0,0)、第 728～729 行范围、第 730～732 行失败行留空；第 736～740 行四项判定；第 742～783 行第 9 项 `time_s` 时间轴一致性；第 794～818 行第 10 项空测量字段与 `detected=False` 语义对账；第 823 行汇总）；
-- `src\external_oscillation_tracker.py`：第 87～96 行 8 列字段；第 99～100 行 `MAX_JUMP_PX = 30.0` / `TIME_TOLERANCE_S = 1e-5`；第 119～132 行 `verify_video_sha256()`；第 337～377 行 `write_trajectory_csv()`（失败行第 364～376 行）；第 380～403 行 `load_trajectory_csv()`（空字段 → `None` 第 397～399 行）；第 422～505 行 `check_trajectory_csv()`（第 452～455、457～459、467～472、475～478、480～492、494～501 行；第 503 行注释与第 504 行汇总）。
+- `src\external_oscillation_tracker.py`：第 88～97 行 8 列字段；第 100～101 行 `MAX_JUMP_PX = 30.0` / `TIME_TOLERANCE_S = 1e-5`；第 120～133 行 `verify_video_sha256()`；第 357～397 行 `write_trajectory_csv()`（失败行第 384～396 行）；第 400～423 行 `load_trajectory_csv()`（空字段 → `None` 第 417～419 行）；第 442～549 行 `check_trajectory_csv()`（第 477～480、482～484、492～497、500～528、505～517、519～526 行；第 503 行注释与第 548 行汇总）。
 
 ### L07 源码地图
 
@@ -635,9 +635,9 @@ Calibration（相机标定）/ 位移计算与毫米换算 / FFT / 频率 / 周�
 | `src\video_tracker.py` 第 591～604 行 | `compute_longest_miss_run()` |
 | `src\video_tracker.py` 第 612～635 行 | `print_statistics()` |
 | `src\video_tracker.py` 第 643～824 行 | `check_csv_data()`（十项检查；第 726～729、730～737、742～783、794～818、823 行） |
-| `src\external_oscillation_tracker.py` 第 422～505 行 | M6 独立质量检查（100% 检出第 452～455 行等） |
+| `src\external_oscillation_tracker.py` 第 442～549 行 | M6 独立质量检查（100% 检出第 477～480 行等） |
 
-（行号按 2026-10-07 当前源码 `src\marker_detector.py`（共 151 行）、`src\video_tracker.py`（共 836 行）、`src\external_oscillation_tracker.py`（共 614 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
+（行号按 2026-10-07 当前源码 `src\marker_detector.py`（共 151 行）、`src\video_tracker.py`（共 836 行）、`src\external_oscillation_tracker.py`（共 661 行）逐行核对；如果实际源码行号发生变化，以当前真实源码为准。）
 
 ### 相关术语与易错点
 
@@ -695,7 +695,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 11. **M4 与 M5 必须分开**：两次拍摄几何不同；`src\dynamic_displacement.py` 第 20～23 行禁止把 M4 常量搬进来、禁止 `import src.displacement`；第 68～76 行专属 gate 写明"与 M4 gate 完全不同，不得混用"；
 12. **ds_px → ds_mm**：`src\displacement.py` 第 368～369 行、`src\dynamic_displacement.py` 第 378～379 行；`ds_mm` 是换算结果，不是另一次测量；
 13. **双重舍入**：文件里的 `ds_mm` 由未舍入的 `ds_px` 算出再舍入；用已舍入的 `ds_px` 反算可能出现 ±0.0001 的差（自检容差 0.0005 mm，第 736 / 1143 行）；
-14. **M6 无 mm 列**：`src\external_oscillation_tracker.py` 第 31～34 行明文禁止标定与位移换算；8 列表头（第 87～96 行）没有 `s_px` / `ds_px` / `ds_mm`；
+14. **M6 无 mm 列**：`src\external_oscillation_tracker.py` 第 31～34 行明文禁止标定与位移换算；8 列表头（第 88～97 行）没有 `s_px` / `ds_px` / `ds_mm`；
 15. **原则**：没有有效标定就只能停留在像素层面；有标定也要说清是哪一次拍摄；
 16. **字段事实**：不存在 `x0_px`；存在 `x_px`、`y_px`、`s_px`、`ds_px`、`ds_mm`、`y0_px`；`y0_px` 的 `0` 是字段名的一部分；
 17. **L09 边界**：本课只登记 `unit_direction()` / `project_point()` 的名称与作用；标定点选择、方向推导、归一化细节、投影几何留到 L09。
@@ -707,7 +707,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 标定模块（本课主角，纯数学） | `src\calibration.py` | 第 1～22 行模块说明与公式；第 24 行 `import math`；第 32～43 行 `_to_float()`；第 46～70 行 `_check_point()`；第 73～92 行 `_check_direction()`；第 100～144 行 `compute_scale()`（第 125～126 行真实距离 > 0；第 128～131 行 `dx` / `dy` / `pixel_distance`；第 134～135 行两点重合；第 137～138 行两个尺度；第 140～144 行返回）；第 147～173 行 `unit_direction()`；第 176～204 行 `project_point()`（第 180 行公式说明；第 204 行 `return x * ux + y * uy`） |
 | M4 常量与 mm 换算 | `src\displacement.py` | 第 41～47 行标定来源说明（第 44～46 行 P1 / P2 / 真实距离）；第 48～50 行常量；第 52～53 行 `PX_PER_MM` / `MM_PER_PX`；第 55 行 `U`；第 57～64 行 M4 gate；第 72～81 行 `DS_FIELDNAMES`；第 98～150 行冻结常量自检；第 357～369 行 `add_displacement()`（第 368～369 行换算公式）；第 759～777 行 ds 公式复算 |
 | M5 常量与 mm 换算 | `src\dynamic_displacement.py` | 第 20～23 行 EXP-004 专属与"不得 import src.displacement"；第 40 行只 import `project_point`；第 59 行冻结说明；第 60～62 行 P1 / P2 / 100.0 mm；第 64～66 行常量；第 68～76 行专属 gate；第 121～174 行冻结常量自检；第 367～379 行 `add_displacement()`（第 378～379 行换算公式）；第 1132～1151 行 ds 公式复算 |
-| M6 边界对照（无 mm 列的原因） | `src\external_oscillation_tracker.py` | 第 4～9 行外部数据集标注；第 19～20 行正式位置特征与帧区间；第 31～34 行"不做：标定（px/mm）、位移换算…"；第 84 行 `POSITION_FEATURE_NAME`；第 87～96 行 8 列表头；第 337～377 行写 CSV |
+| M6 边界对照（无 mm 列的原因） | `src\external_oscillation_tracker.py` | 第 4～9 行外部数据集标注；第 19～20 行正式位置特征与帧区间；第 31～34 行"不做：标定（px/mm）、位移换算…"；第 85 行 `POSITION_FEATURE_NAME`；第 88～97 行 8 列表头；第 357～397 行写 CSV |
 | 调用方 | `demo\run_m43_displacement.py`、`demo\run_m52_dynamic_displacement.py` | 第 63～67、146～158、215～222 行（M4 三视频共用常量与冻结自检）；第 72～98、165～166 行（M5 冻结常量打印与运行） |
 | M4 数据产物（只读核对，未重新生成） | `results\EXP-003-STATIC-002_ds.csv` | 表头 8 列；1961 行（frame 0～1960）；valid 1050 / 911；ds_px -1.249～350.268；ds_mm -0.2170～60.8426 |
 | M4 数据产物（只读核对，未重新生成） | `results\EXP-003-STATIC-003_ds.csv` | 表头 8 列；1984 行（frame 0～1983）；valid 1192 / 792；ds_px -0.311～346.530；ds_mm -0.0540～60.1932 |
@@ -726,7 +726,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - `src\displacement.py` 第 41～47 行标定来源说明（第 42～43 行来源视频 / frame 900 / `1920 x 1080` 坐标系；第 44～46 行 P1 / P2 / 真实距离；第 47 行"不做任何重新标定"）；第 48～50 行 `CALIB_P1_PX` / `CALIB_P2_PX` / `CALIB_REAL_DISTANCE_MM`；**第 52～53 行 `PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`**；第 55 行 `U = (0.999976, -0.006894)`；第 57～64 行 M4 gate；
 - `src\displacement.py` 第 72～81 行 `DS_FIELDNAMES`（含 `s_px` / `ds_px` / `ds_mm`）；第 84～90 行格式规范；第 98～150 行 `check_calibration_constants()`（第 142～147 行互为倒数自检）；第 306～314 行 `add_projection()`；第 317～354 行 `compute_s0()`；**第 357～369 行 `add_displacement()`（第 368～369 行 `ds_px = s_px - s0`、`ds_mm = ds_px / PX_PER_MM`）**；第 377～411 行 `build_ds_row()` / `write_ds_csv()`；
 - `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 26 行"不重新实现投影公式"；第 40 行只 `from src.calibration import project_point`；**第 59 行 EXP-004 标定冻结说明**；第 60～62 行 P1 (813.50, 296.49) / P2 (1422.13, 294.11) / 100.0 mm；**第 64～65 行 `PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`**；第 66 行 `U_004`；第 68～76 行专属 gate（第 68 行"与 M4 gate 完全不同，不得混用"；阈值 4500 / 6500 / 200 / 250）；**第 367～379 行 `add_displacement()`（第 378～379 行公式，除数用 `PX_PER_MM_004`）**；第 1132～1151 行 ds 公式复算；
-- `src\external_oscillation_tracker.py` 第 31～34 行"本模块不做：标定（px/mm）、位移换算…"；第 84 行 `POSITION_FEATURE_NAME`；第 87～96 行 `CSV_FIELDNAMES`（8 列，无 mm 列）；
+- `src\external_oscillation_tracker.py` 第 31～34 行"本模块不做：标定（px/mm）、位移换算…"；第 85 行 `POSITION_FEATURE_NAME`；第 88～97 行 `CSV_FIELDNAMES`（8 列，无 mm 列）；
 - 只读复算（不重新标定）：M4 用冻结 P1 / P2 复算 `pixel_distance ≈ 345.418199 px`、`px_per_mm ≈ 5.7569700`（与冻结 5.756961 差 ≈ 9.0e-6）、`mm_per_px ≈ 0.1737025`（差 ≈ 5.1e-7），均在自检容差 1e-4 内；M5 复算 `hypot ≈ 608.634653 px`、投影法 `s(P2) - s(P1) ≈ 608.634444 px`，除以 100.0 得 ≈ 6.086347 / 6.086344（与冻结 6.086399 差 ≈ 5.2e-5 / 5.5e-5），在容差内。
 
 ### L08 源码地图
@@ -744,7 +744,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | `src\dynamic_displacement.py` 第 20～23、68～76 行 | EXP-004 专属边界与专属 gate（不得与 M4 混用） |
 | `src\dynamic_displacement.py` 第 59～66 行 | M5 标定来源、P1 / P2 / 100.0 mm、`PX_PER_MM_004` / `MM_PER_PX_004` / `U_004` |
 | `src\dynamic_displacement.py` 第 367～379 行 | `add_displacement()`（第 378～379 行 `ds_mm = ds_px / PX_PER_MM_004`） |
-| `src\external_oscillation_tracker.py` 第 31～34、87～96 行 | "不做标定 / 位移换算"；8 列表头（无 mm 列） |
+| `src\external_oscillation_tracker.py` 第 31～34、88～97 行 | "不做标定 / 位移换算"；8 列表头（无 mm 列） |
 
 ### 相关术语与易错点
 
@@ -1276,7 +1276,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - segments 第 594–620 行：`boundary_indexes` 第 595 行、`travel_px` 第 600 / 616 行、`below_min_travel` 第 617 行；
 - 打印部分：第 792 行转向点数量、第 794–799 行运动段数量、第 806–821 行每个转向点、第 827–842 行每个运动段；没有时间间隔 / 周期 / 频率打印；
 - 只读检索：全项目 `M5.4` / `M5.5` 命中 0 条；`src\` / `demo\` 中"周期 / 频率 / FFT"命中均为边界声明或 M6 冻结值引用；
-- 旁证：`src\video_tracker.py` 第 17、615 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行同样声明不做频率 / 周期分析；
+- 旁证：`src\video_tracker.py` 第 17、615 行与 `src\external_oscillation_tracker.py` 第 31–33、427、658 行同样声明不做频率 / 周期分析；
 - M6 侧：`src\m63_final_visualization.py` 第 7 行不重新计算周期 / 频率 / 极值 / FFT；第 110 行 `REPRESENTATIVE_INTERVAL = (150.0, 5.0000, 166.5, 5.5500, 0.550)` 是写死的字面量；第 112–127 行 `FROZEN` 含 `T_exp = 0.542593`、`f_exp = 1.843003` 等；第 202–219 行 `check_frozen_extrema_against_csv()` 只核对封板值与 CSV，不做极值搜索、不做周期重新计算；
 - `demo\run_m53_plot.py` 第 19 行不计算周期 / 频率 / 振幅 / 频谱；第 67–74 行冻结 6 个转向点；第 382 行打印"本轮不计算任何振动参数"。
 

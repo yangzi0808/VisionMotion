@@ -360,7 +360,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 4. `time_s = frame_index / fps`（第 494 行）：把帧号翻译成时间；frame_index 从 0 开始（第 481 行），所以第 0 帧 time_s = 0；CSV 中 time_s 写 6 位小数（第 404、410 行）；
 5. fps 从文件读取（第 130 行）、未硬编码（第 153 行打印说明）；非法 fps（<= 0）时第 438～441 行释放资源并停止；
 6. `cv2.VideoCapture(str(video_path))`（第 125 行）创建视频读取对象；打开失败明确返回 `(None, None)`（第 126～127 行）；`cap.get()` 可读 fps（第 130 行）、总帧数（第 131 行）、旋转元数据（第 134～137 行）；
-7. `cap.read()` 返回 `(ret, frame)`：`ret` 是"是否成功读取"的布尔标志，`frame` 才是图像数据；判断结束看 ret（第 528 行），检测用 frame（第 491 行）；
+7. `cap.read()` 返回 `(ret, frame)`：`ret` 是"是否成功读取"的布尔标志，`frame` 才是图像数据；判断结束看 ret（第 557 行），检测用 frame（第 491 行）；
 8. 第一帧单独读取（第 444 行）用于确定程序实际处理的画面尺寸（第 456～463 行）；随后第 480 行 `current_frame = first_frame` 让第一帧直接进入循环处理，不浪费；
 9. `current_frame` 是"当前正在处理的那一帧"：第 480 行初始化为 first_frame，第 532 行被替换为 next_frame；它不是整个视频，也不携带历史（历史靠 CSV 与 records 记账，第 497、499～510 行）；
 10. 逐帧主循环（第 489 行 `while True`）：第 491 行 `detect_marker(current_frame)` → 第 494 行 `time_s` → 第 497 行写 CSV（每帧一行、失败也写）→ 第 513～521 行写叠加帧 → 第 527 行读下一帧 → 第 528～530 行判断结束 → 第 531～532 行更新 frame_index 与 current_frame；
@@ -393,7 +393,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 - 第 145 行：`def print_video_info(...)`；第 153 行：打印"实际 FPS：…（从当前视频文件读取，未硬编码）"；
 - 第 175 行：`def draw_tracking_frame(...)`；第 196～207 行：检测失败时只显示 DETECTION FAILED，不画任何虚假中心；
 - 第 242 行：`def open_overlay_writer(overlay_path, fps, frame_size):`；第 252 行：`fourcc = cv2.VideoWriter_fourcc(*codec_name)`；第 253 行：`writer = cv2.VideoWriter(str(overlay_path), fourcc, fps, (width, height))`；第 254～255 行：`writer.isOpened()` 后返回 `(writer, codec_name)`；第 256 行：失败候选 `writer.release()`；
-- 第 305～313 行：`read_frame_at()`（PNG 回退时用 `cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)` 跳帧读取）；第 371 行：回退方案中 `result = detect_marker(frame)`；
+- 第 305～313 行：`read_frame_at()`（PNG 回退时用 `cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)` 跳帧读取）；第 400 行：回退方案中 `result = detect_marker(frame)`；
 - 第 393 行：`def build_csv_row(frame_index, time_s, result):`；第 399 行：文档字符串"失败时绝不写 0 / -1 / nan / 字符串"；第 401～409 行：成功行；第 410 行：失败行 `return [frame_index, "%.6f" % time_s, "", "", "", "False"]`；
 - 第 413 行：`def track_video(video_path, csv_path, overlay_path):`；第 428 行：`sha256_before = compute_sha256(video_path)`；第 432 行：`cap, video_info = open_video(video_path)`；第 438～441 行：fps 非法时释放并停止；
 - 第 444 行：`ret, first_frame = cap.read()`（第一次读取第一帧）；第 456～463 行：叠加视频 0.5 倍缩放与 `scale_x / scale_y`；第 465～467 行：`open_overlay_writer(...)`；
@@ -402,7 +402,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 - 第 513～521 行：`cv2.resize` → `draw_tracking_frame` → `writer.write(overlay)`（写叠加帧）；第 523～524 行：PNG 回退时累计清晰度指标；
 - 第 527 行：`ret, next_frame = cap.read()`；第 528～530 行：`if not ret or next_frame is None: break`；第 531～532 行：`frame_index += 1`、`current_frame = next_frame`；第 534～535 行：每 200 帧打印进度；
 - 第 536～539 行：`except KeyboardInterrupt:`（提示已处理数据仍保留）；第 540～544 行：`finally:` 中 `csv_file.close()` / `cap.release()` / `writer.release()`；
-- 第 562～586 行：`summary` 统计字典；第 591 行：`compute_longest_miss_run`；第 612 行：`print_statistics`；第 643 行：`check_csv_data`（第 736～740、794～818 行的检查项验证"失败不伪造坐标"）。
+- 第 562～586 行：`summary` 统计字典；第 620 行：`compute_longest_miss_run`；第 612 行：`print_statistics`；第 643 行：`check_csv_data`（第 736～740、794～818 行的检查项验证"失败不伪造坐标"）。
 
 ### L05 源码地图
 
@@ -693,8 +693,8 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 9. **M4 标定**（`src\displacement.py` 第 41～55 行）：来源 EXP-003-STATIC-002 frame 900 的 1920×1080 坐标系；P1 (1036.23, 490.58)、P2 (1381.64, 488.20)、60.0 mm；`PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`、`U = (0.999976, -0.006894)`；
 10. **M5 标定**（`src\dynamic_displacement.py` 第 59～66 行）：EXP-004 专属（人工点击 + 独立核验）；P1 (813.50, 296.49)、P2 (1422.13, 294.11)、100.0 mm；`PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`、`U_004 = (0.999992, -0.003913)`；
 11. **M4 与 M5 必须分开**：两次拍摄几何不同；`src\dynamic_displacement.py` 第 20～23 行禁止把 M4 常量搬进来、禁止 `import src.displacement`；第 68～76 行专属 gate 写明"与 M4 gate 完全不同，不得混用"；
-12. **ds_px → ds_mm**：`src\displacement.py` 第 368～369 行、`src\dynamic_displacement.py` 第 349～350 行；`ds_mm` 是换算结果，不是另一次测量；
-13. **双重舍入**：文件里的 `ds_mm` 由未舍入的 `ds_px` 算出再舍入；用已舍入的 `ds_px` 反算可能出现 ±0.0001 的差（自检容差 0.0005 mm，第 736 / 1108 行）；
+12. **ds_px → ds_mm**：`src\displacement.py` 第 368～369 行、`src\dynamic_displacement.py` 第 378～379 行；`ds_mm` 是换算结果，不是另一次测量；
+13. **双重舍入**：文件里的 `ds_mm` 由未舍入的 `ds_px` 算出再舍入；用已舍入的 `ds_px` 反算可能出现 ±0.0001 的差（自检容差 0.0005 mm，第 736 / 1143 行）；
 14. **M6 无 mm 列**：`src\external_oscillation_tracker.py` 第 31～34 行明文禁止标定与位移换算；8 列表头（第 87～96 行）没有 `s_px` / `ds_px` / `ds_mm`；
 15. **原则**：没有有效标定就只能停留在像素层面；有标定也要说清是哪一次拍摄；
 16. **字段事实**：不存在 `x0_px`；存在 `x_px`、`y_px`、`s_px`、`ds_px`、`ds_mm`、`y0_px`；`y0_px` 的 `0` 是字段名的一部分；
@@ -706,7 +706,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | --- | --- | --- |
 | 标定模块（本课主角，纯数学） | `src\calibration.py` | 第 1～22 行模块说明与公式；第 24 行 `import math`；第 32～43 行 `_to_float()`；第 46～70 行 `_check_point()`；第 73～92 行 `_check_direction()`；第 100～144 行 `compute_scale()`（第 125～126 行真实距离 > 0；第 128～131 行 `dx` / `dy` / `pixel_distance`；第 134～135 行两点重合；第 137～138 行两个尺度；第 140～144 行返回）；第 147～173 行 `unit_direction()`；第 176～204 行 `project_point()`（第 180 行公式说明；第 204 行 `return x * ux + y * uy`） |
 | M4 常量与 mm 换算 | `src\displacement.py` | 第 41～47 行标定来源说明（第 44～46 行 P1 / P2 / 真实距离）；第 48～50 行常量；第 52～53 行 `PX_PER_MM` / `MM_PER_PX`；第 55 行 `U`；第 57～64 行 M4 gate；第 72～81 行 `DS_FIELDNAMES`；第 98～150 行冻结常量自检；第 357～369 行 `add_displacement()`（第 368～369 行换算公式）；第 759～777 行 ds 公式复算 |
-| M5 常量与 mm 换算 | `src\dynamic_displacement.py` | 第 20～23 行 EXP-004 专属与"不得 import src.displacement"；第 40 行只 import `project_point`；第 59 行冻结说明；第 60～62 行 P1 / P2 / 100.0 mm；第 64～66 行常量；第 68～76 行专属 gate；第 121～174 行冻结常量自检；第 338～350 行 `add_displacement()`（第 349～350 行换算公式）；第 1097～1116 行 ds 公式复算 |
+| M5 常量与 mm 换算 | `src\dynamic_displacement.py` | 第 20～23 行 EXP-004 专属与"不得 import src.displacement"；第 40 行只 import `project_point`；第 59 行冻结说明；第 60～62 行 P1 / P2 / 100.0 mm；第 64～66 行常量；第 68～76 行专属 gate；第 121～174 行冻结常量自检；第 367～379 行 `add_displacement()`（第 378～379 行换算公式）；第 1132～1151 行 ds 公式复算 |
 | M6 边界对照（无 mm 列的原因） | `src\external_oscillation_tracker.py` | 第 4～9 行外部数据集标注；第 19～20 行正式位置特征与帧区间；第 31～34 行"不做：标定（px/mm）、位移换算…"；第 84 行 `POSITION_FEATURE_NAME`；第 87～96 行 8 列表头；第 337～377 行写 CSV |
 | 调用方 | `demo\run_m43_displacement.py`、`demo\run_m52_dynamic_displacement.py` | 第 63～67、146～158、215～222 行（M4 三视频共用常量与冻结自检）；第 72～98、165～166 行（M5 冻结常量打印与运行） |
 | M4 数据产物（只读核对，未重新生成） | `results\EXP-003-STATIC-002_ds.csv` | 表头 8 列；1961 行（frame 0～1960）；valid 1050 / 911；ds_px -1.249～350.268；ds_mm -0.2170～60.8426 |
@@ -725,7 +725,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 第 176～204 行 `project_point()`：第 180 行公式说明；第 193～198 行参数与零长度检查；第 200～202 行归一化；**第 204 行 `return x * ux + y * uy`（实现上面第 180 行的公式 `s = x * ux + y * uy`）**；
 - `src\displacement.py` 第 41～47 行标定来源说明（第 42～43 行来源视频 / frame 900 / `1920 x 1080` 坐标系；第 44～46 行 P1 / P2 / 真实距离；第 47 行"不做任何重新标定"）；第 48～50 行 `CALIB_P1_PX` / `CALIB_P2_PX` / `CALIB_REAL_DISTANCE_MM`；**第 52～53 行 `PX_PER_MM = 5.756961`、`MM_PER_PX = 0.173703`**；第 55 行 `U = (0.999976, -0.006894)`；第 57～64 行 M4 gate；
 - `src\displacement.py` 第 72～81 行 `DS_FIELDNAMES`（含 `s_px` / `ds_px` / `ds_mm`）；第 84～90 行格式规范；第 98～150 行 `check_calibration_constants()`（第 142～147 行互为倒数自检）；第 306～314 行 `add_projection()`；第 317～354 行 `compute_s0()`；**第 357～369 行 `add_displacement()`（第 368～369 行 `ds_px = s_px - s0`、`ds_mm = ds_px / PX_PER_MM`）**；第 377～411 行 `build_ds_row()` / `write_ds_csv()`；
-- `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 26 行"不重新实现投影公式"；第 40 行只 `from src.calibration import project_point`；**第 59 行 EXP-004 标定冻结说明**；第 60～62 行 P1 (813.50, 296.49) / P2 (1422.13, 294.11) / 100.0 mm；**第 64～65 行 `PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`**；第 66 行 `U_004`；第 68～76 行专属 gate（第 68 行"与 M4 gate 完全不同，不得混用"；阈值 4500 / 6500 / 200 / 250）；**第 338～350 行 `add_displacement()`（第 349～350 行公式，除数用 `PX_PER_MM_004`）**；第 1097～1116 行 ds 公式复算；
+- `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 26 行"不重新实现投影公式"；第 40 行只 `from src.calibration import project_point`；**第 59 行 EXP-004 标定冻结说明**；第 60～62 行 P1 (813.50, 296.49) / P2 (1422.13, 294.11) / 100.0 mm；**第 64～65 行 `PX_PER_MM_004 = 6.086399`、`MM_PER_PX_004 = 0.164301`**；第 66 行 `U_004`；第 68～76 行专属 gate（第 68 行"与 M4 gate 完全不同，不得混用"；阈值 4500 / 6500 / 200 / 250）；**第 367～379 行 `add_displacement()`（第 378～379 行公式，除数用 `PX_PER_MM_004`）**；第 1132～1151 行 ds 公式复算；
 - `src\external_oscillation_tracker.py` 第 31～34 行"本模块不做：标定（px/mm）、位移换算…"；第 84 行 `POSITION_FEATURE_NAME`；第 87～96 行 `CSV_FIELDNAMES`（8 列，无 mm 列）；
 - 只读复算（不重新标定）：M4 用冻结 P1 / P2 复算 `pixel_distance ≈ 345.418199 px`、`px_per_mm ≈ 5.7569700`（与冻结 5.756961 差 ≈ 9.0e-6）、`mm_per_px ≈ 0.1737025`（差 ≈ 5.1e-7），均在自检容差 1e-4 内；M5 复算 `hypot ≈ 608.634653 px`、投影法 `s(P2) - s(P1) ≈ 608.634444 px`，除以 100.0 得 ≈ 6.086347 / 6.086344（与冻结 6.086399 差 ≈ 5.2e-5 / 5.5e-5），在容差内。
 
@@ -743,7 +743,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | `src\displacement.py` 第 357～369 行 | `add_displacement()`（第 368～369 行 `ds_mm = ds_px / PX_PER_MM`） |
 | `src\dynamic_displacement.py` 第 20～23、68～76 行 | EXP-004 专属边界与专属 gate（不得与 M4 混用） |
 | `src\dynamic_displacement.py` 第 59～66 行 | M5 标定来源、P1 / P2 / 100.0 mm、`PX_PER_MM_004` / `MM_PER_PX_004` / `U_004` |
-| `src\dynamic_displacement.py` 第 338～350 行 | `add_displacement()`（第 349～350 行 `ds_mm = ds_px / PX_PER_MM_004`） |
+| `src\dynamic_displacement.py` 第 367～379 行 | `add_displacement()`（第 378～379 行 `ds_mm = ds_px / PX_PER_MM_004`） |
 | `src\external_oscillation_tracker.py` 第 31～34、87～96 行 | "不做标定 / 位移换算"；8 列表头（无 mm 列） |
 
 ### 相关术语与易错点
@@ -803,7 +803,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 15. **真实数据验证（只读）**：`results\EXP-003-STATIC-002_track.csv` 与 `_ds.csv` 各 1961 行、`s_px` 非空 1050 行（= `valid=True`，911 行为空）；`results\EXP-004-DYNAMIC-001_track.csv` 与 `_ds.csv` 各 1766 行、`s_px` 全部有值；最小二乘反推的系数与 `U / |U|` 一致到 `1e-7` 量级（M4 差 `(-2.54e-8, +9.61e-8)`，M5 差 `(-9.56e-8, +4.89e-7)`）；
 16. **末位差来自文本舍入**：`s_px` 写 3 位小数（上界 `5e-4 px`）、`x_px` / `y_px` 写 2 位小数；偏差不是算法差异，也不是数据错误；
 17. **与 L08、L10 的分工**：L08 = 尺度（`px/mm`、`mm/px`、`L_pixel`）；L09 = 方向 + 一维坐标（`v`、`u`、`ux` / `uy`、`s_px`）；L10 = 基线与位移（`s0`、valid gate、`ds_px`、`ds_mm`）；
-18. **本课边界**：`s0` 如何选（`src\displacement.py` 第 317 行起 `compute_s0()`）、valid gate 的完整规则（第 57～64 行 / `src\dynamic_displacement.py` 第 68～76 行）、`ds_px` / `ds_mm` 流程（第 357～369 行 / 第 338～350 行）本课只登记名称与位置，不展开；
+18. **本课边界**：`s0` 如何选（`src\displacement.py` 第 317 行起 `compute_s0()`）、valid gate 的完整规则（第 57～64 行 / `src\dynamic_displacement.py` 第 68～76 行）、`ds_px` / `ds_mm` 流程（第 357～369 行 / 第 367～379 行）本课只登记名称与位置，不展开；
 19. **六类材料**：VisionMotion 真实源码 / 真实项目常数 / 真实数据 / 数学公式 / 教学示例 / 概念伪代码；引用项目事实必须能指出文件 + 函数 + 行号。
 
 ### 对应的项目文件
@@ -847,7 +847,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 ### 本节课暂未学习的内容
 
-`s0` 如何选（`src\displacement.py` 第 317 行起 `compute_s0()` 的窗口与最少帧数规则）；valid gate 的完整规则（`src\displacement.py` 第 57～64 行、`src\dynamic_displacement.py` 第 68～76 行）；`ds_px` / `ds_mm` 的完整位移流程（`src\displacement.py` 第 357～369 行、`src\dynamic_displacement.py` 第 338～350 行）；`displacement.py` / `dynamic_displacement.py` 的完整逻辑（统计、报告、自检的其余部分）；周期 / 频率 / FFT 仍属于后续课程。
+`s0` 如何选（`src\displacement.py` 第 317 行起 `compute_s0()` 的窗口与最少帧数规则）；valid gate 的完整规则（`src\displacement.py` 第 57～64 行、`src\dynamic_displacement.py` 第 68～76 行）；`ds_px` / `ds_mm` 的完整位移流程（`src\displacement.py` 第 357～369 行、`src\dynamic_displacement.py` 第 367～379 行）；`displacement.py` / `dynamic_displacement.py` 的完整逻辑（统计、报告、自检的其余部分）；周期 / 频率 / FFT 仍属于后续课程。
 
 （本节学到"两点的像素距离与尺度 → 原始方向向量 → 单位方向向量与归一化 → 点积投影出 s_px → 真实 CSV 复核 → L08 / L09 / L10 分工"这条链；`s0`、valid gate、位移流程只登记名称与位置，留到 L10 展开。）
 
@@ -871,7 +871,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 解释为什么第 0 帧的 `ds_px` 不一定为 0（真实数据：+4.335 / +0.164 / −3.215 px）；
 - 区分 detected 与 valid（第一道 / 第二道筛选），并背出 M4 valid 门限（area 2000～15000、y 400～540）与 M5 valid 门限（area 4500～6500、y 200～250）；
 - 说清无效帧的处理：不删除、`valid=False`、`s_px` / `ds_px` / `ds_mm` 留空（绝不写 0 / -1 / nan）；
-- 写出位移公式：`ds_px = s_px - s0`（第 339 / 349 行）、`ds_mm = ds_px / PX_PER_MM`（第 340 / 350 行，等价 `ds_px × MM_PER_PX`）；
+- 写出位移公式：`ds_px = s_px - s0`（第 339 / 378 行）、`ds_mm = ds_px / PX_PER_MM`（第 340 / 379 行，等价 `ds_px × MM_PER_PX`）；
 - 用三份真实 ds CSV 复核统计、`s0`、公式与空值（第 7 节）；
 - 解释为什么 M4 与 M5 的参数绝对不能混用（标定差约 5.72%、gate 不同、`s0` 窗口不同；源码第 20～23、68 行结构性禁止）；
 - 记住"检测到"不等于"可用于物理计算"，并能默写数据依赖链 `detected → valid → s_px → ds_px → ds_mm`；
@@ -883,31 +883,31 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 1. **位置 ≠ 位移**：`s_px` 是沿尺方向的一维位置坐标（零点由图像原点与方向 `u` 共同决定）；`ds_px = s_px - s0` 才是相对基线 `s0` 的位移；
 2. **valid 是第二道数据筛选**：detected（M3）回答"看到没有"，valid（本模块 `is_valid_frame()`）回答"这一帧能不能用"；只有 valid=True 才有 `s_px` / `ds_px` / `ds_mm`；
 3. **M4 valid 门限**（`src\displacement.py` 第 57～64、175～213 行）：`detected=True` 且 `2000 <= area_px <= 15000` 且 `400 <= y_px <= 540`；注释原文"本次 EXP-003 拍摄几何专属参数，不是通用视觉规则"；
-4. **M5 valid 门限**（`src\dynamic_displacement.py` 第 68～76、183～210 行）：`detected=True` 且 `4500 <= area_px <= 6500` 且 `200 <= y_px <= 250`；标题原文"与 M4 gate 完全不同，不得混用"；
+4. **M5 valid 门限**（`src\dynamic_displacement.py` 第 68～76、183～222 行）：`detected=True` 且 `4500 <= area_px <= 6500` 且 `200 <= y_px <= 250`；标题原文"与 M4 gate 完全不同，不得混用"；
 5. **缺数据也判 False**：detected=True 但 area / y 为 None 时同样 `valid=False`（第 191～193 行）——数据缺失不填 0；
 6. **无效帧不删除**：ds CSV 行数 = track CSV 行数（第 781 行"不删除任何行"）；`s_px` / `ds_px` / `ds_mm` 初始化为 None（第 272～274 行）、写 CSV 时空字符串（第 360～363 行）；绝不写 0 / -1 / nan（第 355 行）；
 7. **`s0` 的定义**（第 288～325 行）：只使用 `time_s <= window_s` 且 `valid=True` 的帧（第 304～305 行），取这些帧 `s_px` 的平均值（第 322～323 行）；窗口参数默认 `S0_WINDOW_S`、最少帧数 `MIN_S0_VALID_FRAMES`；
 8. **M4 的 s0 参数**：0.5 s 窗口、最少 10 帧（第 66～68 行）；**M5 的 s0 参数**：2.0 s 窗口、最少 60 帧（M5 第 78～80 行）；第 318 行"最少有效帧检查"不达标则 `ok=False`、`s0=None`；
 9. **`s0` 不是首帧**：源码第 294 行正式禁止；真实数据里 frame 0 的 `ds_px` = +4.335 / +0.164 / −3.215，直接证明基线不是首帧取值；
 10. **`s0` 不是标尺 10 cm 位置**：10 cm 是标定点 P1（第 44 行 / M5 第 60 行）；`s0` 是数据窗口平均值；只读复算 M4 `s(P1) ≈ 1032.823 px`、M5 `s(P1) ≈ 812.334 px`，都不是对应视频的 `s0`；
-11. **`s0` 不达标不写 ds CSV**（第 781、793 行 / M5 第 1159、1171～1174 行）：不扩大窗口、不修改阈值、不做插值（第 517 行）；M5 还有冻结常量自检前置（第 1215～1217 行）；
-12. **位移公式**：`ds_px = s_px - s0`（第 339 / 349 行）；`ds_mm = ds_px / PX_PER_MM`（第 340 行）/ `PX_PER_MM_004`（第 350 行）；等价 `ds_px × MM_PER_PX`；写反会差约 33 倍（5.756961² ≈ 33.14）；
-13. **双重舍入**：`ds_mm` 由未舍入的 `ds_px` 算出再写 4 位小数；ds_px / s_px 各写 3 位小数（`FIELD_PATTERNS`：第 84～90 / 103～109 行）；反算出现 ~1e-4 mm 的差正常，自检容差 0.0005 mm（第 736～740 行 / M5 第 1105～1113 行）；
+11. **`s0` 不达标不写 ds CSV**（第 781、793 行 / M5 第 1194、1206～1209 行）：不扩大窗口、不修改阈值、不做插值（第 517 行）；M5 还有冻结常量自检前置（第 1250～1252 行）；
+12. **位移公式**：`ds_px = s_px - s0`（第 339 / 378 行）；`ds_mm = ds_px / PX_PER_MM`（第 340 行）/ `PX_PER_MM_004`（第 379 行）；等价 `ds_px × MM_PER_PX`；写反会差约 33 倍（5.756961² ≈ 33.14）；
+13. **双重舍入**：`ds_mm` 由未舍入的 `ds_px` 算出再写 4 位小数；ds_px / s_px 各写 3 位小数（`FIELD_PATTERNS`：第 84～90 / 103～109 行）；反算出现 ~1e-4 mm 的差正常，自检容差 0.0005 mm（第 736～740 行 / M5 第 1140～1148 行）；
 14. **真实 ds CSV 统计**：STATIC-002 = 1961 行、valid 1050/911、`s0` = 1076.063871 px；STATIC-003 = 1984 行、valid 1192/792、`s0` = 1077.364097 px；EXP-004 = 1766 行、全部 valid、`s0` = 855.202603 px；
 15. **真实公式复核**：`ds_px = s_px - s0` 最大偏差 ≤ 0.000904 px（容差 0.002）；`ds_mm` 最大偏差 ≤ 0.000151 mm（容差 0.0005）；无效行位移字段非空 0 例、有效行缺字段 0 例；
 16. **detected=True 但 valid=False 真实存在**：STATIC-002 有 911 帧、STATIC-003 有 792 帧（例：STATIC-002 frame 52，area 12439.0、y 35.44 被 y 门限拒绝）；EXP-004 为 0 帧；
 17. **M4 与 M5 参数不能混用**：尺度（5.756961 vs 6.086399，差约 5.72%）、gate（2000/15000/400/540 vs 4500/6500/200/250）、`s0`（0.5/10 vs 2.0/60）、方向（`U` vs `U_004`）；M5 第 20～23 行禁止 import `src.displacement`；
 18. **混用的真实后果（推演）**：EXP-004 的 y 全部落在 208.63～220.61，若用 M4 的 y 门限（400～540）会被全部拒绝 → 不写 ds CSV；STATIC 的 y 上限 470 / 464，也基本落在 M5 的 200～250 之外；
-19. **统计口径**：`valid_rate`（第 420 / 437 行）、`invalid_count`（第 421 / 438 行）、`detected_invalid_count`（第 423 / 440 行）、`longest_invalid_run`（第 427 / 450 行）；真实值：valid_rate ≈ 53.54% / 60.08% / 100%，longest_invalid_run = 180 / 147 / 0；
+19. **统计口径**：`valid_rate`（第 420 / 466 行）、`invalid_count`（第 421 / 438 行）、`detected_invalid_count`（第 423 / 469 行）、`longest_invalid_run`（第 427 / 479 行）；真实值：valid_rate ≈ 53.54% / 60.08% / 100%，longest_invalid_run = 180 / 147 / 0；
 20. **数据依赖链**：`detected → valid → s_px → ds_px → ds_mm`，每一环只依赖上一环；
-21. **本课边界**：峰值 / 谷值、转向点完整算法（`detect_turning_points()`，M5 第 458～594 行）、周期、频率、FFT、简谐振动理论均留到后续课程，本课只登记名称与位置。
+21. **本课边界**：峰值 / 谷值、转向点完整算法（`detect_turning_points()`，M5 第 487～623 行）、周期、频率、FFT、简谐振动理论均留到后续课程，本课只登记名称与位置。
 
 ### 对应的项目文件
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
 | M4 位移模块（本课主角） | `src\displacement.py` | 第 57～68 行 gate / s0 常量；第 175～213 行 `is_valid_frame()`（有限值校验约第 204 行）；第 290～303 行 `add_valid_flags()`；第 306～314 行 `add_projection()`；第 317～354 行 `compute_s0()`；第 357～369 行 `add_displacement()`；第 377～395 行 `build_ds_row()`；第 419～460 行 `summarize()`；第 535～546 行 s0 不足报告；第 804～846 行 `build_ds_from_track_csv()` |
-| M5 位移模块 | `src\dynamic_displacement.py` | 第 68～76 行专属 gate；第 78～80 行 s0 规则；第 183～210 行 `is_valid_frame()`；第 286～294 行 `add_projection()`；第 297～335 行 `compute_s0()`；第 338～350 行 `add_displacement()`；第 358～376 行 `build_ds_row()`；第 400～454 行 `summarize_dynamic()`；第 1147～1191 行 `build_ds_from_track_csv()`；第 1194～1224 行 `run_experiment()` |
+| M5 位移模块 | `src\dynamic_displacement.py` | 第 68～76 行专属 gate；第 78～80 行 s0 规则；第 183～222 行 `is_valid_frame()`；第 315～323 行 `add_projection()`；第 326～364 行 `compute_s0()`；第 367～379 行 `add_displacement()`；第 387～405 行 `build_ds_row()`；第 429～483 行 `summarize_dynamic()`；第 1182～1226 行 `build_ds_from_track_csv()`；第 1229～1259 行 `run_experiment()` |
 | 上游数据链（L05～L09 已学） | `src\calibration.py`、`src\video_tracker.py` | `project_point()`（calibration.py 第 176～204 行）提供 `s_px`；M3 `track_video()` 提供 track CSV 与 detected |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-002_track.csv` | 各 1961 行；valid 1050 / invalid 911；`s0` = 1076.063871 px；frame 0 行 `0,0.000000,1080.399,4.335,0.7530,4783.0,True,True`；frame 52 为 detected=True 但 valid=False 实例 |
 | 真实数据（只读核对，未重新生成） | `results\EXP-003-STATIC-003_ds.csv`、`results\EXP-003-STATIC-003_track.csv` | 各 1984 行；valid 1192 / invalid 792；`s0` = 1077.364097 px；frame 0 行 `0,0.000000,1077.528,0.164,0.0284,4394.5,True,True`；frame 35 实例 |
@@ -923,11 +923,11 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 第 317～354 行 `compute_s0()`：第 333 行 `window_rows`（`time_s <= window_s`）；第 334 行 `valid_s_values`；第 336～349 行报告字典（`window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `ok` / `s0`）；第 347 行最少帧检查；第 351～352 行平均值；第 323 行"正式禁止：用 10 cm 代替 s0、用首帧代替均值……"；
 - 第 357～369 行 `add_displacement()`：**第 368 行 `row["ds_px"] = row["s_px"] - s0`**；**第 369 行 `row["ds_mm"] = row["ds_px"] / PX_PER_MM`**；
 - 第 377～395 行 `build_ds_row()`：第 389～392 行无效数据写空字符串；第 384 行注释"绝不写 0 / -1 / nan"；第 84～90 行 `FIELD_PATTERNS`（time_s 6 / s_px 3 / ds_px 3 / ds_mm 4 / area_px 1 位小数）；
-- 第 419～460 行 `summarize()`：第 449 行 `valid_rate`；第 450 行 `invalid_count`；第 452 行 `detected_invalid_count`；第 456 行 `longest_invalid_run`（循环第 434～442 行）；
+- 第 419～460 行 `summarize()`：第 449 行 `valid_rate`；第 479 行 `invalid_count`；第 452 行 `detected_invalid_count`；第 456 行 `longest_invalid_run`（循环第 434～442 行）；
 - 第 535～546 行：s0 窗口有效帧不足时打印问题报告；第 546 行原文"本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"；
-- 第 597～796 行 `check_ds_csv()`：第 721～724 行空值检查；第 738～757 行 s0 复算（容差 0.002 px，第 750 行）；第 759～777 行 ds 公式复算（ds_px 容差 0.002 px、ds_mm 容差 0.0005 mm，第 768、771 行）；
+- 第 597～796 行 `check_ds_csv()`：第 721～724 行空值检查；第 738～757 行 s0 复算（容差 0.002 px，第 750 行）；第 759～777 行 ds 公式复算（ds_px 容差 0.002 px、ds_mm 容差 0.0005 mm，第 768、800 行）；
 - 第 804～846 行 `build_ds_from_track_csv()`：第 816 行"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 828 行 `if s0_report["ok"]` 才写；
-- `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 27 行"不删除任何 track CSV 行；valid=False 的位移字段一律留空（不写 0 / -1 / nan）"；第 68～76 行专属 gate（4500～6500 / 200～250）；第 78～80 行 s0 规则（2.0 s / 60 帧）；第 183～210 行 `is_valid_frame()`；第 297～335 行 `compute_s0()`；第 338～350 行 `add_displacement()`（第 349～350 行公式，除数 `PX_PER_MM_004`）；第 400～454 行 `summarize_dynamic()`（第 437～450 行统计字段）；第 1147～1191 行 `build_ds_from_track_csv()`（第 1159、1171～1174 行）；第 1194～1224 行 `run_experiment()`（第 1215～1217 行常量自检前置）。
+- `src\dynamic_displacement.py` 第 20～23 行 EXP-004 专属声明与"不得 import src.displacement"；第 27 行"不删除任何 track CSV 行；valid=False 的位移字段一律留空（不写 0 / -1 / nan）"；第 68～76 行专属 gate（4500～6500 / 200～250）；第 78～80 行 s0 规则（2.0 s / 60 帧）；第 183～222 行 `is_valid_frame()`；第 326～364 行 `compute_s0()`；第 367～379 行 `add_displacement()`（第 378～379 行公式，除数 `PX_PER_MM_004`）；第 429～483 行 `summarize_dynamic()`（第 466～479 行统计字段）；第 1182～1226 行 `build_ds_from_track_csv()`（第 1194、1206～1209 行）；第 1229～1259 行 `run_experiment()`（第 1250～1252 行常量自检前置）。
 
 ### L10 源码地图
 
@@ -944,19 +944,19 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 第 597～796 行 | `check_ds_csv()`（第 721～724、738～757、759～777 行） |
 | 第 804～846、849～866 行 | `build_ds_from_track_csv()` / `run_experiment()` |
 
-| 位置（`src\dynamic_displacement.py`，共 1224 行） | 内容 |
+| 位置（`src\dynamic_displacement.py`，共 1259 行） | 内容 |
 | --- | --- |
 | 第 6～33 行 | 数据链与边界（第 16、20～23、27 行） |
 | 第 59～80 行 | EXP-004 标定、专属 gate、s0 规则 |
 | 第 91～109 行 | `DS_FIELDNAMES` / `FIELD_PATTERNS` |
-| 第 183～210 行 | `is_valid_frame()` |
+| 第 183～222 行 | `is_valid_frame()` |
 | 第 270～294 行 | `add_valid_flags()` / `add_projection()` |
-| 第 297～335 行 | `compute_s0()`（第 314～315、328、332～333 行） |
-| 第 338～350、358～376 行 | `add_displacement()` / `build_ds_row()` |
-| 第 400～454 行 | `summarize_dynamic()` |
-| 第 458～594 行 | `detect_turning_points()`（后续课程内容，本课不展开） |
-| 第 902～1139 行 | `check_ds_csv()`（第 1048～1053、1073～1094、1096～1116 行） |
-| 第 1147～1191、1194～1224 行 | `build_ds_from_track_csv()` / `run_experiment()` |
+| 第 326～364 行 | `compute_s0()`（第 343～344、357、361～362 行） |
+| 第 367～379、387～405 行 | `add_displacement()` / `build_ds_row()` |
+| 第 429～483 行 | `summarize_dynamic()` |
+| 第 487～623 行 | `detect_turning_points()`（后续课程内容，本课不展开） |
+| 第 931～1174 行 | `check_ds_csv()`（第 1083～1088、1108～1129、1131～1151 行） |
+| 第 1182～1226、1229～1259 行 | `build_ds_from_track_csv()` / `run_experiment()` |
 
 （行号按 2026-10-02 当前源码逐行核对；如果实际源码行号发生变化，以当前真实源码为准。全部数据为只读核对，未重新生成。）
 
@@ -967,7 +967,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 ### 本节课暂未学习的内容
 
-~~位移的符号语义（ds 的正负与大小）、运动方向判据（Δds）与 `MIN_TURN_TRAVEL_PX` 的最小认识~~（已在 L11 学习，见下一节）/ ~~峰值 / 谷值、转向点完整算法（`src\dynamic_displacement.py` 第 458～594 行 `detect_turning_points()` 的内部逻辑与最小反向行程 20 px 规则的完整语义）、运动段完整切分~~（已在 L12 学习，见后文）/ 周期、频率、FFT、简谐振动理论——仍属于后续课程，本课只登记名称与位置，不展开。
+~~位移的符号语义（ds 的正负与大小）、运动方向判据（Δds）与 `MIN_TURN_TRAVEL_PX` 的最小认识~~（已在 L11 学习，见下一节）/ ~~峰值 / 谷值、转向点完整算法（`src\dynamic_displacement.py` 第 487～623 行 `detect_turning_points()` 的内部逻辑与最小反向行程 20 px 规则的完整语义）、运动段完整切分~~（已在 L12 学习，见后文）/ 周期、频率、FFT、简谐振动理论——仍属于后续课程，本课只登记名称与位置，不展开。
 
 （本节学到"track CSV → valid gate → s_px → s0 → ds_px / ds_mm → ds CSV → 只读复核"这条完整链；位移的符号与运动方向语义已在 L11 学习；峰值 / 谷值、转向点完整算法与运动段切分已在 L12 学习；周期 / 频率 / FFT 只登记名称，留到后续课程。）
 
@@ -1005,14 +1005,14 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 5. **运动方向由 Δds 决定**：`Δds = ds[i+1] − ds[i]`；Δds > 0 = 向正方向运动、Δds < 0 = 向负方向运动、Δds = 0 = 该相邻间隔读数不变；
 6. **Δds 的两个前提**：两端都 valid（`ds` 非空）才能相减；空洞处 Δds 断开（M4 的平台之间就是空洞）；
 7. **Δds 不是速度**：速度 = Δds / Δt（30 fps 时 Δt ≈ 0.033333 s）；本项目没有速度字段，本课也不算速度；
-8. **源码里没有 Δds 字段**：源码把规则写成文字"正向 = ds 增大 / 负向 = ds 减小"（M5 第 83～84、480 行）；Δds 是本课引入的概念量；转向点算法用的是原始 `x_px`（第 467、495～497 行）；`ux > 0 ⇒ 正向对应原始 x 增大`（第 481 行）；
+8. **源码里没有 Δds 字段**：源码把规则写成文字"正向 = ds 增大 / 负向 = ds 减小"（M5 第 83～84、480 行）；Δds 是本课引入的概念量；转向点算法用的是原始 `x_px`（第 496、524～526 行）；`ux > 0 ⇒ 正向对应原始 x 增大`（第 481 行）；
 9. **M4 静态形态 = 平台 + 台阶 + 空洞**：STATIC-002 / STATIC-003 各有 7 个平台（约 0、10、20、30、40、50、60 mm；台阶间隔约 10 mm），平台之间是长段 valid=False 的空洞；
 10. **M5 动态形态 = 连续往返**：1766/1766 全部 valid、无空洞；`ds_mm` −0.5283（frame 0）～66.1663（frame 1701）；数值多次上升、下降；
 11. **真实例子（负侧向正）**：M5 f237 → f313，`ds_mm` 从 −0.0046 增大到 +27.1660（Δds = +27.1706 mm）；
 12. **真实例子（正侧向负）**：M5 f963 → f1015，`ds_mm` 从 +39.7894 减小到 +26.1587（Δds = −13.6307 mm）；
 13. **正 / 负 / 零计数是符号侧统计**：按 `ds_mm` 非空（valid）行计数；1016/34/0、1174/18/0、1605/161/0；"零 0 例"只表示 4 位小数里没有恰好 0.0000 的行；
 14. **无效帧留空、不删除**：第 272～274 行初始化为 None；第 284～285 行仅 valid 算 `s_px`；第 338～340 行仅 valid 算 `ds_px` / `ds_mm`；第 360～363 行写空字符串；第 355 行注释"绝不写 0 / -1 / nan"；
-15. **`MIN_TURN_TRAVEL_PX = 20.0` 的最小认识**（第 30、85～87、474～477 行）：反向行程阈值——原始 `x_px` 从当前极值反向走满 20 px 才承认转向；静止段噪声（中位数约 0.13 px、最大约 1.25 px）触发不了；
+15. **`MIN_TURN_TRAVEL_PX = 20.0` 的最小认识**（第 30、85～87、503～506 行）：反向行程阈值——原始 `x_px` 从当前极值反向走满 20 px 才承认转向；静止段噪声（中位数约 0.13 px、最大约 1.25 px）触发不了；
 16. **本课边界**：`detect_turning_points()` 完整算法、峰谷完整判定、运动段完整切分、周期、频率、FFT 全部留到 L12 及以后，本课只登记名称与位置。
 
 ### 对应的项目文件
@@ -1038,7 +1038,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 第 87 行：`MIN_TURN_TRAVEL_PX = 20.0`；第 85～86 行说明："只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；
 - 第 111～113 行：`DIRECTION_POSITIVE = "正向"`、`DIRECTION_NEGATIVE = "负向"`（注释："只允许这两种说法"）；
 - 第 133 行："U_004 指向 10 cm -> 20 cm（ux > 0，即"ds 增大"为正向）"；
-- 第 462 行起 `detect_turning_points()`（docstring 第 474～477、480～481 行；内部算法第 512～594 行属于 L12，本课不展开）。
+- 第 462 行起 `detect_turning_points()`（docstring 第 503～506、509～510 行；内部算法第 512～594 行属于 L12，本课不展开）。
 
 ### L11 源码地图
 
@@ -1050,14 +1050,14 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 | 第 357～369 行 | `add_displacement()`（第 367～369 行仅 valid 帧算 `ds_px` / `ds_mm`；第 368 行 `ds_px = s_px - s0`） |
 | 第 377～395 行 | `build_ds_row()`（第 389～392 行无效值写空） |
 
-| 位置（`src\dynamic_displacement.py`，共 1224 行） | 内容 |
+| 位置（`src\dynamic_displacement.py`，共 1259 行） | 内容 |
 | --- | --- |
 | 第 30 行 | 模块 docstring：最小运动行程 `MIN_TURN_TRAVEL_PX = 20.0 px` |
 | 第 59～66 行 | M5 标定与 `U_004`（第 66 行） |
 | 第 82～87 行 | 运动方向统计规则（第 83～84 行正向 / 负向；第 87 行阈值） |
 | 第 111～113 行 | `DIRECTION_POSITIVE` / `DIRECTION_NEGATIVE` |
 | 第 121～175 行 | 冻结常量自检（第 133 行 `U_004` 方向说明） |
-| 第 458～594 行 | 转向点 / 运动段检测（第 462 行定义；本课只登记，不展开） |
+| 第 487～623 行 | 转向点 / 运动段检测（第 462 行定义；本课只登记，不展开） |
 
 （行号按 2026-10-04 当前源码逐行核对；如果实际源码行号发生变化，以当前真实源码为准。全部数据为只读核对，未重新生成。）
 
@@ -1068,7 +1068,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 ### 本节课暂未学习的内容
 
-~~`detect_turning_points()` 完整算法（`src\dynamic_displacement.py` 第 458～594 行）、峰谷完整判定、运动段完整切分~~（已在 L12 学习，见下一节）/ 周期、频率、FFT——仍属于后续课程；本课只登记名称与位置，不展开。
+~~`detect_turning_points()` 完整算法（`src\dynamic_displacement.py` 第 487～623 行）、峰谷完整判定、运动段完整切分~~（已在 L12 学习，见下一节）/ 周期、频率、FFT——仍属于后续课程；本课只登记名称与位置，不展开。
 
 （本节学到"ds 的符号语义 → 正方向约定 → Δds 判方向 → 三份真实数据的符号 / 形态 / 方向例子 → MIN_TURN_TRAVEL_PX 最小认识"这条链；转向点完整算法与运动段切分已在 L12 学习；周期 / 频率 / FFT 只登记名称，留到后续课程。）
 
@@ -1085,16 +1085,16 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 ### 本节课目标
 
 - 说清为什么需要转向点检测：L11 的 Δds 变号只是"方向改变"的判据；程序还需要一条能对抗噪声、处理极值平台、可复现的规则，才能确定"哪一帧是转向点"；
-- 说清转向检测的输入：只使用原始 `x_px` 序列（`detected=True` 且有 `x_px` 的行，按 frame 升序；第 467、495–497 行），不平滑、不滤波、不插值、不补帧、不预测（第 468 行）；
-- 说清 `valid=False` 的行只统计、不删除（第 498 行；第 485 行"只统计，不删除"），它们仍留在分析序列里参与检测；
-- 背出状态机的三个变量：`turn_indexes`（第 513 行）、`direction`（第 514 行：0 / +1 / −1）、`extreme_index`（第 515 行）；
+- 说清转向检测的输入：只使用原始 `x_px` 序列（`detected=True` 且有 `x_px` 的行，按 frame 升序；第 496、524–526 行），不平滑、不滤波、不插值、不补帧、不预测（第 497 行）；
+- 说清 `valid=False` 的行只统计、不删除（第 527 行；第 514 行"只统计，不删除"），它们仍留在分析序列里参与检测；
+- 背出状态机的三个变量：`turn_indexes`（第 542 行）、`direction`（第 543 行：0 / +1 / −1）、`extreme_index`（第 544 行）；
 - 逐行讲清状态机三个分支（第 521–538 行）：`direction == 0` 如何确定方向；`direction == +1` 如何更新峰值与确认 peak；`direction == −1` 如何更新谷值与确认 valley；
-- 说出 `MIN_TURN_TRAVEL_PX = 20.0`（第 87 行）是反向行程阈值；说清第 474–477 行的依据（静止段相邻帧 \|dx\| 中位数约 0.13 px、最大约 1.25 px；20 px 防止噪声制造假转向）；
-- 严格区分极值（转向点本身）与确认帧：`turn_indexes` 存的是 `extreme_index`（第 529、536 行），不是确认帧 `i`；并用真实案例说明确认滞后（peak f491 → f505、valley f602 → f732、peak f838 → f971）；
-- 说清 peak / valley：第 529 行生成 peak、第 536 行生成 valley；peak = 正向 → 负向，valley = 负向 → 正向；
-- 说清 `turns` 七个字段（`describe()` 第 540–547 行 + turns 第 552–563 行）：`frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；`direction_before` / `direction_after` 由 `kind` 推导（第 556–561 行），不是再次测量；
-- 说清 `segments` 输出（第 565–591 行）：第 566 行 `boundary_indexes` = 起点 + 所有转向点 + 终点；每段 start/end frame、time、x、direction、travel_px、below_min_travel；段数 = 转向点数 + 1（第 479 行）；首末帧只是边界（第 478–479 行）；
-- 说清 `below_min_travel`（第 588 行）比较的是"整个运动段两端之间的行程"，与转向确认使用的"从当前极值反向的行程"不是同一个概念（两者都用 20 px，但比较对象不同）；
+- 说出 `MIN_TURN_TRAVEL_PX = 20.0`（第 87 行）是反向行程阈值；说清第 503–506 行的依据（静止段相邻帧 \|dx\| 中位数约 0.13 px、最大约 1.25 px；20 px 防止噪声制造假转向）；
+- 严格区分极值（转向点本身）与确认帧：`turn_indexes` 存的是 `extreme_index`（第 558、565 行），不是确认帧 `i`；并用真实案例说明确认滞后（peak f491 → f505、valley f602 → f732、peak f838 → f971）；
+- 说清 peak / valley：第 558 行生成 peak、第 565 行生成 valley；peak = 正向 → 负向，valley = 负向 → 正向；
+- 说清 `turns` 七个字段（`describe()` 第 569–576 行 + turns 第 581–592 行）：`frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；`direction_before` / `direction_after` 由 `kind` 推导（第 585–590 行），不是再次测量；
+- 说清 `segments` 输出（第 594–620 行）：第 595 行 `boundary_indexes` = 起点 + 所有转向点 + 终点；每段 start/end frame、time、x、direction、travel_px、below_min_travel；段数 = 转向点数 + 1（第 479 行）；首末帧只是边界（第 507–508 行）；
+- 说清 `below_min_travel`（第 617 行）比较的是"整个运动段两端之间的行程"，与转向确认使用的"从当前极值反向的行程"不是同一个概念（两者都用 20 px，但比较对象不同）；
 - 背出 EXP-004 真实结果：6 个转向点（491 peak、602 valley、838 peak、1063 valley、1254 peak、1513 valley）与 7 个运动段（205.05 / 84.80 / 126.17 / 92.22 / 190.09 / 128.80 / 188.61 px）；
 - 说出这 6 个转向点与 `demo\run_m53_plot.py` 第 67–74 行冻结的 6 个 frame 完全一致（该脚本第 15–19 行明确不重新运行转向检测）；
 - 复述工程思想：保留原始数据、不平滑、不插值、不补帧、不预测，用明确、冻结、可复现的规则处理噪声（第 16、27、28、30 行）；
@@ -1104,28 +1104,28 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 1. **转向点检测 = 用冻结规则确定"哪一帧是转向点"**：不能靠"这一帧比上一帧小"这种一帧判据；
 2. **一帧判据不成立的三条原因**：噪声（静止段相邻帧 \|dx\| 中位数约 0.13 px、最大约 1.25 px，第 476 行）、极值平台、可复现性要求；
-3. **输入是原始 `x_px` 序列**（`detected=True` 且 `x_px` 非空、按 frame 升序；第 467、495–497 行）；不使用 `s_px` / `ds`，不读平滑曲线；
-4. **不平滑、不滤波、不插值、不补帧、不预测**（第 468 行；模块第 28 行）；
-5. **`valid=False` 的行只统计、不删除**（第 498 行；第 485 行"只统计，不删除"）；它们仍留在分析序列里参与检测；
-6. **状态机三个变量**：`turn_indexes`（第 513 行）、`direction`（第 514 行：0 / +1 / −1）、`extreme_index`（第 515 行）；
-7. **`direction == 0`**：`|x_i − x_extreme| ≥ 20` 时确定方向（谁大往谁的方向），并把 `extreme_index` 移到 `i`（第 521–524 行）；
-8. **`direction == +1`**：`x_i > x_extreme` 时更新峰值；`x_extreme − x_i ≥ 20` 时确认 peak 并翻转到 −1（第 525–531 行）；
-9. **`direction == −1`**：镜像处理，`x_i < x_extreme` 时更新谷值；`x_i − x_extreme ≥ 20` 时确认 valley 并翻转到 +1（第 532–538 行）；
-10. **`MIN_TURN_TRAVEL_PX = 20.0` 是反向行程阈值**（第 87、474–477 行）：只有从当前极值反向走满至少 20 px，该极值才算转向点；
-11. **`turn_indexes` 存的是 `extreme_index`（转向点 / 极值帧），不是确认帧 `i`**（第 529、536 行）；确认帧只触发确认，随后 `extreme_index` 被重置为 `i`（第 531、538 行）；
+3. **输入是原始 `x_px` 序列**（`detected=True` 且 `x_px` 非空、按 frame 升序；第 467、524–526 行）；不使用 `s_px` / `ds`，不读平滑曲线；
+4. **不平滑、不滤波、不插值、不补帧、不预测**（第 497 行；模块第 28 行）；
+5. **`valid=False` 的行只统计、不删除**（第 527 行；第 514 行"只统计，不删除"）；它们仍留在分析序列里参与检测；
+6. **状态机三个变量**：`turn_indexes`（第 542 行）、`direction`（第 514 行：0 / +1 / −1）、`extreme_index`（第 544 行）；
+7. **`direction == 0`**：`|x_i − x_extreme| ≥ 20` 时确定方向（谁大往谁的方向），并把 `extreme_index` 移到 `i`（第 550–553 行）；
+8. **`direction == +1`**：`x_i > x_extreme` 时更新峰值；`x_extreme − x_i ≥ 20` 时确认 peak 并翻转到 −1（第 554–560 行）；
+9. **`direction == −1`**：镜像处理，`x_i < x_extreme` 时更新谷值；`x_i − x_extreme ≥ 20` 时确认 valley 并翻转到 +1（第 561–567 行）；
+10. **`MIN_TURN_TRAVEL_PX = 20.0` 是反向行程阈值**（第 87、503–506 行）：只有从当前极值反向走满至少 20 px，该极值才算转向点；
+11. **`turn_indexes` 存的是 `extreme_index`（转向点 / 极值帧），不是确认帧 `i`**（第 558、536 行）；确认帧只触发确认，随后 `extreme_index` 被重置为 `i`（第 531、567 行）；
 12. **确认滞后是正常的**：peak f491 → f505 确认、valley f602 → f732 确认、peak f838 → f971 确认；这是抗噪与可复现的代价；
-13. **peak = 正向 → 负向**（第 529 行），**valley = 负向 → 正向**（第 536 行）；因为 `ux > 0`，peak 也是 `ds` 的局部极大、valley 也是 `ds` 的局部极小（第 480–481 行）；
-14. **`turns` 七个字段**：`frame` / `time_s` / `x_px` / `ds_mm`（`describe()` 第 540–547 行）+ `kind` / `direction_before` / `direction_after`（第 555–561 行）；后两个由 `kind` 推导；
-15. **`segments` 用 `boundary_indexes = [0] + 所有转向点 + [len(series) − 1]` 切分**（第 566 行）；每段记录 start/end frame、time、x、direction、`travel_px`（第 571 行）、`below_min_travel`（第 588 行）；
-16. **段数 = 转向点数 + 1**（第 479 行）；首帧和末帧只作为边界，不是转向点（第 478–479 行）；
-17. **两种 20 px 比较对象不同**：转向确认比较"从极值反向的行程"（第 528、535 行）；`below_min_travel` 比较"整段两端之间的行程"（第 571、588 行）；
+13. **peak = 正向 → 负向**（第 558 行），**valley = 负向 → 正向**（第 536 行）；因为 `ux > 0`，peak 也是 `ds` 的局部极大、valley 也是 `ds` 的局部极小（第 509–510 行）；
+14. **`turns` 七个字段**：`frame` / `time_s` / `x_px` / `ds_mm`（`describe()` 第 569–576 行）+ `kind` / `direction_before` / `direction_after`（第 555–561 行）；后两个由 `kind` 推导；
+15. **`segments` 用 `boundary_indexes = [0] + 所有转向点 + [len(series) − 1]` 切分**（第 595 行）；每段记录 start/end frame、time、x、direction、`travel_px`（第 600 行）、`below_min_travel`（第 617 行）；
+16. **段数 = 转向点数 + 1**（第 479 行）；首帧和末帧只作为边界，不是转向点（第 507–508 行）；
+17. **两种 20 px 比较对象不同**：转向确认比较"从极值反向的行程"（第 557、564 行）；`below_min_travel` 比较"整段两端之间的行程"（第 600、617 行）；
 18. **EXP-004 真实结果**：6 个转向点与 7 个运动段（见下）；与 `demo\run_m53_plot.py` 第 67–74 行冻结的 6 个 frame 完全一致；本课不展开周期、频率、频谱（FFT）。
 
 ### 对应的项目文件
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
-| 转向点 / 运动段检测（本课主角） | `src\dynamic_displacement.py` | 第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 462–593 行 `detect_turning_points()`；第 495–498 行分析序列；第 512–538 行状态机；第 540–547 行 `describe()`；第 552–563 行 turns；第 565–591 行 segments；第 588 行 `below_min_travel`；第 740–814 行报告打印 |
+| 转向点 / 运动段检测（本课主角） | `src\dynamic_displacement.py` | 第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 491–622 行 `detect_turning_points()`；第 524–527 行分析序列；第 541–567 行状态机；第 569–576 行 `describe()`；第 581–592 行 turns；第 594–620 行 segments；第 617 行 `below_min_travel`；第 769–843 行报告打印 |
 | 模块边界 | `src\dynamic_displacement.py` | 第 16、27、28、30 行（原始 x_px、不删行、不平滑 / 滤波 / 插值 / 补帧 / 预测、20 px 口径） |
 | 冻结值引用 | `demo\run_m53_plot.py` | 第 15–19 行不重新运行转向检测；第 67–74 行 `FROZEN_TURNING_POINTS`（6 个 frame + 逐字 time_s / ds_mm） |
 | 真实数据（只读核对，未重新生成） | `results\EXP-004-DYNAMIC-001_track.csv`、`results\EXP-004-DYNAMIC-001_ds.csv` | 各 1766 行、frame 0–1765；全部 detected / valid；起点 f0、终点 f1765；6 个转向点、7 个运动段 |
@@ -1134,37 +1134,37 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 ### 本节课确认的源码事实
 
 - 第 87 行：`MIN_TURN_TRAVEL_PX = 20.0`；第 85–86 行注释："只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；
-- 第 474–477 行 docstring："MIN_TURN_TRAVEL_PX = 20.0 是'反向行程阈值'：只有当原始 x 从当前极值反向走了至少 20 px，该极值才算转向点。本视频静止段的噪声（相邻帧 |dx| 中位数约 0.13 px、静止段最大约 1.25 px）远达不到 20 px，因此不会制造假转向 —— 这条规则在这里真正起作用"；
-- 第 467–468 行：只使用原始 `x_px` 序列（`detected=True` 且有 x 的行，按 frame 升序），不平滑、不滤波、不插值、不补帧、不预测；第 478–479 行：首末帧只作为边界；段数 = 转向点数 + 1；第 480–481 行：正向 = ds 增大、负向 = ds 减小，`ux > 0` 使正向对应原始 x 增大；
-- 第 495–497 行：`series = [row for row in rows if row["detected"] and row["x_px"] is not None]`；第 498 行：`analysis_invalid_rows = sum(1 for row in series if not row["valid"])`（只统计、不删除；第 485 行）；
-- 第 500–510 行 report 骨架（analysis_rows / analysis_invalid_rows / start / end / turns / segments / min_turn_travel_px）；第 509–510 行 series 少于 2 行时提前返回；
-- 第 512–515 行：`turn_indexes = []`、`direction = 0`、`extreme_index = 0`；
-- 第 521–524 行（direction == 0）：`abs(x_i - x_extreme) >= MIN_TURN_TRAVEL_PX` → `direction = 1 if x_i > x_extreme else -1`，`extreme_index = i`；
-- 第 525–531 行（direction == 1）：`x_i > x_extreme` → `extreme_index = i`；否则 `x_extreme - x_i >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "peak"))`（第 529 行）、`direction = -1`（第 530 行）、`extreme_index = i`（第 531 行）；
-- 第 532–538 行（direction == −1）：`x_i < x_extreme` → `extreme_index = i`；否则 `x_i - x_extreme >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "valley"))`（第 536 行）、`direction = 1`（第 537 行）、`extreme_index = i`（第 538 行）；
-- 第 540–547 行 `describe()`：返回 frame / time_s / x_px / ds_mm；第 546 行注释：ds_mm 在 valid=False 时为 None（打印"无"，不伪造数值）；第 549–550 行用它生成 start / end；
-- 第 552–563 行 turns：`item = describe(series[index])`；`item["kind"] = kind`；peak → `direction_before = DIRECTION_POSITIVE`、`direction_after = DIRECTION_NEGATIVE`；否则 valley → 负向 → 正向（第 556–561 行）；报告写入 `report["turns"]`；
-- 第 565–591 行 segments：第 566 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 571 行 `travel_px = abs(tail["x_px"] - head["x_px"])`；第 572–577 行按 tail/head 比较给出方向（正向 / 负向 / "无位移"）；第 580–589 行每段字段；第 588 行 `below_min_travel = travel_px < MIN_TURN_TRAVEL_PX`；
-- 第 740–814 行打印：分析行数 / invalid 数（741–744）、起点（745–753）、终点（754–761）、转向点数量（763）、运动段数与 below_min 计数（764–771）、每个转向点（774–792）、每个运动段（795–814）；
+- 第 503–506 行 docstring："MIN_TURN_TRAVEL_PX = 20.0 是'反向行程阈值'：只有当原始 x 从当前极值反向走了至少 20 px，该极值才算转向点。本视频静止段的噪声（相邻帧 |dx| 中位数约 0.13 px、静止段最大约 1.25 px）远达不到 20 px，因此不会制造假转向 —— 这条规则在这里真正起作用"；
+- 第 467–468 行：只使用原始 `x_px` 序列（`detected=True` 且有 x 的行，按 frame 升序），不平滑、不滤波、不插值、不补帧、不预测；第 507–508 行：首末帧只作为边界；段数 = 转向点数 + 1；第 509–510 行：正向 = ds 增大、负向 = ds 减小，`ux > 0` 使正向对应原始 x 增大；
+- 第 524–526 行：`series = [row for row in rows if row["detected"] and row["x_px"] is not None]`；第 527 行：`analysis_invalid_rows = sum(1 for row in series if not row["valid"])`（只统计、不删除；第 514 行）；
+- 第 529–539 行 report 骨架（analysis_rows / analysis_invalid_rows / start / end / turns / segments / min_turn_travel_px）；第 509–510 行 series 少于 2 行时提前返回；
+- 第 541–544 行：`turn_indexes = []`、`direction = 0`、`extreme_index = 0`；
+- 第 550–553 行（direction == 0）：`abs(x_i - x_extreme) >= MIN_TURN_TRAVEL_PX` → `direction = 1 if x_i > x_extreme else -1`，`extreme_index = i`；
+- 第 554–560 行（direction == 1）：`x_i > x_extreme` → `extreme_index = i`；否则 `x_extreme - x_i >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "peak"))`（第 558 行）、`direction = -1`（第 530 行）、`extreme_index = i`（第 531 行）；
+- 第 561–567 行（direction == −1）：`x_i < x_extreme` → `extreme_index = i`；否则 `x_i - x_extreme >= MIN_TURN_TRAVEL_PX` → `turn_indexes.append((extreme_index, "valley"))`（第 536 行）、`direction = 1`（第 537 行）、`extreme_index = i`（第 567 行）；
+- 第 569–576 行 `describe()`：返回 frame / time_s / x_px / ds_mm；第 546 行注释：ds_mm 在 valid=False 时为 None（打印"无"，不伪造数值）；第 578–579 行用它生成 start / end；
+- 第 581–592 行 turns：`item = describe(series[index])`；`item["kind"] = kind`；peak → `direction_before = DIRECTION_POSITIVE`、`direction_after = DIRECTION_NEGATIVE`；否则 valley → 负向 → 正向（第 585–590 行）；报告写入 `report["turns"]`；
+- 第 594–620 行 segments：第 595 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 600 行 `travel_px = abs(tail["x_px"] - head["x_px"])`；第 601–606 行按 tail/head 比较给出方向（正向 / 负向 / "无位移"）；第 609–618 行每段字段；第 617 行 `below_min_travel = travel_px < MIN_TURN_TRAVEL_PX`；
+- 第 769–843 行打印：分析行数 / invalid 数（770–773）、起点（774–782）、终点（783–790）、转向点数量（763）、运动段数与 below_min 计数（793–800）、每个转向点（803–821）、每个运动段（824–843）；
 - `demo\run_m53_plot.py` 第 15–19 行："不重新运行转向检测（只用 M5.2 冻结的 6 个 frame）"；第 67–74 行冻结 6 个 `(frame, time_s, ds_mm)`。
 
 ### L12 源码地图
 
-| 位置（`src\dynamic_displacement.py`，共 1224 行） | 内容 |
+| 位置（`src\dynamic_displacement.py`，共 1259 行） | 内容 |
 | --- | --- |
 | 第 16 行 | 数据链："原始 x_px 转向点统计（最小反向行程 20 px，不平滑、不滤波）" |
 | 第 27–30 行 | 工程边界：不删行 / 留空、不写 0 / −1 / nan；不做平滑 / 滤波 / 插值 / 补帧 / 补零 / 预测 / FFT / 频率 / 周期 / 振幅；转向点只用原始 x_px，20 px |
 | 第 85–87 行 | 阈值注释与 `MIN_TURN_TRAVEL_PX = 20.0` |
-| 第 228–262 行 | `read_track_csv()`（按 CSV 行序读入，不排序、不删行） |
-| 第 462–493 行 | `detect_turning_points()` 定义与 docstring（467–468、474–477、478–479、480–481 行） |
-| 第 495–498 行 | 分析序列与 `analysis_invalid_rows` |
-| 第 500–510 行 | report 骨架；series 少于 2 行提前返回 |
-| 第 512–538 行 | zigzag 状态机（514 direction / 515 extreme_index / 521–524 初始方向 / 525–531 peak / 532–538 valley） |
-| 第 540–547 行 | `describe()` |
-| 第 549–550 行 | start / end 边界点 |
-| 第 552–563 行 | turns 组装（556–561 行由 kind 推导 direction_before / after） |
-| 第 565–591 行 | segments 组装（566 boundary_indexes / 571 travel_px / 588 below_min_travel） |
-| 第 740–814 行 | 报告打印（17–21 项 + 每个转向点 + 每个运动段） |
+| 第 257–291 行 | `read_track_csv()`（按 CSV 行序读入，不排序、不删行） |
+| 第 491–522 行 | `detect_turning_points()` 定义与 docstring（467–468、503–506、507–508、509–510 行） |
+| 第 524–527 行 | 分析序列与 `analysis_invalid_rows` |
+| 第 529–539 行 | report 骨架；series 少于 2 行提前返回 |
+| 第 541–567 行 | zigzag 状态机（514 direction / 544 extreme_index / 550–553 初始方向 / 554–560 peak / 561–567 valley） |
+| 第 569–576 行 | `describe()` |
+| 第 578–579 行 | start / end 边界点 |
+| 第 581–592 行 | turns 组装（585–590 行由 kind 推导 direction_before / after） |
+| 第 594–620 行 | segments 组装（566 boundary_indexes / 571 travel_px / 588 below_min_travel） |
+| 第 769–843 行 | 报告打印（17–21 项 + 每个转向点 + 每个运动段） |
 
 | 位置（`demo\run_m53_plot.py`） | 内容 |
 | --- | --- |
@@ -1227,9 +1227,9 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 说清 L13 的问题起点：L12 已经交出"带时间戳的转向点（turns）"与"单方向运动段（segments）"，项目第一次有资格讨论"重复运动"；
 - 严格区分"项目已经实现的"与"刚刚开始讨论的"：源码只实现到 turns / segments；相邻转向点时间间隔、peak→peak / valley→valley 间隔统计、半周期统计、周期 T、频率 f、周期稳定性判据均未实现；
 - 背出 `src\dynamic_displacement.py` 第 28 行的边界声明；
-- 说清 `detect_turning_points()`（第 462–593 行）只负责转向点与运动段；
-- 逐字段说出 turns（第 540–563 行）与 segments（第 565–591 行）；
-- 说清当前代码只打印转向点数量、转向点信息、运动段信息，不打印间隔 / 周期 / 频率（第 763、765–770、777–792、798–813 行）；
+- 说清 `detect_turning_points()`（第 491–622 行）只负责转向点与运动段；
+- 逐字段说出 turns（第 569–592 行）与 segments（第 594–620 行）；
+- 说清当前代码只打印转向点数量、转向点信息、运动段信息，不打印间隔 / 周期 / 频率（第 792、794–799、806–821、827–842 行）；
 - 说清 turns → 事件序列、segments → 单方向区间的作用；
 - 说清"一个运动段 ≠ 一个周期"的三条理由；
 - 说清半周期候选（peak→valley / valley→peak）与完整周期候选（peak→peak / valley→valley）；
@@ -1243,14 +1243,14 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 1. 项目真实源码已实现：M2 单图检测 → M3 视频追踪 → M4 / M5 位移 → M5.2 转向点 turns → M5.2 运动段 segments；
 2. 当前 M5 源码没有实现：相邻转向点时间间隔、peak→peak / valley→valley 间隔统计、半周期统计、周期 T、频率 f、周期稳定性判据；
 3. `src\dynamic_displacement.py` 第 28 行原文："不做平滑 / 滤波 / 插值 / 补帧 / 补零 / 预测 / FFT / 频率 / 周期 / 振幅分析。"；
-4. `detect_turning_points()`（第 462–593 行）只产出 turns（第 552–563 行）与 segments（第 565–591 行）；
+4. `detect_turning_points()`（第 491–622 行）只产出 turns（第 581–592 行）与 segments（第 594–620 行）；
 5. turns 七个字段：`frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；其中 `time_s` 是 L13 的关键字段；
 6. segments 字段：start / end 的 frame、time、x，`direction`、`travel_px`、`below_min_travel`；段时长可由两端时间相减得到，但源码没有做这个减法；
-7. 打印边界：只有转向点数量（第 763 行）、运动段数量（第 765–770 行）、每个转向点（第 777–792 行）、每个运动段（第 798–813 行）；
+7. 打印边界：只有转向点数量（第 792 行）、运动段数量（第 794–799 行）、每个转向点（第 806–821 行）、每个运动段（第 827–842 行）；
 8. 全项目检索 M5.4 / M5.5 无结果（0 条）；
 9. turns 把连续运动转化为带时间戳、带事件类型的事件序列 → 可以做时间分析；
 10. segments 提供每个单方向运动区间的起止时间、方向与行程；
-11. 一个运动段 ≠ 一个周期：首尾段可能被视频边界截断（第 478–479 行）；一段只代表一个方向；周期应由同类事件之间定义；
+11. 一个运动段 ≠ 一个周期：首尾段可能被视频边界截断（第 507–508 行）；一段只代表一个方向；周期应由同类事件之间定义；
 12. 半周期候选 = peak→valley / valley→peak；完整周期候选 = peak→peak / valley→valley；
 13. 周期成立的基本思想：同类事件的间隔 + 半周期与完整周期是否一致 + 样本数量 + 数据一致性；
 14. EXP-004 只读分析：6 个转向点时间、5 个半周期候选、peak→peak / valley→valley 候选、2 × 半周期均值与偏差；结论是"有明显往复结构，但不能给出稳定可信的正式周期值"；
@@ -1261,7 +1261,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 
 | 类型 | 文件 | 说明 |
 | --- | --- | --- |
-| 本课主角（项目真实源码） | `src\dynamic_displacement.py` | `detect_turning_points()` 第 462–593 行；turns 第 540–563 行；segments 第 565–591 行；第 28 行边界声明；打印第 763、765–770、777–792、798–813 行 |
+| 本课主角（项目真实源码） | `src\dynamic_displacement.py` | `detect_turning_points()` 第 491–622 行；turns 第 569–592 行；segments 第 594–620 行；第 28 行边界声明；打印第 792、794–799、806–821、827–842 行 |
 | M6 对照（项目真实源码） | `src\m63_final_visualization.py` | 第 7 行不重新计算周期 / 频率 / 极值 / FFT；第 110 行 `REPRESENTATIVE_INTERVAL` 写死字面量；第 112–127 行 `FROZEN`（`T_exp` / `f_exp` 等）；第 202–219 行只做封板值一致性核对 |
 | M5.3 可视化脚本（项目真实源码） | `demo\run_m53_plot.py` | 第 19 行不计算周期 / 频率 / 振幅 / 频谱；第 67–74 行冻结 6 个转向点；第 382 行打印本轮不计算振动参数 |
 | M6 对照报告 | `docs\M6.3_FINAL_REPORT.md` | 第 154–169 行：峰—峰 9 段均值 T = 0.542593 s；谷—谷 9 段 0.542593 s；半周期法 0.542105 s；互差 ≤ 0.09%（外部公开视频记录） |
@@ -1271,10 +1271,10 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 ### 本节课确认的源码事实（项目真实源码）
 
 - `src\dynamic_displacement.py` 第 28 行：不做平滑 / 滤波 / 插值 / 补帧 / 补零 / 预测 / FFT / 频率 / 周期 / 振幅分析；
-- `detect_turning_points()`（第 462–593 行）：输入原始 `x_px` 序列，输出 turns / segments；第 478–479 行声明首末帧只是边界、段数 = 转向点数 + 1；
-- turns 第 540–563 行：七个字段，`time_s` 第 544 行、`kind` 第 555 行、`direction_before` / `direction_after` 第 556–561 行；
-- segments 第 565–591 行：`boundary_indexes` 第 566 行、`travel_px` 第 571 / 587 行、`below_min_travel` 第 588 行；
-- 打印部分：第 763 行转向点数量、第 765–770 行运动段数量、第 777–792 行每个转向点、第 798–813 行每个运动段；没有时间间隔 / 周期 / 频率打印；
+- `detect_turning_points()`（第 491–622 行）：输入原始 `x_px` 序列，输出 turns / segments；第 507–508 行声明首末帧只是边界、段数 = 转向点数 + 1；
+- turns 第 569–592 行：七个字段，`time_s` 第 544 行、`kind` 第 584 行、`direction_before` / `direction_after` 第 585–590 行；
+- segments 第 594–620 行：`boundary_indexes` 第 595 行、`travel_px` 第 600 / 616 行、`below_min_travel` 第 617 行；
+- 打印部分：第 792 行转向点数量、第 794–799 行运动段数量、第 806–821 行每个转向点、第 827–842 行每个运动段；没有时间间隔 / 周期 / 频率打印；
 - 只读检索：全项目 `M5.4` / `M5.5` 命中 0 条；`src\` / `demo\` 中"周期 / 频率 / FFT"命中均为边界声明或 M6 冻结值引用；
 - 旁证：`src\video_tracker.py` 第 17、615 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行同样声明不做频率 / 周期分析；
 - M6 侧：`src\m63_final_visualization.py` 第 7 行不重新计算周期 / 频率 / 极值 / FFT；第 110 行 `REPRESENTATIVE_INTERVAL = (150.0, 5.0000, 166.5, 5.5500, 0.550)` 是写死的字面量；第 112–127 行 `FROZEN` 含 `T_exp = 0.542593`、`f_exp = 1.843003` 等；第 202–219 行 `check_frozen_extrema_against_csv()` 只核对封板值与 CSV，不做极值搜索、不做周期重新计算；

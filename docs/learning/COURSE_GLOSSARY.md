@@ -247,7 +247,7 @@
 - **中文名称**：时间（单位：秒）
 - **英文名称**：time_s
 - **简单定义**：某一帧距离视频开始经过了多少秒，回答"过了多长时间"。
-- **VisionMotion 中的具体含义**：trajectory.csv 的第二列，为时间序列提供时间轴。当前视频 30 fps，所以 **time_s ≈ frame / 30**：frame 76 → 2.533333 s，frame 77 → 2.566667 s，frame 78 → 2.600000 s。注意它和 frame 数值完全不同，不能混用（如 frame 76 对应约 2.533 s，不是 76 s）。
+- **VisionMotion 中的具体含义**：trajectory.csv 的第二列，为时间序列提供时间轴。当前视频 30 fps，所以 **time_s ≈ frame / 30**：frame 76 → 2.533333 s，frame 77 → 2.566667 s，frame 78 → 2.600000 s。注意它和 frame 数值完全不同，不能混用（如 frame 76 对应约 2.562 s，不是 76 s）。
 
 ### 8. x_px
 
@@ -788,7 +788,7 @@
 - **中文名称**：释放资源
 - **英文名称**：release
 - **初学者解释**：用完把资源交还给系统：关闭视频读取器 / 写入器，释放文件句柄与解码器；不释放可能导致资源被占用、输出文件不完整。
-- **VisionMotion 中的具体作用**：资源清理写在 `finally` 块（第 540～544 行）：`csv_file.close()`（第 541 行）、`cap.release()`（第 542 行）、`writer.release()`（第 544 行，writer 存在时）；配合 `try`（第 488 行）与 `except KeyboardInterrupt`（第 536～539 行），即使中途异常或按 Ctrl+C，也尽量完成清理，已处理的帧数据仍保留在 CSV 与叠加视频中。失败路径上也有 `release()`：第 256、384、440、447 行等。
+- **VisionMotion 中的具体作用**：资源清理写在 `finally` 块（第 540～544 行）：`csv_file.close()`（第 541 行）、`cap.release()`（第 542 行）、`writer.release()`（第 544 行，writer 存在时）；配合 `try`（第 488 行）与 `except KeyboardInterrupt`（第 536～539 行），即使中途异常或按 Ctrl+C，也尽量完成清理，已处理的帧数据仍保留在 CSV 与叠加视频中。失败路径上也有 `release()`：第 256、384、469、447 行等。
 - **源码位置**：`src\video_tracker.py` 第 488、536～544 行（及第 256、384 行）。
 
 ### 11. Frame Loop
@@ -930,7 +930,7 @@
 - **中文名称**：按字典写行的 CSV 写入器
 - **英文名称**：csv.DictWriter
 - **初学者解释**：csv 模块里按"字典 + fieldnames"写行的写入器，能一次性写出表头；字段留空时写空字符串。
-- **VisionMotion 中的具体作用**：M6 的 `write_trajectory_csv()` 用它在第 348 行创建（`fieldnames=CSV_FIELDNAMES`、`lineterminator="\n"`）、第 349 行 `writeheader()` 写表头、第 352、365 行写成功 / 失败字典行；与 M3 的 `csv.writer` + 列表（第 484、497 行）形成对照——两种写法保证同样的"表头 + 每帧一行 + 失败留空"。
+- **VisionMotion 中的具体作用**：M6 的 `write_trajectory_csv()` 用它在第 348 行创建（`fieldnames=CSV_FIELDNAMES`、`lineterminator="\n"`）、第 378 行 `writeheader()` 写表头、第 352、365 行写成功 / 失败字典行；与 M3 的 `csv.writer` + 列表（第 484、497 行）形成对照——两种写法保证同样的"表头 + 每帧一行 + 失败留空"。
 - **源码位置**：`src\external_oscillation_tracker.py` 第 337～377 行（第 348、349、352、365 行）；对照 `src\video_tracker.py` 第 484、497 行。
 
 ### 15. y_px
@@ -1122,7 +1122,7 @@
 - **英文名称**：pixels per millimeter
 - **初学者解释**：1 毫米现实长度在画面里占多少个像素；数值越大，说明这段现实长度在画面里占的像素越多。它由"这一次拍摄"的几何条件决定，不是像素的固有属性。
 - **VisionMotion 中的具体作用**：`compute_scale()` 第 137 行计算 `px_per_mm = pixel_distance / real_distance_mm`，第 142 行随字典返回；冻结常量：M4 `PX_PER_MM = 5.756961`（`src\displacement.py` 第 52 行）、M5 `PX_PER_MM_004 = 6.086399`（`src\dynamic_displacement.py` 第 64 行）。它是位移换算的主表达方式：`ds_mm = ds_px / PX_PER_MM`（`src\displacement.py` 第 369 行）。
-- **源码位置**：`src\calibration.py` 第 137、142 行；`src\displacement.py` 第 52、369 行；`src\dynamic_displacement.py` 第 64、350 行。
+- **源码位置**：`src\calibration.py` 第 137、142 行；`src\displacement.py` 第 52、369 行；`src\dynamic_displacement.py` 第 64、379 行。
 
 ### 4. mm/px（每像素毫米数）
 
@@ -1194,23 +1194,23 @@
 - **英文名称**：s_px
 - **初学者解释**：把二维的 `(x_px, y_px)` 投影到尺子方向上之后得到的一维位置（像素）；同一目标在尺方向上的位置变化就是"位移"的来源。
 - **VisionMotion 中的具体作用**：ds CSV 的第 3 列（`src\displacement.py` 第 75 行、`src\dynamic_displacement.py` 第 94 行）；由 `add_projection()` 计算（`src\displacement.py` 第 306～314 行）；`s0` 取前 0.5 s（M4）/ 前 2.0 s（M5）有效帧 `s_px` 的平均值（`src\displacement.py` 第 317～354 行、`src\dynamic_displacement.py` 第 78～80 行）；`ds_px = s_px - s0`。
-- **源码位置**：`src\displacement.py` 第 75、306～354、368 行；`src\dynamic_displacement.py` 第 94、349 行。
+- **源码位置**：`src\displacement.py` 第 75、306～354、368 行；`src\dynamic_displacement.py` 第 94、378 行。
 
 ### 13. ds_px（相对位移，像素）
 
 - **中文名称**：相对位移（像素）
 - **英文名称**：ds_px
 - **初学者解释**：相对起点基准 `s0` 的位移，单位像素：`ds_px = s_px - s0`；它回答"相对开始时动了多少像素"。
-- **VisionMotion 中的具体作用**：ds CSV 的第 4 列（`src\displacement.py` 第 76 行、`src\dynamic_displacement.py` 第 95 行）；计算在第 368 / 349 行；写入格式 3 位小数（第 87 / 106 行）；`valid=False` 的行留空（`src\displacement.py` 第 384、390 行）。它是 `ds_mm` 的分子：`ds_mm = ds_px / PX_PER_MM`。
-- **源码位置**：`src\displacement.py` 第 76、87、368、384、390 行；`src\dynamic_displacement.py` 第 95、106、349 行。
+- **VisionMotion 中的具体作用**：ds CSV 的第 4 列（`src\displacement.py` 第 76 行、`src\dynamic_displacement.py` 第 95 行）；计算在第 368 / 378 行；写入格式 3 位小数（第 87 / 106 行）；`valid=False` 的行留空（`src\displacement.py` 第 384、390 行）。它是 `ds_mm` 的分子：`ds_mm = ds_px / PX_PER_MM`。
+- **源码位置**：`src\displacement.py` 第 76、87、368、384、390 行；`src\dynamic_displacement.py` 第 95、106、378 行。
 
 ### 14. ds_mm（相对位移，毫米）
 
 - **中文名称**：相对位移（毫米）
 - **英文名称**：ds_mm
 - **初学者解释**：`ds_px` 经过本实验标定换算后的毫米位移：`ds_mm = ds_px / PX_PER_MM`（等价于 `ds_px × MM_PER_PX`）。它是换算结果，不是"又测了一遍毫米"。
-- **VisionMotion 中的具体作用**：ds CSV 的第 5 列（`src\displacement.py` 第 77 行、`src\dynamic_displacement.py` 第 96 行）；M4 用 `PX_PER_MM`（第 369 行），M5 用 `PX_PER_MM_004`（第 350 行）；写入格式 4 位小数（第 88 / 107 行）；公式自检容差 0.0005 mm（`src\displacement.py` 第 736～740 行、`src\dynamic_displacement.py` 第 1105～1113 行）。真实数据注意"双重舍入"：用文件里已舍入的 `ds_px` 反算可能出现 ±0.0001 的差。M6 外部视频没有 ds_mm 列（没有有效标定）。
-- **源码位置**：`src\displacement.py` 第 77、88、369、771～775 行；`src\dynamic_displacement.py` 第 96、107、350、1105～1113 行。
+- **VisionMotion 中的具体作用**：ds CSV 的第 5 列（`src\displacement.py` 第 77 行、`src\dynamic_displacement.py` 第 96 行）；M4 用 `PX_PER_MM`（第 369 行），M5 用 `PX_PER_MM_004`（第 379 行）；写入格式 4 位小数（第 88 / 107 行）；公式自检容差 0.0005 mm（`src\displacement.py` 第 736～740 行、`src\dynamic_displacement.py` 第 1140～1148 行）。真实数据注意"双重舍入"：用文件里已舍入的 `ds_px` 反算可能出现 ±0.0001 的差。M6 外部视频没有 ds_mm 列（没有有效标定）。
+- **源码位置**：`src\displacement.py` 第 77、88、369、771～775 行；`src\dynamic_displacement.py` 第 96、107、379、1140～1148 行。
 
 ### 15. 无标定原则（Calibration Boundary）
 
@@ -1354,8 +1354,8 @@
 - **中文名称**：投影坐标与位移的区别
 - **英文名称**：s_px is a coordinate, not a displacement
 - **初学者解释**：`s_px` 回答"沿尺方向现在在哪"；位移回答"相对开始时走了多少"——后者需要先选一个基线。
-- **VisionMotion 中的具体作用**：`s_px` 由 `project_point()` 产生；"相对基线的位移"是 `ds_px = s_px - s0`、`ds_mm = ds_px / PX_PER_MM`（`src\displacement.py` 第 368～369 行、`src\dynamic_displacement.py` 第 349～350 行）。基线 `s0` 怎么选（`compute_s0()`，`src\displacement.py` 第 317 行起）、valid gate 的完整规则（`src\displacement.py` 第 57～64 行、`src\dynamic_displacement.py` 第 68～76 行）、`ds_px` / `ds_mm` 的完整流程**都属于 L10**；L09 只登记它们的名称与位置。
-- **源码位置**：`src\displacement.py` 第 57～64、317、357～369 行；`src\dynamic_displacement.py` 第 68～76、338～350 行。
+- **VisionMotion 中的具体作用**：`s_px` 由 `project_point()` 产生；"相对基线的位移"是 `ds_px = s_px - s0`、`ds_mm = ds_px / PX_PER_MM`（`src\displacement.py` 第 368～369 行、`src\dynamic_displacement.py` 第 378～379 行）。基线 `s0` 怎么选（`compute_s0()`，`src\displacement.py` 第 317 行起）、valid gate 的完整规则（`src\displacement.py` 第 57～64 行、`src\dynamic_displacement.py` 第 68～76 行）、`ds_px` / `ds_mm` 的完整流程**都属于 L10**；L09 只登记它们的名称与位置。
+- **源码位置**：`src\displacement.py` 第 57～64、317、357～369 行；`src\dynamic_displacement.py` 第 68～76、367～379 行。
 
 ---
 
@@ -1367,15 +1367,15 @@
 - **英文名称**：valid gate
 - **初学者解释**：在"检测到目标"之后的第二道数据筛选：判断这一帧的检测结果**能不能用于物理计算**。检测到 ≠ 能用。
 - **VisionMotion 中的具体作用**：ds CSV 的 `valid` 列（`DS_FIELDNAMES`：`src\displacement.py` 第 72～81 行 / `src\dynamic_displacement.py` 第 91～100 行）；判据由 `is_valid_frame()` 唯一给出；只有 `valid=True` 的帧才计算 `s_px` → `ds_px` → `ds_mm`。M4 注释原文"本次 EXP-003 拍摄几何专属参数，不是通用视觉规则"（`src\displacement.py` 第 57 行）；M5 标题原文"与 M4 gate 完全不同，不得混用"（`src\dynamic_displacement.py` 第 68 行）。真实数据：STATIC-002 的 911 帧、STATIC-003 的 792 帧都是 detected=True 但 valid=False（例：STATIC-002 frame 52，area 12439.0、y 35.44 被 y 门限拒绝）；EXP-004 为 0 帧。
-- **源码位置**：`src\displacement.py` 第 57～64、175～213 行；`src\dynamic_displacement.py` 第 68～76、183～210 行。
+- **源码位置**：`src\displacement.py` 第 57～64、175～213 行；`src\dynamic_displacement.py` 第 68～76、183～222 行。
 
 ### 2. is_valid_frame（valid 判定函数）
 
 - **中文名称**：valid 判定函数
 - **英文名称**：is_valid_frame
 - **初学者解释**：输入 detected、area_px、y_px，输出这一帧能不能用（True / False）：先要求 detected=True，再要求 area 与 y 都落在本实验的门限内；缺数据也返回 False。
-- **VisionMotion 中的具体作用**：M4 版（`src\displacement.py` 第 175～213 行）：第 194～195 行 `if not detected: return False`；第 197～205 行 area / y 为 None 返回 False（"数据缺失，不填 0"）；第 207～211 行两个范围判断。M5 版（`src\dynamic_displacement.py` 第 183～210 行）逻辑相同、常量换成 `_004`。第 185 行注释原文"绝不修改原始 detected，只在这里判断'这一帧能不能用'"。
-- **源码位置**：`src\displacement.py` 第 175～213 行；`src\dynamic_displacement.py` 第 183～210 行。
+- **VisionMotion 中的具体作用**：M4 版（`src\displacement.py` 第 175～213 行）：第 194～195 行 `if not detected: return False`；第 197～205 行 area / y 为 None 返回 False（"数据缺失，不填 0"）；第 207～211 行两个范围判断。M5 版（`src\dynamic_displacement.py` 第 183～222 行）逻辑相同、常量换成 `_004`。第 185 行注释原文"绝不修改原始 detected，只在这里判断'这一帧能不能用'"。
+- **源码位置**：`src\displacement.py` 第 175～213 行；`src\dynamic_displacement.py` 第 183～222 行。
 
 ### 3. detected 与 valid 的区别（补充视角）
 
@@ -1383,32 +1383,32 @@
 - **中文名称**：detected 与 valid 的区别
 - **英文名称**：detected vs valid
 - **初学者解释**：detected 回答"看到了吗"（M3 检测结果，track CSV 第 6 列）；valid 回答"这一帧的数据能用吗"（本模块第二道筛选，ds CSV 第 8 列）。
-- **VisionMotion 中的具体作用**：detected 由 `marker_detector.py` / M3 产生；valid 由本模块 `is_valid_frame()` 产生，依据是 detected + area 范围 + y 范围。真实数据：三份 track CSV 的 detected 都是 100%；valid 分别为 1050/1961（53.54%）、1192/1984（60.08%）、1766/1766（100%）——只看 detected 成功率会严重高估可用数据量（`summarize()`：`src\displacement.py` 第 447～449 行；`summarize_dynamic()`：`src\dynamic_displacement.py` 第 435～437 行）。
-- **源码位置**：`src\displacement.py` 第 57～64、175～213、419～460 行；`src\dynamic_displacement.py` 第 68～76、183～210、400～454 行。
+- **VisionMotion 中的具体作用**：detected 由 `marker_detector.py` / M3 产生；valid 由本模块 `is_valid_frame()` 产生，依据是 detected + area 范围 + y 范围。真实数据：三份 track CSV 的 detected 都是 100%；valid 分别为 1050/1961（53.54%）、1192/1984（60.08%）、1766/1766（100%）——只看 detected 成功率会严重高估可用数据量（`summarize()`：`src\displacement.py` 第 447～449 行；`summarize_dynamic()`：`src\dynamic_displacement.py` 第 464～466 行）。
+- **源码位置**：`src\displacement.py` 第 57～64、175～213、419～460 行；`src\dynamic_displacement.py` 第 68～76、183～222、429～483 行。
 
 ### 4. 无效帧留空（位移字段的缺失表示）
 
 - **中文名称**：无效帧留空
 - **英文名称**：empty displacement fields for invalid rows
 - **初学者解释**：valid=False 的帧**不删除**，但 `s_px` / `ds_px` / `ds_mm` 三列**留空**——空表示"没有测到 / 不能用"，绝不写 0、-1、nan。
-- **VisionMotion 中的具体作用**：`add_valid_flags()` 先把三个字段初始化为 None（`src\displacement.py` 第 301～303 行 / `src\dynamic_displacement.py` 第 281～283 行）；`add_displacement()` 只在 valid 时写值；`build_ds_row()` 把 None 写成空字符串（`src\displacement.py` 第 389～392 行 / `src\dynamic_displacement.py` 第 370～372 行）；第 384 行注释"缺失数据一律写成空字符串（""），绝不写 0 / -1 / nan"。自检逐行核对（第 721～724 行 / 第 1048～1053 行）。真实数据：三份 ds CSV 中无效行位移字段非空 0 例、有效行缺字段 0 例；ds CSV 行数与 track CSV 完全一致（1961 / 1984 / 1766）。
-- **源码位置**：`src\displacement.py` 第 21～22、290～303、384～392、721～724、816 行；`src\dynamic_displacement.py` 第 27、270～284、365～372、1048～1053、1159 行。
+- **VisionMotion 中的具体作用**：`add_valid_flags()` 先把三个字段初始化为 None（`src\displacement.py` 第 301～303 行 / `src\dynamic_displacement.py` 第 310～312 行）；`add_displacement()` 只在 valid 时写值；`build_ds_row()` 把 None 写成空字符串（`src\displacement.py` 第 389～392 行 / `src\dynamic_displacement.py` 第 399～401 行）；第 384 行注释"缺失数据一律写成空字符串（""），绝不写 0 / -1 / nan"。自检逐行核对（第 721～724 行 / 第 1083～1088 行）。真实数据：三份 ds CSV 中无效行位移字段非空 0 例、有效行缺字段 0 例；ds CSV 行数与 track CSV 完全一致（1961 / 1984 / 1766）。
+- **源码位置**：`src\displacement.py` 第 21～22、290～303、384～392、721～724、816 行；`src\dynamic_displacement.py` 第 27、299～313、394～401、1083～1088、1194 行。
 
 ### 5. s0（基线）
 
 - **中文名称**：位移基线
 - **英文名称**：s0 / baseline
 - **初学者解释**：位移的参考起点，单位像素。`ds_px = s_px - s0`；`s0` 是"时间窗口内所有有效帧的 `s_px` 平均值"，不是首帧、也不是标尺刻度位置。
-- **VisionMotion 中的具体作用**：`compute_s0()` 计算（`src\displacement.py` 第 317～354 行 / `src\dynamic_displacement.py` 第 297～335 行）；窗口内先按 `time_s <= window_s` 与 `valid=True` 筛选（第 333～334 行 / 第 314～315 行），再取平均（第 351～352 行 / 第 332～333 行）；最少有效帧不足时 `ok=False`、`s0=None`（第 347 行 / 第 328 行）。源码第 323 行明文"正式禁止：用 10 cm 代替 s0、用首帧代替均值"。真实复算值：STATIC-002 `s0` = 1076.063871 px、STATIC-003 = 1077.364097 px、EXP-004 = 855.202603 px。
-- **源码位置**：`src\displacement.py` 第 317～354、368 行；`src\dynamic_displacement.py` 第 297～335、349 行；真实数据 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
+- **VisionMotion 中的具体作用**：`compute_s0()` 计算（`src\displacement.py` 第 317～354 行 / `src\dynamic_displacement.py` 第 326～364 行）；窗口内先按 `time_s <= window_s` 与 `valid=True` 筛选（第 333～334 行 / 第 343～344 行），再取平均（第 351～352 行 / 第 361～362 行）；最少有效帧不足时 `ok=False`、`s0=None`（第 347 行 / 第 357 行）。源码第 323 行明文"正式禁止：用 10 cm 代替 s0、用首帧代替均值"。真实复算值：STATIC-002 `s0` = 1076.063871 px、STATIC-003 = 1077.364097 px、EXP-004 = 855.202603 px。
+- **源码位置**：`src\displacement.py` 第 317～354、368 行；`src\dynamic_displacement.py` 第 326～364、378 行；真实数据 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
 
 ### 6. compute_s0（基线计算函数）
 
 - **中文名称**：基线计算函数
 - **英文名称**：compute_s0
 - **初学者解释**：收集时间窗口内 valid=True 的 `s_px`，检查帧数是否够，然后求平均；返回一个报告字典而不是单个数字（报告里带窗口统计与 ok 标志）。
-- **VisionMotion 中的具体作用**：`src\displacement.py` 第 317～354 行；签名 `compute_s0(rows, window_s=S0_WINDOW_S, min_valid_frames=MIN_S0_VALID_FRAMES)`（第 317 行）；报告字段：`window_s` / `window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `min_valid_frames` / `ok` / `s0`（第 336～349 行）。M5 同名函数在第 297～335 行，第 311～312 行补充"不扩大窗口、不修改 gate"。调用方：第 825 行 / 第 1168 行；不达标时第 828 行 / 第 1171 行决定不写 ds CSV。
-- **源码位置**：`src\displacement.py` 第 317～354、825～831 行；`src\dynamic_displacement.py` 第 297～335、1168～1174 行。
+- **VisionMotion 中的具体作用**：`src\displacement.py` 第 317～354 行；签名 `compute_s0(rows, window_s=S0_WINDOW_S, min_valid_frames=MIN_S0_VALID_FRAMES)`（第 317 行）；报告字段：`window_s` / `window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `min_valid_frames` / `ok` / `s0`（第 336～349 行）。M5 同名函数在第 326～364 行，第 311～312 行补充"不扩大窗口、不修改 gate"。调用方：第 825 行 / 第 1168 行；不达标时第 828 行 / 第 1171 行决定不写 ds CSV。
+- **源码位置**：`src\displacement.py` 第 317～354、825～831 行；`src\dynamic_displacement.py` 第 326～364、1203～1209 行。
 
 ### 7. s0 窗口与最少有效帧（S0_WINDOW_S / MIN_S0_VALID_FRAMES）
 
@@ -1423,8 +1423,8 @@
 - **中文名称**：位置与位移的区别
 - **英文名称**：position vs displacement
 - **初学者解释**：位置回答"在哪"（`s_px`），位移回答"相对起点走了多少"（`ds_px`、`ds_mm`）。位置有零点从哪来的问题，位移没有。
-- **VisionMotion 中的具体作用**：`s_px` 是沿方向 `u` 的一维投影坐标（L09）；位移必须减去基线：`ds_px = s_px - s0`（`src\displacement.py` 第 368 行 / `src\dynamic_displacement.py` 第 349 行）。`s_px` 的绝对值跨实验不可比，差值才对应物理位移。真实证据：三份数据的 frame 0 的 `ds_px` = +4.335 / +0.164 / −3.215（都不为 0，因为 `s0` 是窗口均值而不是首帧值）。
-- **源码位置**：`src\displacement.py` 第 317～354、368～369 行；`src\dynamic_displacement.py` 第 297～335、349～350 行；真实数据 `results\EXP-003-STATIC-002_ds.csv` 等三份（只读）。
+- **VisionMotion 中的具体作用**：`s_px` 是沿方向 `u` 的一维投影坐标（L09）；位移必须减去基线：`ds_px = s_px - s0`（`src\displacement.py` 第 368 行 / `src\dynamic_displacement.py` 第 378 行）。`s_px` 的绝对值跨实验不可比，差值才对应物理位移。真实证据：三份数据的 frame 0 的 `ds_px` = +4.335 / +0.164 / −3.215（都不为 0，因为 `s0` 是窗口均值而不是首帧值）。
+- **源码位置**：`src\displacement.py` 第 317～354、368～369 行；`src\dynamic_displacement.py` 第 326～364、378～379 行；真实数据 `results\EXP-003-STATIC-002_ds.csv` 等三份（只读）。
 
 ### 9. ds_px（相对位移，像素）（补充视角）
 
@@ -1432,8 +1432,8 @@
 - **中文名称**：相对位移（像素）
 - **英文名称**：ds_px
 - **初学者解释**：`ds_px = s_px - s0`，单位像素；"相对基线 `s0` 移动了多少像素"。
-- **VisionMotion 中的具体作用**：计算在第 368 行 / 第 349 行；只在 valid=True 的行计算（`add_displacement()`，第 357～369 行 / 第 338～350 行）；写 3 位小数（第 87 / 106 行）；无效行留空（第 390 / 371 行）。真实复核（只读）：`|ds_px - (s_px - s0)|` 最大偏差 0.000870968 px（STATIC-002）/ 0.000903226 px（STATIC-003）/ 0.000603306 px（EXP-004），全部在自检容差 0.002 px 内；范围：−1.249～350.268 / −0.311～346.530 / −3.215～402.715 px。
-- **源码位置**：`src\displacement.py` 第 76、87、357～369、390 行；`src\dynamic_displacement.py` 第 95、106、338～350、371 行。
+- **VisionMotion 中的具体作用**：计算在第 368 行 / 第 378 行；只在 valid=True 的行计算（`add_displacement()`，第 357～369 行 / 第 367～379 行）；写 3 位小数（第 87 / 106 行）；无效行留空（第 390 / 400 行）。真实复核（只读）：`|ds_px - (s_px - s0)|` 最大偏差 0.000870968 px（STATIC-002）/ 0.000903226 px（STATIC-003）/ 0.000603306 px（EXP-004），全部在自检容差 0.002 px 内；范围：−1.249～350.268 / −0.311～346.530 / −3.215～402.715 px。
+- **源码位置**：`src\displacement.py` 第 76、87、357～369、390 行；`src\dynamic_displacement.py` 第 95、106、367～379、400 行。
 
 ### 10. ds_mm（相对位移，毫米）（补充视角）
 
@@ -1441,8 +1441,8 @@
 - **中文名称**：相对位移（毫米）
 - **英文名称**：ds_mm
 - **初学者解释**：`ds_mm = ds_px / PX_PER_MM`（等价 `ds_px × MM_PER_PX`）；它是换算结果，不是另一次测量。
-- **VisionMotion 中的具体作用**：M4 用 `PX_PER_MM = 5.756961`（`src\displacement.py` 第 369 行）；M5 用 `PX_PER_MM_004 = 6.086399`（`src\dynamic_displacement.py` 第 350 行）；写 4 位小数（第 88 / 107 行）；无效行留空（第 391 / 372 行）。真实复核（只读）：用写入的 `ds_px` 反算最大偏差 0.000132217 / 0.000134074 / 0.000127431 mm；用 `s_px − s0` 反推未舍入 `ds_px` 最大偏差 0.000143821 / 0.000150884 / 0.000139318 mm——全部在自检容差 0.0005 mm 内；范围：−0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663 mm。
-- **源码位置**：`src\displacement.py` 第 77、88、369、391 行；`src\dynamic_displacement.py` 第 96、107、350、372 行。
+- **VisionMotion 中的具体作用**：M4 用 `PX_PER_MM = 5.756961`（`src\displacement.py` 第 369 行）；M5 用 `PX_PER_MM_004 = 6.086399`（`src\dynamic_displacement.py` 第 379 行）；写 4 位小数（第 88 / 107 行）；无效行留空（第 391 / 401 行）。真实复核（只读）：用写入的 `ds_px` 反算最大偏差 0.000132217 / 0.000134074 / 0.000127431 mm；用 `s_px − s0` 反推未舍入 `ds_px` 最大偏差 0.000143821 / 0.000150884 / 0.000139318 mm——全部在自检容差 0.0005 mm 内；范围：−0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663 mm。
+- **源码位置**：`src\displacement.py` 第 77、88、369、391 行；`src\dynamic_displacement.py` 第 96、107、379、401 行。
 
 ### 11. 双重舍入（补充视角）
 
@@ -1450,16 +1450,16 @@
 - **中文名称**：双重舍入
 - **英文名称**：double rounding
 - **初学者解释**：`ds_mm` 是用**未舍入**的 `ds_px` 算出来再写 4 位小数的；而文件里的 `ds_px` 只有 3 位小数。所以"拿文件里的 `ds_px` 反算 `ds_mm`"可能出现 ±0.0001 mm 量级的差——这是正常的舍入顺序，不是数据错误。
-- **VisionMotion 中的具体作用**：`FIELD_PATTERNS` 规定 `ds_px` 3 位小数、`ds_mm` 4 位小数（`src\displacement.py` 第 84～90 行 / `src\dynamic_displacement.py` 第 103～109 行）；自检容差 0.0005 mm（`src\displacement.py` 第 771～775 行 / `src\dynamic_displacement.py` 第 1105～1113 行）。真实复核（只读）：两种口径的最大偏差分别 ≤ 0.000134074 mm 与 ≤ 0.000150884 mm，正好是 ~1e-4 mm 量级——与双重舍入预期一致。
-- **源码位置**：`src\displacement.py` 第 84～90、377～395、771～775 行；`src\dynamic_displacement.py` 第 103～109、358～376、1105～1113 行。
+- **VisionMotion 中的具体作用**：`FIELD_PATTERNS` 规定 `ds_px` 3 位小数、`ds_mm` 4 位小数（`src\displacement.py` 第 84～90 行 / `src\dynamic_displacement.py` 第 103～109 行）；自检容差 0.0005 mm（`src\displacement.py` 第 771～775 行 / `src\dynamic_displacement.py` 第 1140～1148 行）。真实复核（只读）：两种口径的最大偏差分别 ≤ 0.000134074 mm 与 ≤ 0.000150884 mm，正好是 ~1e-4 mm 量级——与双重舍入预期一致。
+- **源码位置**：`src\displacement.py` 第 84～90、377～395、771～775 行；`src\dynamic_displacement.py` 第 103～109、387～405、1140～1148 行。
 
 ### 12. 有效性统计字段（valid_rate / invalid_count 等）
 
 - **中文名称**：有效性统计字段
 - **英文名称**：valid_rate / invalid_count / detected_invalid_count / longest_invalid_run
 - **初学者解释**：四个回答"数据可用性"的统计量：有效比例、无效总数、被第二道筛选拒绝的数量、最长连续无效段。
-- **VisionMotion 中的具体作用**：`summarize()`（`src\displacement.py` 第 419～460 行）：第 449 行 `valid_rate`、第 450 行 `invalid_count`、第 452 行 `detected_invalid_count`、第 456 行 `longest_invalid_run`（循环第 434～442 行）；`summarize_dynamic()`（`src\dynamic_displacement.py` 第 400～454 行）：第 437 / 438 / 440 / 450 行。真实数值：valid_rate = 1050/1961 ≈ 53.54% / 1192/1984 ≈ 60.08% / 1766/1766 = 100%；detected_invalid_count = 911 / 792 / 0；longest_invalid_run = 180 / 147 / 0。
-- **源码位置**：`src\displacement.py` 第 419～460 行；`src\dynamic_displacement.py` 第 400～454 行；真实数据 `results\EXP-003-STATIC-002_ds.csv` 等三份（只读）。
+- **VisionMotion 中的具体作用**：`summarize()`（`src\displacement.py` 第 419～460 行）：第 449 行 `valid_rate`、第 479 行 `invalid_count`、第 452 行 `detected_invalid_count`、第 456 行 `longest_invalid_run`（循环第 434～442 行）；`summarize_dynamic()`（`src\dynamic_displacement.py` 第 429～483 行）：第 466 / 467 / 469 / 479 行。真实数值：valid_rate = 1050/1961 ≈ 53.54% / 1192/1984 ≈ 60.08% / 1766/1766 = 100%；detected_invalid_count = 911 / 792 / 0；longest_invalid_run = 180 / 147 / 0。
+- **源码位置**：`src\displacement.py` 第 419～460 行；`src\dynamic_displacement.py` 第 429～483 行；真实数据 `results\EXP-003-STATIC-002_ds.csv` 等三份（只读）。
 
 ### 13. 数据依赖链（detected → valid → s_px → ds_px → ds_mm）
 
@@ -1467,15 +1467,15 @@
 - **英文名称**：data dependency chain
 - **初学者解释**：五个环节一环扣一环：先有检测（detected），再有可用性筛选（valid），才有位置（s_px）、位移（ds_px）与毫米位移（ds_mm）；每一环只依赖上一环。
 - **VisionMotion 中的具体作用**：detected 写在 track CSV 第 6 列；valid 由 `is_valid_frame()` 判定并写在 ds CSV 第 8 列；`s_px` 由 `add_projection()` 只对 valid 行计算（`src\displacement.py` 第 306～314 行）；`ds_px` / `ds_mm` 由 `add_displacement()` 只对 valid 行计算（第 368～369 行）。任何一环断掉，后面全部留空：detected=False → 不判 valid；area / y 超界或缺失 → valid=False；valid=False → 没有 `s_px`、没有 ds、不参与 `s0` 平均（第 334 行）。
-- **源码位置**：`src\displacement.py` 第 175～213、290～303、306～314、333～334、357～369 行；`src\dynamic_displacement.py` 第 183～210、270～284、286～294、314～315、338～350 行。
+- **源码位置**：`src\displacement.py` 第 175～213、290～303、306～314、333～334、357～369 行；`src\dynamic_displacement.py` 第 183～222、299～313、315～323、343～344、367～379 行。
 
 ### 14. s0 不达标不写 ds CSV
 
 - **中文名称**：s0 不达标不写 ds CSV
 - **英文名称**：no ds CSV when s0 is not available
 - **初学者解释**：如果视频开头窗口里有效帧太少，就不生成 ds CSV——宁可"没有结果"，也不改规则硬凑。
-- **VisionMotion 中的具体作用**：`build_ds_from_track_csv()` 第 816 行原文"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 828 行 `if s0_report["ok"]` 才调用 `add_displacement()` / `write_ds_csv()`（第 829～831 行）；M5 同逻辑（第 1159、1171～1174 行），且第 1215～1217 行还要求冻结常量自检先通过。不足时的处理原文："本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"（第 546 行）。
-- **源码位置**：`src\displacement.py` 第 535～546、804～846 行；`src\dynamic_displacement.py` 第 1147～1191、1215～1217 行。
+- **VisionMotion 中的具体作用**：`build_ds_from_track_csv()` 第 816 行原文"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 828 行 `if s0_report["ok"]` 才调用 `add_displacement()` / `write_ds_csv()`（第 829～831 行）；M5 同逻辑（第 1194、1206～1209 行），且第 1250～1252 行还要求冻结常量自检先通过。不足时的处理原文："本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"（第 546 行）。
+- **源码位置**：`src\displacement.py` 第 535～546、804～846 行；`src\dynamic_displacement.py` 第 1182～1226、1250～1252 行。
 
 ---
 
@@ -1487,7 +1487,7 @@
 - **英文名称**：turning point
 - **初学者解释**：运动方向发生改变的位置所对应的那一帧。它不是"程序发现方向变了"的那一帧，而是**方向改变前到达的极值帧**。
 - **VisionMotion 中的具体作用**：`detect_turning_points()` 用原始 `x_px` 序列与 20 px 反向行程阈值找转向点，并把每个转向点写成 `turns` 里的一条记录（`frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`）。真实结果（只读核对）：EXP-004 共 6 个转向点——491 peak、602 valley、838 peak、1063 valley、1254 peak、1513 valley；与 `demo\run_m53_plot.py` 第 67～74 行冻结的 6 个 frame 完全一致。
-- **源码位置**：`src\dynamic_displacement.py` 第 462–593 行（第 529、536 行写入 `turn_indexes`；第 552–563 行组装 turns）；冻结值见 `demo\run_m53_plot.py` 第 67–74 行。
+- **源码位置**：`src\dynamic_displacement.py` 第 491–622 行（第 558、565 行写入 `turn_indexes`；第 581–592 行组装 turns）；冻结值见 `demo\run_m53_plot.py` 第 67–74 行。
 
 ### 2. detect_turning_points()
 
@@ -1495,70 +1495,70 @@
 - **英文名称**：detect_turning_points
 - **初学者解释**：输入逐帧数据、输出"转向点列表 + 运动段列表"的函数；它只处理原始 `x_px`，不做平滑 / 滤波 / 插值 / 补帧 / 预测。
 - **VisionMotion 中的具体作用**：定义在 `src\dynamic_displacement.py` 第 462 行，函数体到第 593 行（第 458–594 行是"八、原始 x_px 转向点 / 运动段检测"小节）。第 495–497 行构造分析序列：`row["detected"] and row["x_px"] is not None`；第 498 行统计其中 `valid=False` 的行数（只统计，不删除）；第 512–538 行是 zigzag 状态机；返回 `turns` 与 `segments`。它由 `build_ds_from_track_csv()` 调用（第 1183 行）。
-- **源码位置**：`src\dynamic_displacement.py` 第 462–593 行（docstring 第 463–493 行；关键行 495–498、512–538、540–547、552–563、565–591）；调用点第 1183 行。
+- **源码位置**：`src\dynamic_displacement.py` 第 491–622 行（docstring 第 492–522 行；关键行 524–527、541–567、569–576、581–592、594–620）；调用点第 1218 行。
 
 ### 3. 分析序列（analysis_rows / analysis_invalid_rows）
 
 - **中文名称**：分析序列与其中无效行数
 - **英文名称**：analysis series / analysis_rows / analysis_invalid_rows
 - **初学者解释**：真正参与转向检测的行集合叫分析序列；报告里同时记录"一共用了多少行"和"其中有多少行 `valid=False`"，后者只统计、不删除。
-- **VisionMotion 中的具体作用**：第 495–497 行用 `detected=True` 且有 `x_px` 的行构造 `series`；第 498 行 `analysis_invalid_rows = sum(1 for row in series if not row["valid"])`；第 501–502 行写进 report；第 485 行 docstring 原文"其中 valid=False 的行数（只统计，不删除）"；第 741–744 行把它打印为"17. 转向点分析使用行数：%d（其中 valid=False 行：%d，只统计不删除）"。注意：`series` 的筛选条件不含 `valid`，所以 `valid=False` 的行仍留在序列里参与状态机。真实数据：EXP-004 的 `analysis_rows = 1766`、`analysis_invalid_rows = 0`。
-- **源码位置**：`src\dynamic_displacement.py` 第 485、495–498、501–502、741–744 行。
+- **VisionMotion 中的具体作用**：第 524–526 行用 `detected=True` 且有 `x_px` 的行构造 `series`；第 527 行 `analysis_invalid_rows = sum(1 for row in series if not row["valid"])`；第 501–502 行写进 report；第 514 行 docstring 原文"其中 valid=False 的行数（只统计，不删除）"；第 770–773 行把它打印为"17. 转向点分析使用行数：%d（其中 valid=False 行：%d，只统计不删除）"。注意：`series` 的筛选条件不含 `valid`，所以 `valid=False` 的行仍留在序列里参与状态机。真实数据：EXP-004 的 `analysis_rows = 1766`、`analysis_invalid_rows = 0`。
+- **源码位置**：`src\dynamic_displacement.py` 第 514、524–527、501–502、770–773 行。
 
 ### 4. 原始 x_px 序列（raw x_px series）
 
 - **中文名称**：原始 x_px 序列
 - **英文名称**：raw x_px series
 - **初学者解释**：直接用检测结果里的水平像素坐标 `x_px` 按 frame 升序排成的序列——不换字段、不做任何前处理。
-- **VisionMotion 中的具体作用**：第 467 行 docstring 明确"只使用原始 x_px 序列（detected=True 且有 x 的行，按 frame 升序）"；第 468 行"不平滑、不滤波、不插值、不补帧、不预测"；模块第 30 行"转向点只使用原始 x_px 数据，最小运动行程 MIN_TURN_TRAVEL_PX = 20.0 px"。因为 `U_004` 的 `ux > 0`，正向对应原始 x 增大、也对应 ds 增大（第 480–481 行）。`read_track_csv()`（第 228–262 行）按 CSV 行序读入，不排序、不删行；帧升序是 track CSV 的输入契约。
-- **源码位置**：`src\dynamic_displacement.py` 第 16、30、228–262、467–468、480–481、495–497 行。
+- **VisionMotion 中的具体作用**：第 496 行 docstring 明确"只使用原始 x_px 序列（detected=True 且有 x 的行，按 frame 升序）"；第 497 行"不平滑、不滤波、不插值、不补帧、不预测"；模块第 30 行"转向点只使用原始 x_px 数据，最小运动行程 MIN_TURN_TRAVEL_PX = 20.0 px"。因为 `U_004` 的 `ux > 0`，正向对应原始 x 增大、也对应 ds 增大（第 509–510 行）。`read_track_csv()`（第 257–291 行）按 CSV 行序读入，不排序、不删行；帧升序是 track CSV 的输入契约。
+- **源码位置**：`src\dynamic_displacement.py` 第 16、30、257–291、467–468、509–510、524–526 行。
 
 ### 5. 状态机（zigzag）
 
 - **中文名称**：zigzag 状态机
 - **英文名称**：zigzag state machine
 - **初学者解释**：用"当前极值 + 当前方向"两个状态逐帧推进的检测流程：顺着方向走就更新极值，反向走满 20 px 就确认一次转向。
-- **VisionMotion 中的具体作用**：第 512–515 行初始化 `turn_indexes = []`、`direction = 0`、`extreme_index = 0`；第 517–538 行逐帧循环：`direction == 0` 时先确定方向（第 521–524 行，`abs(x_i - x_extreme) >= 20`）；`direction == +1` 时更新峰值并在反向 20 px 时确认 peak（第 525–531 行）；`direction == -1` 时镜像确认 valley（第 532–538 行）。确认后方向翻转、`extreme_index` 重置为确认帧 `i`。全程只用当前与历史帧，不使用未来信息。
-- **源码位置**：`src\dynamic_displacement.py` 第 512–538 行。
+- **VisionMotion 中的具体作用**：第 541–544 行初始化 `turn_indexes = []`、`direction = 0`、`extreme_index = 0`；第 517–538 行逐帧循环：`direction == 0` 时先确定方向（第 550–553 行，`abs(x_i - x_extreme) >= 20`）；`direction == +1` 时更新峰值并在反向 20 px 时确认 peak（第 554–560 行）；`direction == -1` 时镜像确认 valley（第 561–567 行）。确认后方向翻转、`extreme_index` 重置为确认帧 `i`。全程只用当前与历史帧，不使用未来信息。
+- **源码位置**：`src\dynamic_displacement.py` 第 541–567 行。
 
 ### 6. direction（0 / +1 / −1）
 
 - **中文名称**：当前已确认方向
 - **英文名称**：direction
 - **初学者解释**：状态机里的方向变量：`0` = 还没确定方向；`+1` = 正在沿 +x（正向）走；`-1` = 正在沿 −x（负向）走。
-- **VisionMotion 中的具体作用**：第 514 行初始化为 0；第 523 行在 `|x_i - x_extreme| >= 20` 后设为 `1 if x_i > x_extreme else -1`，同时把 `extreme_index` 移到 `i`（第 524 行）；第 530 行 peak 确认后置为 `-1`；第 537 行 valley 确认后置为 `+1`。因为 `U_004` 的 `ux > 0`，`+1` 就是"正向 = ds 增大"、`-1` 就是"负向 = ds 减小"（第 83–84、480–481 行）。只读内存复算：EXP-004 的 `direction` 首次在 frame 246 确定为 `+1`（x0 852.81 → x246 873.27，差 20.46 px）。
-- **源码位置**：`src\dynamic_displacement.py` 第 83–84、480–481、514、521–524、530、537 行。
+- **VisionMotion 中的具体作用**：第 543 行初始化为 0；第 523 行在 `|x_i - x_extreme| >= 20` 后设为 `1 if x_i > x_extreme else -1`，同时把 `extreme_index` 移到 `i`（第 553 行）；第 559 行 peak 确认后置为 `-1`；第 566 行 valley 确认后置为 `+1`。因为 `U_004` 的 `ux > 0`，`+1` 就是"正向 = ds 增大"、`-1` 就是"负向 = ds 减小"（第 83–84、509–510 行）。只读内存复算：EXP-004 的 `direction` 首次在 frame 246 确定为 `+1`（x0 852.81 → x246 873.27，差 20.46 px）。
+- **源码位置**：`src\dynamic_displacement.py` 第 83–84、509–510、543、550–553、559、566 行。
 
 ### 7. extreme_index
 
 - **中文名称**：当前方向上的极值下标
 - **英文名称**：extreme_index
 - **初学者解释**：当前这一轮运动里"最远走到哪里"的位置记账；顺着方向走就不断把它更新为最新帧，反向走满 20 px 时它就作为转向点被写入列表。
-- **VisionMotion 中的具体作用**：第 515 行初始化为 0；第 526–527 行（正向）当 `x_i > x_extreme` 时 `extreme_index = i`；第 533–534 行（负向）当 `x_i < x_extreme` 时 `extreme_index = i`；第 529、536 行把 `extreme_index`（而不是确认帧 `i`）写入 `turn_indexes`；第 531、538 行在确认后把 `extreme_index` 重置为 `i`，开始跟踪新方向的极值。注意它是 `series` 的下标，不是 frame；输出时通过 `series[index]["frame"]` 取真实 frame（`describe()` 第 543 行）。EXP-004 恰好 1766 行全部进入 series，所以下标数值与 frame 相同。
-- **源码位置**：`src\dynamic_displacement.py` 第 515、526–527、529、531、533–534、536、538、543、554 行。
+- **VisionMotion 中的具体作用**：第 544 行初始化为 0；第 526–527 行（正向）当 `x_i > x_extreme` 时 `extreme_index = i`；第 533–534 行（负向）当 `x_i < x_extreme` 时 `extreme_index = i`；第 558、565 行把 `extreme_index`（而不是确认帧 `i`）写入 `turn_indexes`；第 560、567 行在确认后把 `extreme_index` 重置为 `i`，开始跟踪新方向的极值。注意它是 `series` 的下标，不是 frame；输出时通过 `series[index]["frame"]` 取真实 frame（`describe()` 第 572 行）。EXP-004 恰好 1766 行全部进入 series，所以下标数值与 frame 相同。
+- **源码位置**：`src\dynamic_displacement.py` 第 544、526–527、558、560、533–534、565、567、572、583 行。
 
 ### 8. turn_indexes
 
 - **中文名称**：已确认转向点列表
 - **英文名称**：turn_indexes
 - **初学者解释**：状态机确认过的转向点清单，每一项是"极值下标 + 类型（peak / valley）"。
-- **VisionMotion 中的具体作用**：第 513 行初始化为 `[]`；第 529 行追加 `(extreme_index, "peak")`；第 536 行追加 `(extreme_index, "valley")`；第 553–563 行遍历它生成 `turns`；第 566 行用它的下标组成运动段边界。它只包含确认过的转向点，不含起点 / 终点。真实数据：EXP-004 的 `turn_indexes` 长度为 6，依次为 f491 peak、f602 valley、f838 peak、f1063 valley、f1254 peak、f1513 valley（frame 由 `series[index]["frame"]` 得到）。
-- **源码位置**：`src\dynamic_displacement.py` 第 513、529、536、552–563、566 行。
+- **VisionMotion 中的具体作用**：第 542 行初始化为 `[]`；第 558 行追加 `(extreme_index, "peak")`；第 565 行追加 `(extreme_index, "valley")`；第 553–563 行遍历它生成 `turns`；第 595 行用它的下标组成运动段边界。它只包含确认过的转向点，不含起点 / 终点。真实数据：EXP-004 的 `turn_indexes` 长度为 6，依次为 f491 peak、f602 valley、f838 peak、f1063 valley、f1254 peak、f1513 valley（frame 由 `series[index]["frame"]` 得到）。
+- **源码位置**：`src\dynamic_displacement.py` 第 542、558、565、581–592、595 行。
 
 ### 9. MIN_TURN_TRAVEL_PX = 20.0（反向行程阈值）
 
 - **中文名称**：最小反向行程阈值
 - **英文名称**：minimum turn travel threshold（MIN_TURN_TRAVEL_PX）
 - **初学者解释**：只有原始 `x` 从当前极值**反向**走满至少 20 px，这个极值才被确认为转向点；它是"确认一次转向"的门槛，不是"相邻两帧变化量"的门槛。
-- **VisionMotion 中的具体作用**：第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 85–86 行注释"只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；第 474–477 行 docstring 说明依据：本视频静止段相邻帧 |dx| 中位数约 0.13 px、静止段最大约 1.25 px，远达不到 20 px，因此不会制造假转向。第 507 行把它写进 report（`min_turn_travel_px`）。20 px 在第 522、528、535、588 行各出现一次：前三条是状态机里的"从极值反向的行程"，第 588 行是"整段两端之间的行程"。
-- **源码位置**：`src\dynamic_displacement.py` 第 85–87、474–477、507、522、528、535、588 行。
+- **VisionMotion 中的具体作用**：第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`；第 85–86 行注释"只有当原始 x 从当前极值反向走了至少 20 px，该极值才被确认为转向点（静止段噪声不可能触发）"；第 503–506 行 docstring 说明依据：本视频静止段相邻帧 |dx| 中位数约 0.13 px、静止段最大约 1.25 px，远达不到 20 px，因此不会制造假转向。第 536 行把它写进 report（`min_turn_travel_px`）。20 px 在第 551、557、564、617 行各出现一次：前三条是状态机里的"从极值反向的行程"，第 617 行是"整段两端之间的行程"。
+- **源码位置**：`src\dynamic_displacement.py` 第 85–87、503–506、536、551、557、564、617 行。
 
 ### 10. 确认帧（confirmation frame）与确认滞后
 
 - **中文名称**：确认帧 / 确认滞后
 - **英文名称**：confirmation frame / confirmation lag
 - **初学者解释**：转向点本身是极值帧；程序要等反向行程达到 20 px 的那一帧才承认这次转向，这一帧叫确认帧。确认帧一般比转向点晚，这段延迟叫确认滞后。
-- **VisionMotion 中的具体作用**：状态机在 `x_extreme - x_i >= 20`（第 528 行）或 `x_i - x_extreme >= 20`（第 535 行）时确认转向，但写入 `turn_indexes` 的是 `extreme_index`（第 529、536 行），确认帧 `i` 只用于触发确认并把 `extreme_index` 重置为 `i`（第 531、538 行）。真实案例：peak f491 在 f505 确认（反向 21.71 px）、valley f602 在 f732 确认（反向 22.28 px）、peak f838 在 f971 确认（反向 20.71 px）；按同一规则只读内存复算其余三次为 f1063→f1156（20.03 px）、f1254→f1346（20.66 px）、f1513→f1535（20.08 px）。确认滞后是抗噪与可复现的代价，不是错误。
+- **VisionMotion 中的具体作用**：状态机在 `x_extreme - x_i >= 20`（第 557 行）或 `x_i - x_extreme >= 20`（第 564 行）时确认转向，但写入 `turn_indexes` 的是 `extreme_index`（第 558、565 行），确认帧 `i` 只用于触发确认并把 `extreme_index` 重置为 `i`（第 560、567 行）。真实案例：peak f491 在 f505 确认（反向 21.71 px）、valley f602 在 f732 确认（反向 22.28 px）、peak f838 在 f971 确认（反向 20.71 px）；按同一规则只读内存复算其余三次为 f1063→f1156（20.03 px）、f1254→f1346（20.66 px）、f1513→f1535（20.08 px）。确认滞后是抗噪与可复现的代价，不是错误。
 - **源码位置**：`src\dynamic_displacement.py` 第 528–531、535–538 行；真实数据见 `results\EXP-004-DYNAMIC-001_track.csv` 对应行（只读核对）。
 
 ### 11. peak / valley（峰值 / 谷值）
@@ -1566,16 +1566,16 @@
 - **中文名称**：峰值 / 谷值
 - **英文名称**：peak / valley
 - **初学者解释**：peak 是正向运动结束时留下的极值（原始 x 的局部极大）；valley 是负向运动结束时留下的极值（原始 x 的局部极小）。
-- **VisionMotion 中的具体作用**：第 529 行在 `direction == +1` 分支确认 peak，方向变化为"正向 → 负向"；第 536 行在 `direction == -1` 分支确认 valley，方向变化为"负向 → 正向"；第 556–561 行把这两种类型翻译成 `direction_before` / `direction_after`。因为 `U_004` 的 `ux > 0`（第 480–481 行），peak 也对应 `ds` 的局部极大、valley 也对应 `ds` 的局部极小。真实数据：EXP-004 三次 peak（f491 / f838 / f1254）与三次 valley（f602 / f1063 / f1513）交替出现。
-- **源码位置**：`src\dynamic_displacement.py` 第 480–481、529、536、556–561 行。
+- **VisionMotion 中的具体作用**：第 558 行在 `direction == +1` 分支确认 peak，方向变化为"正向 → 负向"；第 565 行在 `direction == -1` 分支确认 valley，方向变化为"负向 → 正向"；第 585–590 行把这两种类型翻译成 `direction_before` / `direction_after`。因为 `U_004` 的 `ux > 0`（第 509–510 行），peak 也对应 `ds` 的局部极大、valley 也对应 `ds` 的局部极小。真实数据：EXP-004 三次 peak（f491 / f838 / f1254）与三次 valley（f602 / f1063 / f1513）交替出现。
+- **源码位置**：`src\dynamic_displacement.py` 第 509–510、558、565、585–590 行。
 
 ### 12. turns（转向点报告）与 describe()
 
 - **中文名称**：转向点报告与字段整理函数
 - **英文名称**：turns report / describe()
 - **初学者解释**：`turns` 是每个转向点一条记录的列表；`describe()` 负责把一行数据整理成报告需要的四个基本字段。
-- **VisionMotion 中的具体作用**：`describe(row)`（第 540–547 行）返回 `frame` / `time_s` / `x_px` / `ds_mm`（第 546 行注释：`ds_mm` 在 `valid=False` 时为 `None`，打印"无"，不伪造数值）；第 549–550 行用它生成起点 / 终点；第 552–563 行用它生成每个转向点并加上 `kind` / `direction_before` / `direction_after`。最终 `turns` 的七个字段是 `frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；第 774–792 行把每个转向点打印出来。
-- **源码位置**：`src\dynamic_displacement.py` 第 540–547、549–550、552–563、774–792 行。
+- **VisionMotion 中的具体作用**：`describe(row)`（第 569–576 行）返回 `frame` / `time_s` / `x_px` / `ds_mm`（第 546 行注释：`ds_mm` 在 `valid=False` 时为 `None`，打印"无"，不伪造数值）；第 578–579 行用它生成起点 / 终点；第 581–592 行用它生成每个转向点并加上 `kind` / `direction_before` / `direction_after`。最终 `turns` 的七个字段是 `frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；第 803–821 行把每个转向点打印出来。
+- **源码位置**：`src\dynamic_displacement.py` 第 569–576、578–579、581–592、803–821 行。
 
 ### 13. direction_before / direction_after
 
@@ -1583,39 +1583,39 @@
 - **英文名称**：direction_before / direction_after
 - **初学者解释**：转向点之前的运动方向与之后的运动方向；它们由转向类型直接决定，不需要再测一次。
 - **VisionMotion 中的具体作用**：第 556–558 行：`kind == "peak"` → `direction_before = DIRECTION_POSITIVE`（正向）、`direction_after = DIRECTION_NEGATIVE`（负向）；第 559–561 行：`else`（valley）→ 负向 → 正向。`DIRECTION_POSITIVE = "正向"`、`DIRECTION_NEGATIVE = "负向"` 在第 111–113 行定义（注释"只允许这两种说法"）。因此这两个字段是由 `kind` **推导**得到的，不是从 Δds 重新测量出来的；真实数据里 f491 的这两个字段就是"正向 → 负向"。
-- **源码位置**：`src\dynamic_displacement.py` 第 111–113、556–561 行。
+- **源码位置**：`src\dynamic_displacement.py` 第 111–113、585–590 行。
 
 ### 14. 运动段（motion segment）与 boundary_indexes
 
 - **中文名称**：运动段与边界索引
 - **英文名称**：motion segment / boundary_indexes
 - **初学者解释**：把"起点 → 每个转向点 → 终点"依次连起来，相邻两个边界之间就是一段运动；段数 = 转向点数 + 1。
-- **VisionMotion 中的具体作用**：第 566 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 568–591 行对每对相邻边界生成一个 `segment` 字典（`start_frame` / `start_time_s` / `start_x_px` / `end_frame` / `end_time_s` / `end_x_px` / `direction` / `travel_px` / `below_min_travel`）；第 479 行 docstring"运动段数 = 转向点数量 + 1"；第 764–771 行把段数与 below_min 计数打印出来；第 795–814 行打印每一段。真实数据：EXP-004 的 6 个转向点把整段运动切成 7 段，边界 frame 为 0 → 491 → 602 → 838 → 1063 → 1254 → 1513 → 1765；其中 0 与 1765 是边界而不是转向点。
-- **源码位置**：`src\dynamic_displacement.py` 第 478–479、565–591、764–771、795–814 行。
+- **VisionMotion 中的具体作用**：第 595 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 568–591 行对每对相邻边界生成一个 `segment` 字典（`start_frame` / `start_time_s` / `start_x_px` / `end_frame` / `end_time_s` / `end_x_px` / `direction` / `travel_px` / `below_min_travel`）；第 479 行 docstring"运动段数 = 转向点数量 + 1"；第 793–800 行把段数与 below_min 计数打印出来；第 824–843 行打印每一段。真实数据：EXP-004 的 6 个转向点把整段运动切成 7 段，边界 frame 为 0 → 491 → 602 → 838 → 1063 → 1254 → 1513 → 1765；其中 0 与 1765 是边界而不是转向点。
+- **源码位置**：`src\dynamic_displacement.py` 第 507–508、594–620、793–800、824–843 行。
 
 ### 15. travel_px
 
 - **中文名称**：段行程（像素）
 - **英文名称**：travel_px
 - **初学者解释**：这一运动段两端之间的行程：`|终点 x_px − 起点 x_px|`，单位像素。
-- **VisionMotion 中的具体作用**：第 571 行 `travel_px = abs(tail["x_px"] - head["x_px"])`；第 586 行旁边由 `tail` / `head` 比较给出段方向（第 572–577 行：tail 大 = 正向、tail 小 = 负向、相等 = "无位移"）；第 801 行打印为"行程：%.2f px"。注意它是**两端之间**的行程（段级），不是状态机里"从极值反向的行程"（第 528、535 行）。真实数据：EXP-004 七段的 `travel_px` 为 205.05 / 84.80 / 126.17 / 92.22 / 190.09 / 128.80 / 188.61 px。
-- **源码位置**：`src\dynamic_displacement.py` 第 565–577、586、795–814 行。
+- **VisionMotion 中的具体作用**：第 600 行 `travel_px = abs(tail["x_px"] - head["x_px"])`；第 615 行旁边由 `tail` / `head` 比较给出段方向（第 601–606 行：tail 大 = 正向、tail 小 = 负向、相等 = "无位移"）；第 801 行打印为"行程：%.2f px"。注意它是**两端之间**的行程（段级），不是状态机里"从极值反向的行程"（第 557、564 行）。真实数据：EXP-004 七段的 `travel_px` 为 205.05 / 84.80 / 126.17 / 92.22 / 190.09 / 128.80 / 188.61 px。
+- **源码位置**：`src\dynamic_displacement.py` 第 565–577、615、824–843 行。
 
 ### 16. below_min_travel
 
 - **中文名称**：段行程是否小于最小行程
 - **英文名称**：below_min_travel
 - **初学者解释**：给每一段打的标记：这段两端之间的行程是不是小于 20 px。
-- **VisionMotion 中的具体作用**：第 588 行 `"below_min_travel": travel_px < MIN_TURN_TRAVEL_PX`；它比较的是**整个运动段两端之间的行程**（第 571 行），发生在状态机结束、切分运动段之后；而转向确认比较的是"从当前极值反向的行程"（第 528、535 行），发生在状态机运行中。两者都使用 20 px，但比较对象不同。第 764–771 行统计"其中行程 < 20.0 px 的段：%d"。真实数据：EXP-004 七段行程都 ≥ 20 px，因此七个 `below_min_travel` 全部为 `False`。
-- **源码位置**：`src\dynamic_displacement.py` 第 571、588、764–771 行。
+- **VisionMotion 中的具体作用**：第 617 行 `"below_min_travel": travel_px < MIN_TURN_TRAVEL_PX`；它比较的是**整个运动段两端之间的行程**（第 600 行），发生在状态机结束、切分运动段之后；而转向确认比较的是"从当前极值反向的行程"（第 557、564 行），发生在状态机运行中。两者都使用 20 px，但比较对象不同。第 793–800 行统计"其中行程 < 20.0 px 的段：%d"。真实数据：EXP-004 七段行程都 ≥ 20 px，因此七个 `below_min_travel` 全部为 `False`。
+- **源码位置**：`src\dynamic_displacement.py` 第 600、617、793–800 行。
 
 ### 17. 边界点（起点 / 终点）
 
 - **中文名称**：边界点（起点 / 终点）
 - **英文名称**：boundary points
 - **初学者解释**：视频的第一帧和最后一帧只作为运动记录的两端边界，不算转向点。
-- **VisionMotion 中的具体作用**：第 478–479 行 docstring"视频首帧与末帧不是极值点，只作为记录边界（起点 / 终点），不计入转向点数量"；第 549–550 行 `report["start"] = describe(series[0])`、`report["end"] = describe(series[-1])`；第 566 行把它们与所有转向点拼成 `boundary_indexes`；第 745–761 行打印起点 / 终点。真实数据：EXP-004 的起点 f0（t 0.000000，x 852.81，ds_mm −0.5283）、终点 f1765（t 29.355535，x 1256.91，ds_mm 65.8647）。
-- **源码位置**：`src\dynamic_displacement.py` 第 478–479、549–550、566、745–761 行。
+- **VisionMotion 中的具体作用**：第 507–508 行 docstring"视频首帧与末帧不是极值点，只作为记录边界（起点 / 终点），不计入转向点数量"；第 578–579 行 `report["start"] = describe(series[0])`、`report["end"] = describe(series[-1])`；第 595 行把它们与所有转向点拼成 `boundary_indexes`；第 745–761 行打印起点 / 终点。真实数据：EXP-004 的起点 f0（t 0.000000，x 852.81，ds_mm −0.5283）、终点 f1765（t 29.355535，x 1256.91，ds_mm 65.8647）。
+- **源码位置**：`src\dynamic_displacement.py` 第 507–508、578–579、595、745–761 行。
 
 ### 18. 原始数据原则（不平滑 / 不滤波 / 不插值 / 不补帧 / 不预测）
 
@@ -1630,8 +1630,8 @@
 - **中文名称**：冻结规则与可复现性
 - **英文名称**：frozen rules & reproducibility
 - **初学者解释**：把阈值与流程写成明确常量（如 20.0 px），同一个输入必然得到同一个输出；任何人可以按行号复算。
-- **VisionMotion 中的具体作用**：第 466 行 docstring"口径（已冻结，不得修改；与 M5.1-C 只读审计完全相同）"；第 87 行阈值是常量；第 512 行注释"与 M5.1-C 审计完全相同的实现"；第 20–23 行声明 EXP-004 专属、不得混用 M4 常量；第 30 行固定 MIN_TURN_TRAVEL_PX = 20.0 px。真实验证：M5.2 冻结的 6 个转向点（`demo\run_m53_plot.py` 第 67–74 行）与 `results\EXP-004-DYNAMIC-001_*.csv` 只读复算结果完全一致；该脚本第 15–19 行还明确"不重新运行转向检测（只用 M5.2 冻结的 6 个 frame）"。
-- **源码位置**：`src\dynamic_displacement.py` 第 20–23、30、87、462–466、512 行；`demo\run_m53_plot.py` 第 15–19、67–74 行。
+- **VisionMotion 中的具体作用**：第 466 行 docstring"口径（已冻结，不得修改；与 M5.1-C 只读审计完全相同）"；第 87 行阈值是常量；第 541 行注释"与 M5.1-C 审计完全相同的实现"；第 20–23 行声明 EXP-004 专属、不得混用 M4 常量；第 30 行固定 MIN_TURN_TRAVEL_PX = 20.0 px。真实验证：M5.2 冻结的 6 个转向点（`demo\run_m53_plot.py` 第 67–74 行）与 `results\EXP-004-DYNAMIC-001_*.csv` 只读复算结果完全一致；该脚本第 15–19 行还明确"不重新运行转向检测（只用 M5.2 冻结的 6 个 frame）"。
+- **源码位置**：`src\dynamic_displacement.py` 第 20–23、30、87、462–466、541 行；`demo\run_m53_plot.py` 第 15–19、67–74 行。
 
 ---
 
@@ -1644,16 +1644,16 @@
 - **中文名称**：位移变化量
 - **英文名称**：Δds / delta ds
 - **初学者解释**：相邻两帧位移读数之差：`Δds = ds[i+1] - ds[i]`。它回答的是"这一段正在往哪边运动"：Δds > 0 向正方向运动，Δds < 0 向负方向运动，Δds = 0 表示该相邻间隔读数不变。Δds 不是速度（速度还要除以 Δt）。
-- **VisionMotion 中的具体作用**：源码里**没有** `Δds` / `delta_ds` 变量或 CSV 字段；与它对应的文字规则写在 `src\dynamic_displacement.py` 第 83～84 行（"正向 = ds 增大（沿 U_004，即尺子 10 cm -> 20 cm 方向）"；"负向 = ds 减小"）与第 480～481 行。用 `ds_px` 或 `ds_mm` 算都同号（第 369 / 350 行除数为正）。两个前提：两帧都 valid（`ds` 非空）才能相减；空洞处 Δds 断开（M4 静态数据的平台之间就是空洞）。真实例子：M5 frame 237 → 313，`ds_mm` 从 −0.0046 增大到 +27.1660（Δds = +27.1706 mm）；M5 frame 963 → 1015，从 +39.7894 减小到 +26.1587（Δds = −13.6307 mm）。
-- **源码位置**：`src\displacement.py` 第 301～303、313～314、368～369、389～392 行；`src\dynamic_displacement.py` 第 83～84、349～350、480～481 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读核对）。
+- **VisionMotion 中的具体作用**：源码里**没有** `Δds` / `delta_ds` 变量或 CSV 字段；与它对应的文字规则写在 `src\dynamic_displacement.py` 第 83～84 行（"正向 = ds 增大（沿 U_004，即尺子 10 cm -> 20 cm 方向）"；"负向 = ds 减小"）与第 509～510 行。用 `ds_px` 或 `ds_mm` 算都同号（第 369 / 379 行除数为正）。两个前提：两帧都 valid（`ds` 非空）才能相减；空洞处 Δds 断开（M4 静态数据的平台之间就是空洞）。真实例子：M5 frame 237 → 313，`ds_mm` 从 −0.0046 增大到 +27.1660（Δds = +27.1706 mm）；M5 frame 963 → 1015，从 +39.7894 减小到 +26.1587（Δds = −13.6307 mm）。
+- **源码位置**：`src\displacement.py` 第 301～303、313～314、368～369、389～392 行；`src\dynamic_displacement.py` 第 83～84、378～379、509～510 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读核对）。
 
 ### 2. 运动方向（正向 / 负向）
 
 - **中文名称**：运动方向
 - **英文名称**：motion direction（positive / negative）
 - **初学者解释**：判断"正在往哪个方向运动"只看变化量 Δds 的符号（不是看 ds 的符号）：Δds > 0 = 向正方向；Δds < 0 = 向负方向；Δds = 0 = 该相邻间隔读数不变。
-- **VisionMotion 中的具体作用**：第 83～84 行给出定义；第 111～113 行规定显示文字只允许 `DIRECTION_POSITIVE = "正向"` 与 `DIRECTION_NEGATIVE = "负向"` 两种说法（注释："只允许这两种说法"）；第 480～481 行在 docstring 重复规则，并指出 `U_004` 的 `ux > 0`，所以正向对应原始 `x_px` 增大（`detect_turning_points()` 用的就是原始 `x_px`，第 467、495～497 行；完整算法属于 L12）。真实例子：M5 f237 → f313（负侧、向正方向运动）与 f963 → f1015（正侧、向负方向运动）。
-- **源码位置**：`src\dynamic_displacement.py` 第 82～87、111～113、458～594 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
+- **VisionMotion 中的具体作用**：第 83～84 行给出定义；第 111～113 行规定显示文字只允许 `DIRECTION_POSITIVE = "正向"` 与 `DIRECTION_NEGATIVE = "负向"` 两种说法（注释："只允许这两种说法"）；第 509～510 行在 docstring 重复规则，并指出 `U_004` 的 `ux > 0`，所以正向对应原始 `x_px` 增大（`detect_turning_points()` 用的就是原始 `x_px`，第 496、524～526 行；完整算法属于 L12）。真实例子：M5 f237 → f313（负侧、向正方向运动）与 f963 → f1015（正侧、向负方向运动）。
+- **源码位置**：`src\dynamic_displacement.py` 第 82～87、111～113、487～623 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
 
 ### 3. 正方向约定（P1 → P2）
 
@@ -1668,8 +1668,8 @@
 - **中文名称**：参考位置与符号侧
 - **英文名称**：reference position and side of sign
 - **初学者解释**：`s0` 是参考位置（L10 的窗口内有效帧 `s_px` 平均值），它本身**不带方向**；`ds = s_px - s0` 为正 → 这一帧在参考位置的**正侧**（沿 `U` / `U_004` 指向的一侧）；为负 → **负侧**；为零 → 恰好落在参考位置上。符号只表示"在哪一侧"，不代表好坏、不代表快慢。
-- **VisionMotion 中的具体作用**：源码只写 `ds_px = s_px - s0`（第 339 / 349 行），"正侧 / 负侧"是概念解释用语（源码里没有这两个词）。真实数据（只读核对）：STATIC-002 的 34 个负号帧全部在 frame 1～51；STATIC-003 的 18 个全部在 frame 2～34；EXP-004 的 161 个全部在 frame 0～237。`|ds|` 表示离参考位置多远（沿尺方向的投影距离），不是速度。
-- **源码位置**：`src\displacement.py` 第 317～354、368～369 行；`src\dynamic_displacement.py` 第 349～350 行；真实数据 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
+- **VisionMotion 中的具体作用**：源码只写 `ds_px = s_px - s0`（第 339 / 378 行），"正侧 / 负侧"是概念解释用语（源码里没有这两个词）。真实数据（只读核对）：STATIC-002 的 34 个负号帧全部在 frame 1～51；STATIC-003 的 18 个全部在 frame 2～34；EXP-004 的 161 个全部在 frame 0～237。`|ds|` 表示离参考位置多远（沿尺方向的投影距离），不是速度。
+- **源码位置**：`src\displacement.py` 第 317～354、368～369 行；`src\dynamic_displacement.py` 第 378～379 行；真实数据 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
 
 ### 5. 符号统计（正 / 负 / 零计数）
 
@@ -1677,7 +1677,7 @@
 - **英文名称**：sign counts（positive / negative / zero）
 - **初学者解释**：按 `ds_mm` **非空**（即 valid=True）的行统计"正侧 / 负侧 / 恰好为零"的帧数。它统计的是**符号侧**，不是"有多少帧在向正 / 负方向运动"。
 - **VisionMotion 中的具体作用**：三份真实数据为 1016/34/0（STATIC-002）、1174/18/0（STATIC-003）、1605/161/0（EXP-004）；"零 0 例"只表示这三份文件的 4 位小数里没有恰好写成 `0.0000` 的行，不代表"不可能经过参考位置"。对应 `ds_mm` 范围：−0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663。
-- **源码位置**：`src\displacement.py` 第 368～369 行；`src\dynamic_displacement.py` 第 349～350 行；统计来自 `results\` 下三份 ds CSV（只读）。
+- **源码位置**：`src\displacement.py` 第 368～369 行；`src\dynamic_displacement.py` 第 378～379 行；统计来自 `results\` 下三份 ds CSV（只读）。
 
 ### 6. 平台 + 台阶 + 空洞（M4 静态形态）
 
@@ -1693,15 +1693,15 @@
 - **英文名称**：continuous back-and-forth（M5 dynamic displacement shape）
 - **初学者解释**：M5 动态位移数据的形态：`ds` 数值在整段数据里多次上升、下降，而且没有空洞（每一帧都有位移值，Δds 可以逐帧算）。
 - **VisionMotion 中的具体作用**：EXP-004 为 1766/1766 全部 valid、0 invalid；`ds_mm` 从 −0.5283（frame 0）到 66.1663（frame 1701），末帧 frame 1765 = 65.8647；抽样轨迹见笔记第 8.2 节（约 33 → 19 → 40 → 25 → 55 → 35 → 66 mm 的多次升降）。本课不数转向点、不切运动段、不谈周期 / 频率 / FFT（留给 L12 及以后）。
-- **源码位置**：`src\dynamic_displacement.py` 第 338～350 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv` / `_track.csv`（只读）。
+- **源码位置**：`src\dynamic_displacement.py` 第 367～379 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv` / `_track.csv`（只读）。
 
 ### 8. MIN_TURN_TRAVEL_PX（最小反向行程阈值，最小认识）
 
 - **中文名称**：最小反向行程阈值
 - **英文名称**：MIN_TURN_TRAVEL_PX
 - **初学者解释**：只有原始 `x_px` 从当前极值**反向走满 20 px**，这个极值才被确认为转向点（峰 / 谷）；小于 20 px 的反向行程不改变方向认定。它是一条"行程阈值"，不是速度阈值、不是位移阈值。
-- **VisionMotion 中的具体作用**：`src\dynamic_displacement.py` 第 30 行 docstring、第 85～87 行定义（第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`）、第 474～477 行解释：静止段噪声的相邻帧 `|dx|` 中位数约 0.13 px、静止段最大约 1.25 px，远达不到 20 px，所以噪声不会制造假转向。本课只建立最小认识；`detect_turning_points()`（第 462 行起）的完整算法（zigzag、峰谷判定、运动段切分，第 512～594 行）属于 L12。
-- **源码位置**：`src\dynamic_displacement.py` 第 30、82～87、462、474～477、480～481 行。
+- **VisionMotion 中的具体作用**：`src\dynamic_displacement.py` 第 30 行 docstring、第 85～87 行定义（第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`）、第 503～506 行解释：静止段噪声的相邻帧 `|dx|` 中位数约 0.13 px、静止段最大约 1.25 px，远达不到 20 px，所以噪声不会制造假转向。本课只建立最小认识；`detect_turning_points()`（第 491 行起）的完整算法（zigzag、峰谷判定、运动段切分，第 541～623 行）属于 L12。
+- **源码位置**：`src\dynamic_displacement.py` 第 30、82～87、491、503～506、509～510 行。
 
 ### 9. 五类材料（L11 版）
 
@@ -1724,23 +1724,23 @@
 - **英文名称**：reciprocating motion / repetitive motion
 - **初学者解释**：运动反复来回，同一种状态（例如到达峰、到达谷）在时间上再次出现。
 - **VisionMotion 中的具体作用**：L12 产出的 turns 中，peak 与 valley 交替出现（EXP-004：f491 peak → f602 valley → f838 peak → f1063 valley → f1254 peak → f1513 valley），这就是"往复运动"在本项目里的最低证据形式。注意：**"看到往复"只说明存在重复结构，不等于"周期已成立"**（见第 6 条）。
-- **源码位置**：`src\dynamic_displacement.py` 第 462–593 行（turns / segments 的产生）；第 540–563 行（turns 的 `kind` 与 `time_s`）。
+- **源码位置**：`src\dynamic_displacement.py` 第 491–622 行（turns / segments 的产生）；第 569–592 行（turns 的 `kind` 与 `time_s`）。
 
 ### 2. 事件序列（turns 事件序列）
 
 - **中文名称**：事件序列
 - **英文名称**：event sequence
 - **初学者解释**：把连续运动整理成一串"在什么时间、发生了什么类型的事件"的记录，例如"8.166327 s 发生 peak、10.012483 s 发生 valley"。
-- **VisionMotion 中的具体作用**：turns 的每条记录都带 `time_s`（第 544 行）与 `kind`（第 555 行），因此 turns 天然构成事件序列；L13 的时间分析就只有一步——把两个 `time_s` 相减。**注意：`detect_turning_points()` 只产出这个序列，不负责对序列做间隔统计。**
-- **源码位置**：`src\dynamic_displacement.py` 第 540–547、552–563 行。
+- **VisionMotion 中的具体作用**：turns 的每条记录都带 `time_s`（第 544 行）与 `kind`（第 584 行），因此 turns 天然构成事件序列；L13 的时间分析就只有一步——把两个 `time_s` 相减。**注意：`detect_turning_points()` 只产出这个序列，不负责对序列做间隔统计。**
+- **源码位置**：`src\dynamic_displacement.py` 第 569–576、581–592 行。
 
 ### 3. 事件间隔
 
 - **中文名称**：事件间隔
 - **英文名称**：event interval
 - **初学者解释**：两个转向事件之间相差多少秒，等于后一个事件的 `time_s` 减去前一个事件的 `time_s`。
-- **VisionMotion 中的具体作用**：**当前 M5 源码没有实现事件间隔统计**：第 28 行声明不做周期分析；第 462–593 行只产出 turns / segments；打印部分（第 763、765–770、777–792、798–813 行）没有间隔输出。L13 的间隔数字（如 EXP-004 的 1.846156 s 等）来自对已有 CSV 的只读分析，不是项目功能。
-- **源码位置**：边界证据 `src\dynamic_displacement.py` 第 28、462–593、763、765–770、777–792、798–813 行；间隔数字见 `docs\learning\L13_从运动段到往复运动.md` 第 11 节（只读分析）。
+- **VisionMotion 中的具体作用**：**当前 M5 源码没有实现事件间隔统计**：第 28 行声明不做周期分析；第 491–622 行只产出 turns / segments；打印部分（第 792、794–799、806–821、827–842 行）没有间隔输出。L13 的间隔数字（如 EXP-004 的 1.846156 s 等）来自对已有 CSV 的只读分析，不是项目功能。
+- **源码位置**：边界证据 `src\dynamic_displacement.py` 第 28、491–622、792、794–799、806–821、827–842 行；间隔数字见 `docs\learning\L13_从运动段到往复运动.md` 第 11 节（只读分析）。
 
 ### 4. 半周期候选
 
@@ -1748,7 +1748,7 @@
 - **英文名称**：half-period candidate
 - **初学者解释**：相邻的异类事件之间的间隔——peak → valley 或 valley → peak，各代表"走了半个来回"的候选。
 - **VisionMotion 中的具体作用**：EXP-004 的 5 个相邻间隔（1.846156 / 3.925159 / 3.742207 / 3.176718 / 4.307696 s）都是半周期候选；最小 1.846156 s、最大 4.307696 s、均值 3.399587 s、最大 / 最小约 2.33 倍——彼此并不一致（只读分析，非项目功能）。
-- **源码位置**：素材来自 `src\dynamic_displacement.py` 第 540–563 行 turns 的 `time_s` / `kind`；统计本身见 `docs\learning\L13_从运动段到往复运动.md` 第 11.2 节（只读分析；当前源码未实现）。
+- **源码位置**：素材来自 `src\dynamic_displacement.py` 第 569–592 行 turns 的 `time_s` / `kind`；统计本身见 `docs\learning\L13_从运动段到往复运动.md` 第 11.2 节（只读分析；当前源码未实现）。
 
 ### 5. 完整周期候选
 
@@ -1756,7 +1756,7 @@
 - **英文名称**：full-period candidate
 - **初学者解释**：同类事件之间的间隔——peak → peak 或 valley → valley，各代表"走完一个完整来回"的候选。
 - **VisionMotion 中的具体作用**：EXP-004 的 peak→peak = 5.771315 / 6.918925 s（均值 6.345120 s，仅 2 个样本）；valley→valley = 7.667366 / 7.484414 s（均值 7.575890 s，仅 2 个样本）；两者相对 2 × 半周期均值（6.799174 s）分别偏离约 −6.68% 与 +11.42%（只读分析，非项目功能）。
-- **源码位置**：素材来自 `src\dynamic_displacement.py` 第 540–563 行；统计见 `docs\learning\L13_从运动段到往复运动.md` 第 11.3–11.4 节（只读分析；当前源码未实现）。
+- **源码位置**：素材来自 `src\dynamic_displacement.py` 第 569–592 行；统计见 `docs\learning\L13_从运动段到往复运动.md` 第 11.3–11.4 节（只读分析；当前源码未实现）。
 
 ### 6. 周期 T
 
@@ -1764,7 +1764,7 @@
 - **英文名称**：period（T）
 - **初学者解释**：往复运动完成一次完整来回所需要的时间；必须先证明"重复得足够一致"，周期值才可信。
 - **VisionMotion 中的具体作用**：**当前 M5 源码没有实现周期计算**（第 28 行；第 4.8 节清单）。EXP-004 的只读分析结论是：可以确认存在明显的往复结构，但不能给出稳定、可信的正式周期值。M6 侧的 T = 0.542593 s 是外部公开视频（EXP-EXT-LAB67-V1）的冻结记录，被 `src\m63_final_visualization.py` 第 112–127 行 `FROZEN` 引用，**不是 M5 动态实验已实现的算法**。本课思想：先证明重复，再谈周期；先证明周期稳定，再谈频率。
-- **源码位置**：`src\dynamic_displacement.py` 第 28、462–593 行；`src\m63_final_visualization.py` 第 7、112–127 行；`docs\M6.3_FINAL_REPORT.md` 第 154–169 行。
+- **源码位置**：`src\dynamic_displacement.py` 第 28、491–622 行；`src\m63_final_visualization.py` 第 7、112–127 行；`docs\M6.3_FINAL_REPORT.md` 第 154–169 行。
 
 ### 7. 频率 f
 
@@ -1780,7 +1780,7 @@
 - **英文名称**：period stability criterion
 - **初学者解释**：判断"能不能宣布一个可信周期值"的检查清单，而不是某一个神奇公式。
 - **VisionMotion 中的具体作用**：本课给出的判据思想（**概念解释，未实现**）：① 同类事件间隔是否一致；② 半周期与完整周期是否互相自洽；③ 样本数量是否足够；④ 数据是否来自同一段连续、可信的数据。EXP-004 在①②③上都不能通过（跨度约 2.33 倍；偏差 −6.68% / +11.42%；各只有 2 个整周期样本），所以本课不给正式周期值。当前源码中没有任何这样的检查代码（第 28 行边界 + 第 4.8 节清单）。
-- **源码位置**：边界证据 `src\dynamic_displacement.py` 第 28、462–593 行；判据思想见 `docs\learning\L13_从运动段到往复运动.md` 第 10、15 节（概念解释；当前源码未实现）。
+- **源码位置**：边界证据 `src\dynamic_displacement.py` 第 28、491–622 行；判据思想见 `docs\learning\L13_从运动段到往复运动.md` 第 10、15 节（概念解释；当前源码未实现）。
 
 ### 9. 冻结值（T_exp / f_exp）
 
@@ -1795,8 +1795,8 @@
 - **中文名称**：运动段不等于周期
 - **英文名称**：a segment is not a period
 - **初学者解释**：一个运动段只描述"一个方向走了多远"；周期描述"完整来回一次要多久"，两者不是一回事。
-- **VisionMotion 中的具体作用**：三条理由——① 首尾段可能被视频边界截断（`detect_turning_points()` docstring 第 478–479 行：首末帧只作为边界；EXP-004 段1 f0 → f491、段7 f1513 → f1765 各有一端是视频边界）；② 每个 segment 的 `direction` 只有一种取值（第 572–577 行），最多是半个来回；③ 周期应由同类事件之间定义（peak→peak / valley→valley），而段的边界是"起点 + 转向点 + 终点"（第 566 行），段与段交替方向，不能拿单段当周期。
-- **源码位置**：`src\dynamic_displacement.py` 第 478–479、565–591 行（第 566、572–577、580–588 行）。
+- **VisionMotion 中的具体作用**：三条理由——① 首尾段可能被视频边界截断（`detect_turning_points()` docstring 第 507–508 行：首末帧只作为边界；EXP-004 段1 f0 → f491、段7 f1513 → f1765 各有一端是视频边界）；② 每个 segment 的 `direction` 只有一种取值（第 601–606 行），最多是半个来回；③ 周期应由同类事件之间定义（peak→peak / valley→valley），而段的边界是"起点 + 转向点 + 终点"（第 595 行），段与段交替方向，不能拿单段当周期。
+- **源码位置**：`src\dynamic_displacement.py` 第 507–508、594–620 行（第 595、601–606、609–617 行）。
 
 ---
 
@@ -1939,7 +1939,7 @@
 - **英文名称**：detection vs measurement
 - **初学者解释**：检测回答"目标在画面里的哪里（像素）"；测量回答"目标在物理世界里移动了多少（毫米）"——两件不同的事。
 - **VisionMotion 中的具体作用**：`detect_marker()` 给出的是**像素位置** `(cx, cy)` / 面积；只有再经过标定、投影与基线 `s0` 之后，才得到"位移" `ds_px / ds_mm`。**像素坐标不是物理位移；M6 只有检测与像素位置，没有测量。**
-- **源码位置**：`src\marker_detector.py` 第 105～151 行（检测）；`src\displacement.py` 第 357～369 行 / `src\dynamic_displacement.py` 第 338～350 行（测量）；`docs\learning\L20_完整项目复盘.md` 第 5 节。
+- **源码位置**：`src\marker_detector.py` 第 105～151 行（检测）；`src\displacement.py` 第 357～369 行 / `src\dynamic_displacement.py` 第 367～379 行（测量）；`docs\learning\L20_完整项目复盘.md` 第 5 节。
 
 ### 4. detected vs valid（总复盘口径）
 
@@ -1947,7 +1947,7 @@
 - **英文名称**：detected vs valid
 - **初学者解释**：两层状态——`detected` 回答"看到了吗"，`valid` 回答"这一帧的数据能用吗"。
 - **VisionMotion 中的具体作用**：`detected` 由检测器产生；`valid` 由各实验专属的 valid gate（area / y 范围）产生。**只看 detected 成功率会严重高估可用数据量**：真实数据三份 track CSV 的 detected 都是 100%，但 valid 分别为 1050/1961、1192/1984、1766/1766。被拒绝的帧不会被删除，而是位移字段留空、`valid=False`。
-- **源码位置**：`src\displacement.py` 第 175～213、419～460 行；`src\dynamic_displacement.py` 第 183～210、400～454 行；`docs\learning\L20_完整项目复盘.md` 第 6 节。
+- **源码位置**：`src\displacement.py` 第 175～213、419～460 行；`src\dynamic_displacement.py` 第 183～222、429～483 行；`docs\learning\L20_完整项目复盘.md` 第 6 节。
 
 ### 5. 冻结值 ≠ 运行时能力
 
@@ -2006,8 +2006,8 @@ FFT / 频谱、简谐振动（仍未学习，L13 只登记名称，不展开）
 ### 维护说明
 
 - L09 词条（原始方向向量、单位方向向量、归一化、compute_scale 六步、unit_direction 完整展开、project_point 完整展开与再次归一化、点积、有号投影长度、ux / uy 的几何意义、正交分解、U、U_004、六类材料、只读核对、s_px 是坐标不是位移）的事实来自 `src\calibration.py` 第 9～10、24、100～144（第 118～120、122～126、128～131、134～135、137～138、140～144 行）、147～173（第 149、166～168、170～171、173 行）、176～204（第 180、193～194、196～202、204 行）行，`src\displacement.py` 第 41～55（第 48～50、52～53、55 行）、111～112、128～141、306～314 行，`src\dynamic_displacement.py` 第 20～23、40、59～66（第 60～62、64～65、66 行）、138～172（第 138～144、147～157、167～172 行）行；真实数据（只读核对，未重新生成、未修改，统计口径：`s_px` 非空才参与复算）来自 `results\EXP-003-STATIC-002_track.csv`（1961 行、frame 0～1960）与 `results\EXP-003-STATIC-002_ds.csv`（有 `s_px` 的行 1050；加归一化后最大偏差 4.974e-4 px；最小二乘拟合系数与 U / |U| 一致到 1e-7 量级），`results\EXP-004-DYNAMIC-001_track.csv`（1766 行、frame 0～1765）与 `results\EXP-004-DYNAMIC-001_ds.csv`（`s_px` 全部有值 1766 行；加归一化后最大偏差 4.998e-4 px）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
-- L10 词条（valid gate、is_valid_frame、detected 与 valid 的区别、无效帧留空、s0、compute_s0、S0_WINDOW_S / MIN_S0_VALID_FRAMES、位置与位移、ds_px 补充视角、ds_mm 补充视角、双重舍入补充视角、有效性统计字段、数据依赖链、s0 不达标不写 ds CSV）的事实来自 `src\displacement.py` 第 21～22、57～68、72～90、175～213、290～303、306～314、317～354（第 333～334、336～349、347、351～352 行）、357～369（第 368～369 行）、377～395（第 384、389～392 行）、419～460（第 434～442、449～456 行）、535～546、597～796（第 721～724、738～757、759～777 行）、804～846（第 816、828～831 行）行，`src\dynamic_displacement.py` 第 20～23、27、68～76、78～80、91～109、183～210、270～284、286～294、297～335（第 314～315、328、332～333 行）、338～350（第 349～350 行）、358～376（第 370～372 行）、400～454（第 437～450 行）、902～1139（第 1048～1053、1073～1094、1096～1116 行）、1147～1191（第 1159、1171～1174 行）、1194～1224（第 1215～1217 行）行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`（1961 行、valid 1050 / invalid 911、s0 = 1076.063871 px、ds_px −1.249～350.268、ds_mm −0.2170～60.8426、frame 0 行 `0,0.000000,1080.399,4.335,0.7530,4783.0,True,True`）、`results\EXP-003-STATIC-003_ds.csv`（1984 行、valid 1192 / invalid 792、s0 = 1077.364097 px、ds_px −0.311～346.530、ds_mm −0.0540～60.1932、frame 0 行 `0,0.000000,1077.528,0.164,0.0284,4394.5,True,True`）、`results\EXP-004-DYNAMIC-001_ds.csv`（1766 行、valid 1766 / invalid 0、s0 = 855.202603 px、ds_px −3.215～402.715、ds_mm −0.5283～66.1663、frame 0 行 `0,0.000000,851.987,-3.215,-0.5283,5713.0,True,True`）及对应三份 `_track.csv`（行数 1961 / 1984 / 1766、detected 全部 True；被拒帧例证 frame 52 / frame 35；公式复算最大偏差 ds_px ≤ 0.000904 px、ds_mm ≤ 0.000151 mm）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
-- L12 词条（转向点、detect_turning_points、分析序列（analysis_rows / analysis_invalid_rows）、原始 x_px 序列、状态机（zigzag）、direction、extreme_index、turn_indexes、MIN_TURN_TRAVEL_PX 反向行程阈值、确认帧与确认滞后、peak / valley、turns / describe、direction_before / direction_after、运动段 / boundary_indexes、travel_px、below_min_travel、边界点、原始数据原则、冻结与可复现）的事实来自 `src\dynamic_displacement.py` 第 16、20～23、27～30、85～87、228～262、462～593 行（重点：467～468、474～477、478～479、480～481、495～498、500～510、512～538、540～547、549～550、552～563、565～591、588、740～814 行）与 `demo\run_m53_plot.py` 第 15～19、67～74 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0～1765、detected / valid 全部 True；`analysis_rows = 1766`、`analysis_invalid_rows = 0`；6 个转向点 f491 peak (t 8.166327, x 1057.86, ds_mm 33.1549)、f602 valley (10.012483, 973.06, 19.2217)、f838 peak (13.937642, 1099.23, 39.9535)、f1063 valley (17.679849, 1007.01, 24.7998)、f1254 peak (20.856567, 1197.10, 56.0319)、f1513 valley (25.164263, 1068.30, 34.8700)；7 个运动段 travel_px = 205.05 / 84.80 / 126.17 / 92.22 / 190.09 / 128.80 / 188.61 px，below_min_travel 全为 False；按第 512～538 行只读内存复算的确认帧：f491→f505、f602→f732、f838→f971、f1063→f1156、f1254→f1346、f1513→f1535）（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
+- L10 词条（valid gate、is_valid_frame、detected 与 valid 的区别、无效帧留空、s0、compute_s0、S0_WINDOW_S / MIN_S0_VALID_FRAMES、位置与位移、ds_px 补充视角、ds_mm 补充视角、双重舍入补充视角、有效性统计字段、数据依赖链、s0 不达标不写 ds CSV）的事实来自 `src\displacement.py` 第 21～22、57～68、72～90、175～213、290～303、306～314、317～354（第 333～334、336～349、347、351～352 行）、357～369（第 368～369 行）、377～395（第 384、389～392 行）、419～460（第 434～442、449～456 行）、535～546、597～796（第 721～724、738～757、759～777 行）、804～846（第 816、828～831 行）行，`src\dynamic_displacement.py` 第 20～23、27、68～76、78～80、91～109、183～222、299～313、315～323、326～364（第 343～344、357、361～362 行）、367～379（第 378～379 行）、387～405（第 399～401 行）、429～483（第 466～479 行）、931～1174（第 1083～1088、1108～1129、1131～1151 行）、1182～1226（第 1194、1206～1209 行）、1229～1259（第 1250～1252 行）行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`（1961 行、valid 1050 / invalid 911、s0 = 1076.063871 px、ds_px −1.249～379.268、ds_mm −0.2170～60.8426、frame 0 行 `0,0.000000,1080.399,4.335,0.7530,4783.0,True,True`）、`results\EXP-003-STATIC-003_ds.csv`（1984 行、valid 1192 / invalid 792、s0 = 1077.364097 px、ds_px −0.311～346.530、ds_mm −0.0540～60.1932、frame 0 行 `0,0.000000,1077.528,0.164,0.0284,4394.5,True,True`）、`results\EXP-004-DYNAMIC-001_ds.csv`（1766 行、valid 1766 / invalid 0、s0 = 855.202603 px、ds_px −3.215～402.715、ds_mm −0.5283～66.1663、frame 0 行 `0,0.000000,851.987,-3.215,-0.5283,5713.0,True,True`）及对应三份 `_track.csv`（行数 1961 / 1984 / 1766、detected 全部 True；被拒帧例证 frame 52 / frame 35；公式复算最大偏差 ds_px ≤ 0.000904 px、ds_mm ≤ 0.000151 mm）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
+- L12 词条（转向点、detect_turning_points、分析序列（analysis_rows / analysis_invalid_rows）、原始 x_px 序列、状态机（zigzag）、direction、extreme_index、turn_indexes、MIN_TURN_TRAVEL_PX 反向行程阈值、确认帧与确认滞后、peak / valley、turns / describe、direction_before / direction_after、运动段 / boundary_indexes、travel_px、below_min_travel、边界点、原始数据原则、冻结与可复现）的事实来自 `src\dynamic_displacement.py` 第 16、20～23、27～30、85～87、257～291、491～622 行（重点：467～468、503～506、507～508、509～510、524～527、529～539、541～567、569～576、578～579、581～592、594～620、617、769～843 行）与 `demo\run_m53_plot.py` 第 15～19、67～74 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0～1765、detected / valid 全部 True；`analysis_rows = 1766`、`analysis_invalid_rows = 0`；6 个转向点 f491 peak (t 8.166327, x 1057.86, ds_mm 33.1549)、f602 valley (10.012483, 973.06, 19.2217)、f838 peak (13.937642, 1099.23, 39.9535)、f1063 valley (17.679849, 1007.01, 24.7998)、f1254 peak (20.856567, 1197.10, 56.0319)、f1513 valley (25.164263, 1068.30, 34.8700)；7 个运动段 travel_px = 205.05 / 84.80 / 126.17 / 92.22 / 190.09 / 128.80 / 188.61 px，below_min_travel 全为 False；按第 541～567 行只读内存复算的确认帧：f491→f505、f602→f732、f838→f971、f1063→f1156、f1254→f1346、f1513→f1535）（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
 - 词条中的项目事实来自仓库内实际文件（`results\EXP-EXT-LAB67-V1_trajectory.csv`、`README.md`、`src\external_oscillation_tracker.py` 等），未修改任何代码、数据或实验结果。
 - L02 词条（BGR、HSV、Hue、Saturation、Value、Mask、Threshold、Morphological Opening、Erosion、Dilation、Contour、Moments、Centroid、Bounding Rectangle、Binary Image、Kernel、Channel）的参数与代码事实来自 `src\marker_detector.py`，未重新运行任何程序。
 - L03 词条（Pixel 补充视角、NumPy Array、Image、BGR 补充视角、RGB、HSV 补充视角、Hue / Saturation / Value 补充视角、Color Space、Threshold 补充视角、Mask 补充视角、Binary Image 补充视角、cv2.cvtColor、cv2.inRange、bitwise_or、Contour 补充视角）的事实来自 `src\marker_detector.py` 第 22～27、48、51～52、55、73、110 行附近；未重新运行任何程序。
@@ -2015,9 +2015,9 @@ FFT / 频谱、简谐振动（仍未学习，L13 只登记名称，不展开）
 - L05 词条（Video、Frame 补充视角、FPS 补充视角、VideoCapture、cap.read、ret、current_frame、VideoWriter、Overlay Video、release、Frame Loop、Function Reuse、Module）的事实来自 `src\video_tracker.py` 第 15～23、34、44、47、125～131、153、175～207、242～258、371、437～441、444、480～481、488～497、513～521、527～532、536～544 行附近与 `demo\run_video_tracking.py` 第 35、38、43、52～58 行（按 2026-10-07 当前源码逐行核对，`src\video_tracker.py` 共 836 行）；未重新运行任何程序。
 - L06 词条（Row、Column、Header、Cell、CSV_FIELDNAMES、build_csv_row、writerow、lineterminator、records、Missing Value、Discrete Time Series、Field Design、np.genfromtxt、csv.DictWriter、y_px、_track.csv / _trajectory.csv，以及 Frame / time_s / x_px / area_px / detected / CSV 六个补充视角）的事实来自 `src\video_tracker.py` 第 26、40～41、130、393～410、476、483～485、494、497、499～510、643～824 行与 `src\external_oscillation_tracker.py` 第 86～96、220～221、302～304、337～377、494～500 行；产物数据（只读核对，未重新生成）来自 `results\EXP-002-VIDEO-001_track.csv`（表头 6 列、170 行数据）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行数据）（按 2026-10-07 当前源码与产物逐行核对）；未重新运行任何程序。
 - L07 词条（Detection Failure、success、DETECTION FAILED、失败返回结构、空字段、`(0,0)` 伪数据、detection_rate、longest_miss_run、Quality Check、Robustness、Evidence Boundary）的事实来自 `src\marker_detector.py` 第 33、75～76、83～84、97～98、129、132～133、136～137、143～151 行与 `src\video_tracker.py` 第 196～207、393～410、476、489～532、562～586、591～604、612～635、643～824 行，M6 对照来自 `src\external_oscillation_tracker.py` 第 422～505 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-002-VIDEO-001_track.csv`（170 行、170/170 全 True、0 失败行、0 空字段、area 24409.0 / 64846.25 / 105163.5）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（160 行、160/160 全 True、0 失败行、0 空字段、area 226 / 508.5 / 658）（按 2026-10-07 当前源码与产物逐行核对）；未重新运行任何程序。
-- L08 词条（Calibration、图像坐标系 / 物理世界坐标系、px/mm、mm/px、pixel_distance、compute_scale、已知真实长度、M4 冻结标定常量、M5 冻结标定常量、unit_direction、project_point、s_px、ds_px、ds_mm、无标定原则、y0_px 字段名读法）的事实来自 `src\calibration.py` 第 1～22、24、32～43、46～70、73～92、100～144（第 125～126、128～131、134～135、137～138、140～144 行）、147～173、176～204 行，`src\displacement.py` 第 23、41～55（第 48～50、52～53、55 行）、57～64、72～90、98～150、277～340（第 368～369 行）、348～382、725～740 行，`src\dynamic_displacement.py` 第 20～23、40、59～66（第 60～62、64～65、66 行）、68～76、78～80、91～109、121～174、338～350（第 349～350 行）、1097～1116 行，以及 `src\external_oscillation_tracker.py` 第 31～34、84、87～96 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`（1961 行、valid 1050/911、ds_px -1.249～350.268、ds_mm -0.2170～60.8426）、`results\EXP-003-STATIC-003_ds.csv`（1984 行、valid 1192/792、ds_px -0.311～346.530、ds_mm -0.0540～60.1932）、`results\EXP-004-DYNAMIC-001_ds.csv`（1766 行、valid 1766/0、ds_px -3.215～402.715、ds_mm -0.5283～66.1663）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行、x_px 718.5～728.0、y0_px 508～622）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
+- L08 词条（Calibration、图像坐标系 / 物理世界坐标系、px/mm、mm/px、pixel_distance、compute_scale、已知真实长度、M4 冻结标定常量、M5 冻结标定常量、unit_direction、project_point、s_px、ds_px、ds_mm、无标定原则、y0_px 字段名读法）的事实来自 `src\calibration.py` 第 1～22、24、32～43、46～70、73～92、100～144（第 125～126、128～131、134～135、137～138、140～144 行）、147～173、176～204 行，`src\displacement.py` 第 23、41～55（第 48～50、52～53、55 行）、57～64、72～90、98～150、277～340（第 368～369 行）、348～382、725～740 行，`src\dynamic_displacement.py` 第 20～23、40、59～66（第 60～62、64～65、66 行）、68～76、78～80、91～109、121～174、367～379（第 378～379 行）、1132～1151 行，以及 `src\external_oscillation_tracker.py` 第 31～34、84、87～96 行；产物数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`（1961 行、valid 1050/911、ds_px -1.249～379.268、ds_mm -0.2170～60.8426）、`results\EXP-003-STATIC-003_ds.csv`（1984 行、valid 1192/792、ds_px -0.311～346.530、ds_mm -0.0540～60.1932）、`results\EXP-004-DYNAMIC-001_ds.csv`（1766 行、valid 1766/0、ds_px -3.215～402.715、ds_mm -0.5283～66.1663）与 `results\EXP-EXT-LAB67-V1_trajectory.csv`（表头 8 列、160 行、x_px 718.5～728.0、y0_px 508～622）（按 2026-10-02 当前源码与产物逐行核对）；未重新运行任何程序。
 - 新增术语时请保持五字段格式（中文名称 / 英文名称 / 初学者解释 / VisionMotion 中的具体作用 / 源码位置），并在"速查索引"中同步登记。
 
 - 记录日期：2026-09-28；L04 记录日期：2026-09-29；L05 记录日期：2026-09-29；L06 记录日期：2026-10-02；L07 记录日期：2026-10-02；L08 记录日期：2026-10-02；L09 记录日期：2026-10-02；L10 记录日期：2026-10-02；L11 记录日期：2026-10-04；L12 记录日期：2026-10-04；L13 记录日期：2026-10-04；L14 记录日期：2026-10-04；L15 记录日期：2026-10-04；L16 记录日期：2026-10-04；L17 记录日期：2026-10-04；L18 记录日期：2026-10-04；L19 记录日期：2026-10-04；L20 记录日期：2026-10-04；当前已登记课程：L01–L20。
-- L11 词条（Δds、运动方向（正向 / 负向）、正方向约定（P1 → P2）、参考位置与符号侧、符号统计、平台 + 台阶 + 空洞、连续往返、MIN_TURN_TRAVEL_PX 最小认识、五类材料）的事实来自 `src\displacement.py` 第 44～46、55、301～303、313～314、367～369、389～392 行与 `src\dynamic_displacement.py` 第 30、59～66、82～87、111～113、133、462、474～477、480～481 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv` 及对应三份 `_track.csv`（valid 1050/911、1192/792、1766/0；`ds_mm` −0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663；正/负/零 = 1016/34/0、1174/18/0、1605/161/0；M5 f237→f313 与 f963→f1015 两条方向例子；平台 / 空洞统计 180 / 147 帧）（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
-- L13 词条（往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期 T、频率 f、周期稳定性判据、冻结值（T_exp / f_exp）、运动段 ≠ 周期）的事实来自 `src\dynamic_displacement.py` 第 16、28、30、462–593 行（重点：540–547、552–563、565–591、763、765–770、777–792、798–813 行）、`src\m63_final_visualization.py` 第 7、109–110、112–127、202–219 行、`demo\run_m53_plot.py` 第 19、67–74、382 行，旁证 `src\video_tracker.py` 第 17 行、`print_statistics()` 第 614–615 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行，M6 对照 `docs\M6.3_FINAL_REPORT.md` 第 154–169 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0–1765；6 个转向点时间 f491 8.166327 / f602 10.012483 / f838 13.937642 / f1063 17.679849 / f1254 20.856567 / f1513 25.164263 s；5 个半周期候选 1.846156 / 3.925159 / 3.742207 / 3.176718 / 4.307696 s，最小 1.846156、最大 4.307696、均值 3.399587、最大 / 最小 ≈ 2.33；peak→peak 5.771315 / 6.918925 s，均值 6.345120；valley→valley 7.667366 / 7.484414 s，均值 7.575890；2 × 半周期均值 6.799174 s；偏差 ≈ −6.68% / +11.42%）；上述间隔数字均为只读分析结果（内存中读取与计算，未写任何文件），不是当前项目代码已经实现的功能；只读检索显示全项目 M5.4 / M5.5 命中 0 条（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
+- L11 词条（Δds、运动方向（正向 / 负向）、正方向约定（P1 → P2）、参考位置与符号侧、符号统计、平台 + 台阶 + 空洞、连续往返、MIN_TURN_TRAVEL_PX 最小认识、五类材料）的事实来自 `src\displacement.py` 第 44～46、55、301～303、313～314、367～369、389～392 行与 `src\dynamic_displacement.py` 第 30、59～66、82～87、111～113、133、491、503～506、509～510 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv` 及对应三份 `_track.csv`（valid 1050/911、1192/792、1766/0；`ds_mm` −0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663；正/负/零 = 1016/34/0、1174/18/0、1605/161/0；M5 f237→f313 与 f963→f1015 两条方向例子；平台 / 空洞统计 180 / 147 帧）（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。
+- L13 词条（往复运动 / 重复运动、事件序列、事件间隔、半周期候选、完整周期候选、周期 T、频率 f、周期稳定性判据、冻结值（T_exp / f_exp）、运动段 ≠ 周期）的事实来自 `src\dynamic_displacement.py` 第 16、28、30、491–622 行（重点：569–576、581–592、594–620、763、794–799、806–821、827–842 行）、`src\m63_final_visualization.py` 第 7、109–110、112–127、202–219 行、`demo\run_m53_plot.py` 第 19、67–74、382 行，旁证 `src\video_tracker.py` 第 17 行、`print_statistics()` 第 614–615 行与 `src\external_oscillation_tracker.py` 第 31–33、407、611 行，M6 对照 `docs\M6.3_FINAL_REPORT.md` 第 154–169 行；真实数据（只读核对，未重新生成、未修改）来自 `results\EXP-004-DYNAMIC-001_track.csv` 与 `results\EXP-004-DYNAMIC-001_ds.csv`（各 1766 行、frame 0–1765；6 个转向点时间 f491 8.166327 / f602 10.012483 / f838 13.937642 / f1063 17.679849 / f1254 20.856567 / f1513 25.164263 s；5 个半周期候选 1.846156 / 3.925159 / 3.742207 / 3.176718 / 4.307696 s，最小 1.846156、最大 4.307696、均值 3.399587、最大 / 最小 ≈ 2.33；peak→peak 5.771315 / 6.918925 s，均值 6.345120；valley→valley 7.667366 / 7.484414 s，均值 7.575890；2 × 半周期均值 6.799174 s；偏差 ≈ −6.68% / +11.42%）；上述间隔数字均为只读分析结果（内存中读取与计算，未写任何文件），不是当前项目代码已经实现的功能；只读检索显示全项目 M5.4 / M5.5 命中 0 条（按 2026-10-04 当前源码与产物逐行核对）；未重新运行任何程序。

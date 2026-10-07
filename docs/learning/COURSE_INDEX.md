@@ -34,7 +34,7 @@
 ## L01 VisionMotion项目、CSV与时间序列
 
 - **课程编号**：L01
-- **课程标题**：VisionMotion 项目、CSV 与时间序列
+- **课程标题**：VisionMotion项目、CSV与时间序列
 - **学习状态**：已完成
 - **记录日期**：2026-09-28
 - **笔记文件**：[`L01_VisionMotion项目_CSV与时间序列.md`](L01_VisionMotion项目_CSV与时间序列.md)
@@ -78,7 +78,7 @@
 - 160 / 160 帧 detected = True；
 - 第一个局部极小值出现在 frame 77，y0_px = 508；
 - 第一个局部极大值出现在 frame 85，y0_px = 622；
-- y0_px 整体呈往复变化，形成运动轨迹的时间序列。
+- y0_px 整体呈往复变化，形成运动轨迹的时间序列。（"局部极小 / 局部极大""往复变化"只是对数值的直观观察，属于**提前了解**；峰 / 谷与往复运动的判定方法将在后续课程学习。）
 
 ### 相关术语与易错点
 
@@ -241,7 +241,7 @@ Contour 的内部细节 / ~~视频追踪~~（已在 L05 学习，见后续小节
 ## L04 Contour、Moments 与 Centroid
 
 - **课程编号**：L04
-- **课程标题**：Contour、Moments 与 Centroid：从目标区域到目标中心
+- **课程标题**：Contour、Moments 与 Centroid
 - **学习状态**：已完成
 - **记录日期**：2026-09-29
 - **笔记文件**：[`L04_Contour_Moments_Centroid.md`](L04_Contour_Moments_Centroid.md)
@@ -923,7 +923,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 第 317～354 行 `compute_s0()`：第 333 行 `window_rows`（`time_s <= window_s`）；第 334 行 `valid_s_values`；第 336～349 行报告字典（`window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `ok` / `s0`）；第 347 行最少帧检查；第 351～352 行平均值；第 323 行"正式禁止：用 10 cm 代替 s0、用首帧代替均值……"；
 - 第 357～369 行 `add_displacement()`：**第 368 行 `row["ds_px"] = row["s_px"] - s0`**；**第 369 行 `row["ds_mm"] = row["ds_px"] / PX_PER_MM`**；
 - 第 377～395 行 `build_ds_row()`：第 389～392 行无效数据写空字符串；第 384 行注释"绝不写 0 / -1 / nan"；第 84～90 行 `FIELD_PATTERNS`（time_s 6 / s_px 3 / ds_px 3 / ds_mm 4 / area_px 1 位小数）；
-- 第 419～460 行 `summarize()`：第 449 行 `valid_rate`；第 479 行 `invalid_count`；第 452 行 `detected_invalid_count`；第 456 行 `longest_invalid_run`（循环第 434～442 行）；
+- 第 419～460 行 `summarize()`：第 449 行 `valid_rate`；第 450 行 `invalid_count`；第 452 行 `detected_invalid_count`；第 456 行 `longest_invalid_run`（循环第 434～442 行）；
 - 第 535～546 行：s0 窗口有效帧不足时打印问题报告；第 546 行原文"本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"；
 - 第 597～796 行 `check_ds_csv()`：第 721～724 行空值检查；第 738～757 行 s0 复算（容差 0.002 px，第 750 行）；第 759～777 行 ds 公式复算（ds_px 容差 0.002 px、ds_mm 容差 0.0005 mm，第 768、800 行）；
 - 第 804～846 行 `build_ds_from_track_csv()`：第 816 行"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 828 行 `if s0_report["ok"]` 才写；
@@ -1093,7 +1093,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 - 严格区分极值（转向点本身）与确认帧：`turn_indexes` 存的是 `extreme_index`（第 558、565 行），不是确认帧 `i`；并用真实案例说明确认滞后（peak f491 → f505、valley f602 → f732、peak f838 → f971）；
 - 说清 peak / valley：第 558 行生成 peak、第 565 行生成 valley；peak = 正向 → 负向，valley = 负向 → 正向；
 - 说清 `turns` 七个字段（`describe()` 第 569–576 行 + turns 第 581–592 行）：`frame` / `time_s` / `x_px` / `ds_mm` / `kind` / `direction_before` / `direction_after`；`direction_before` / `direction_after` 由 `kind` 推导（第 585–590 行），不是再次测量；
-- 说清 `segments` 输出（第 594–620 行）：第 595 行 `boundary_indexes` = 起点 + 所有转向点 + 终点；每段 start/end frame、time、x、direction、travel_px、below_min_travel；段数 = 转向点数 + 1（第 479 行）；首末帧只是边界（第 507–508 行）；
+- 说清 `segments` 输出（第 594–620 行）：第 595 行 `boundary_indexes` = 起点 + 所有转向点 + 终点；每段 start/end frame、time、x、direction、travel_px、below_min_travel；段数 = 转向点数 + 1（第 508 行）；首末帧只是边界（第 507–508 行）；
 - 说清 `below_min_travel`（第 617 行）比较的是"整个运动段两端之间的行程"，与转向确认使用的"从当前极值反向的行程"不是同一个概念（两者都用 20 px，但比较对象不同）；
 - 背出 EXP-004 真实结果：6 个转向点（491 peak、602 valley、838 peak、1063 valley、1254 peak、1513 valley）与 7 个运动段（205.05 / 84.80 / 126.17 / 92.22 / 190.09 / 128.80 / 188.61 px）；
 - 说出这 6 个转向点与 `demo\run_m53_plot.py` 第 67–74 行冻结的 6 个 frame 完全一致（该脚本第 15–19 行明确不重新运行转向检测）；
@@ -1117,7 +1117,7 @@ Kalman filter / 深度学习 / YOLO / 复杂跟踪算法（ROI 搜索、光流�
 13. **peak = 正向 → 负向**（第 558 行），**valley = 负向 → 正向**（`detect_turning_points()` 中 valley 写入逻辑，当前约第 565 行）；因为 `ux > 0`，peak 也是 `ds` 的局部极大、valley 也是 `ds` 的局部极小（第 509–510 行）；
 14. **`turns` 七个字段**：`frame` / `time_s` / `x_px` / `ds_mm`（`describe()` 第 569–576 行）+ `kind` / `direction_before` / `direction_after`（第 584–590 行）；后两个由 `kind` 推导；
 15. **`segments` 用 `boundary_indexes = [0] + 所有转向点 + [len(series) − 1]` 切分**（第 595 行）；每段记录 start/end frame、time、x、direction、`travel_px`（第 600 行）、`below_min_travel`（第 617 行）；
-16. **段数 = 转向点数 + 1**（第 479 行）；首帧和末帧只作为边界，不是转向点（第 507–508 行）；
+16. **段数 = 转向点数 + 1**（第 508 行）；首帧和末帧只作为边界，不是转向点（第 507–508 行）；
 17. **两种 20 px 比较对象不同**：转向确认比较"从极值反向的行程"（第 557、564 行）；`below_min_travel` 比较"整段两端之间的行程"（第 600、617 行）；
 18. **EXP-004 真实结果**：6 个转向点与 7 个运动段（见下）；与 `demo\run_m53_plot.py` 第 67–74 行冻结的 6 个 frame 完全一致；本课不展开周期、频率、频谱（FFT）。
 

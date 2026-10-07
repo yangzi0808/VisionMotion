@@ -314,7 +314,7 @@
 - **中文名称**：时间分辨率
 - **英文名称**：temporal resolution
 - **简单定义**：测量系统能够分辨的最小时间间隔。
-- **VisionMotion 中的具体含义**：由 FPS 决定：30 fps → 相邻两个位置样本的间隔为 1/30 s ≈ 0.033333 s，这就是本项目的**时间分辨率**。发生在两帧之间的变化无法被分辨；谈论"极值出现的时刻"时，其定位精度也受这一间隔限制。
+- **VisionMotion 中的具体含义**：由 FPS 决定：30 fps → 相邻两个位置样本的间隔为 1/30 s ≈ 0.033333 s，这就是该视频的**时间分辨率**（项目内不同实验视频的 fps 不同，须按各自视频换算）。发生在两帧之间的变化无法被分辨；谈论"极值出现的时刻"时，其定位精度也受这一间隔限制。
 
 ### 17. 局部极大 / 局部极小
 
@@ -732,7 +732,7 @@
 - **中文名称**：每秒帧数 / 帧率
 - **英文名称**：FPS（frames per second）
 - **初学者解释**：每秒有多少帧，也就是"视频的播放/记录速度"；它决定相邻两帧之间的时间间隔：间隔 = 1/fps。
-- **VisionMotion 中的具体作用**：fps 在 `open_video()` 中从视频文件读取（第 130 行，未硬编码；第 153 行打印时特别注明）；主循环用它把帧号翻译成时间：`time_s = frame_index / fps`（第 494 行）。本项目视频 30 fps 时，相邻帧间隔 1/30 s ≈ 0.033333 s。fps 非法（<= 0）时第 438～441 行停止处理。
+- **VisionMotion 中的具体作用**：fps 在 `open_video()` 中从视频文件读取（第 130 行，未硬编码；第 153 行打印时特别注明）；主循环用它把帧号翻译成时间：`time_s = frame_index / fps`（第 494 行）。该视频 30 fps 时，相邻帧间隔 1/30 s ≈ 0.033333 s；不同实验视频 fps 不同，须按各自文件的 fps 换算。fps 非法（<= 0）时第 438～441 行停止处理。
 - **源码位置**：`src\video_tracker.py` 第 130、153、438～441、494 行。
 
 ### 4. VideoCapture
@@ -1209,7 +1209,7 @@
 - **中文名称**：相对位移（毫米）
 - **英文名称**：ds_mm
 - **初学者解释**：`ds_px` 经过本实验标定换算后的毫米位移：`ds_mm = ds_px / PX_PER_MM`（等价于 `ds_px × MM_PER_PX`）。它是换算结果，不是"又测了一遍毫米"。
-- **VisionMotion 中的具体作用**：ds CSV 的第 5 列（`src\displacement.py` 第 77 行、`src\dynamic_displacement.py` 第 96 行）；M4 用 `PX_PER_MM`（第 369 行），M5 用 `PX_PER_MM_004`（第 379 行）；写入格式 4 位小数（第 88 / 107 行）；公式自检容差 0.0005 mm（`src\displacement.py` 第 736～740 行、`src\dynamic_displacement.py` 第 1140～1148 行）。真实数据注意"双重舍入"：用文件里已舍入的 `ds_px` 反算可能出现 ±0.0001 的差。M6 外部视频没有 ds_mm 列（没有有效标定）。
+- **VisionMotion 中的具体作用**：ds CSV 的第 5 列（`src\displacement.py` 第 77 行、`src\dynamic_displacement.py` 第 96 行）；M4 用 `PX_PER_MM`（第 369 行），M5 用 `PX_PER_MM_004`（第 379 行）；写入格式 4 位小数（第 88 / 107 行）；公式自检容差 0.0005 mm（`src\displacement.py` 第 771～775 行、`src\dynamic_displacement.py` 第 1140～1148 行）。真实数据注意"双重舍入"：用文件里已舍入的 `ds_px` 反算可能出现 ±0.0001 的差。M6 外部视频没有 ds_mm 列（没有有效标定）。
 - **源码位置**：`src\displacement.py` 第 77、88、369、771～775 行；`src\dynamic_displacement.py` 第 96、107、379、1140～1148 行。
 
 ### 15. 无标定原则（Calibration Boundary）
@@ -1407,7 +1407,7 @@
 - **中文名称**：基线计算函数
 - **英文名称**：compute_s0
 - **初学者解释**：收集时间窗口内 valid=True 的 `s_px`，检查帧数是否够，然后求平均；返回一个报告字典而不是单个数字（报告里带窗口统计与 ok 标志）。
-- **VisionMotion 中的具体作用**：`src\displacement.py` 第 317～354 行；签名 `compute_s0(rows, window_s=S0_WINDOW_S, min_valid_frames=MIN_S0_VALID_FRAMES)`（第 317 行）；报告字段：`window_s` / `window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `min_valid_frames` / `ok` / `s0`（第 336～349 行）。M5 同名函数在第 326～364 行，第 311～312 行补充"不扩大窗口、不修改 gate"。调用方：第 825 行 / 第 1168 行；不达标时第 828 行 / 第 1171 行决定不写 ds CSV。
+- **VisionMotion 中的具体作用**：`src\displacement.py` 第 317～354 行；签名 `compute_s0(rows, window_s=S0_WINDOW_S, min_valid_frames=MIN_S0_VALID_FRAMES)`（第 317 行）；报告字段：`window_s` / `window_total_frames` / `window_valid_frames` / `window_missed_frames` / `window_detected_invalid_frames` / `min_valid_frames` / `ok` / `s0`（第 336～349 行）。M5 同名函数在第 326～364 行，第 341 行补充"不扩大窗口、不修改 gate"。调用方：第 825 行 / 第 1203 行；不达标时第 828 行 / 第 1206 行决定不写 ds CSV。
 - **源码位置**：`src\displacement.py` 第 317～354、825～831 行；`src\dynamic_displacement.py` 第 326～364、1203～1209 行。
 
 ### 7. s0 窗口与最少有效帧（S0_WINDOW_S / MIN_S0_VALID_FRAMES）
@@ -1476,6 +1476,82 @@
 - **初学者解释**：如果视频开头窗口里有效帧太少，就不生成 ds CSV——宁可"没有结果"，也不改规则硬凑。
 - **VisionMotion 中的具体作用**：`build_ds_from_track_csv()` 第 816 行原文"过程中不删除任何行；s0 窗口有效帧不足时不写 ds CSV"；第 828 行 `if s0_report["ok"]` 才调用 `add_displacement()` / `write_ds_csv()`（第 829～831 行）；M5 同逻辑（第 1194、1206～1209 行），且第 1250～1252 行还要求冻结常量自检先通过。不足时的处理原文："本视频不生成 ds CSV；不扩大窗口、不修改阈值、不做插值"（第 546 行）。
 - **源码位置**：`src\displacement.py` 第 535～546、804～846 行；`src\dynamic_displacement.py` 第 1182～1226、1250～1252 行。
+
+---
+
+## L11 位移数据、正负号与运动方向
+
+### 1. Δds（位移变化量）
+
+- **中文名称**：位移变化量
+- **英文名称**：Δds / delta ds
+- **初学者解释**：相邻两帧位移读数之差：`Δds = ds[i+1] - ds[i]`。它回答的是"这一段正在往哪边运动"：Δds > 0 向正方向运动，Δds < 0 向负方向运动，Δds = 0 表示该相邻间隔读数不变。Δds 不是速度（速度还要除以 Δt）。
+- **VisionMotion 中的具体作用**：源码里**没有** `Δds` / `delta_ds` 变量或 CSV 字段；与它对应的文字规则写在 `src\dynamic_displacement.py` 第 83～84 行（"正向 = ds 增大（沿 U_004，即尺子 10 cm -> 20 cm 方向）"；"负向 = ds 减小"）与第 509～510 行。用 `ds_px` 或 `ds_mm` 算都同号（第 369 / 379 行除数为正）。两个前提：两帧都 valid（`ds` 非空）才能相减；空洞处 Δds 断开（M4 静态数据的平台之间就是空洞）。真实例子：M5 frame 237 → 313，`ds_mm` 从 −0.0046 增大到 +27.1660（Δds = +27.1706 mm）；M5 frame 963 → 1015，从 +39.7894 减小到 +26.1587（Δds = −13.6307 mm）。
+- **源码位置**：`src\displacement.py` 第 301～303、313～314、368～369、389～392 行；`src\dynamic_displacement.py` 第 83～84、378～379、509～510 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读核对）。
+
+### 2. 运动方向（正向 / 负向）
+
+- **中文名称**：运动方向
+- **英文名称**：motion direction（positive / negative）
+- **初学者解释**：判断"正在往哪个方向运动"只看变化量 Δds 的符号（不是看 ds 的符号）：Δds > 0 = 向正方向；Δds < 0 = 向负方向；Δds = 0 = 该相邻间隔读数不变。
+- **VisionMotion 中的具体作用**：第 83～84 行给出定义；第 111～113 行规定显示文字只允许 `DIRECTION_POSITIVE = "正向"` 与 `DIRECTION_NEGATIVE = "负向"` 两种说法（注释："只允许这两种说法"）；第 509～510 行在 docstring 重复规则，并指出 `U_004` 的 `ux > 0`，所以正向对应原始 `x_px` 增大（`detect_turning_points()` 用的就是原始 `x_px`，第 496、524～526 行；完整算法属于 L12）。真实例子：M5 f237 → f313（负侧、向正方向运动）与 f963 → f1015（正侧、向负方向运动）。
+- **源码位置**：`src\dynamic_displacement.py` 第 82～87、111～113、487～623 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
+
+### 3. 正方向约定（P1 → P2）
+
+- **中文名称**：正方向约定
+- **英文名称**：positive direction convention（P1 → P2）
+- **初学者解释**：正方向不是物理定律，而是实验前人为规定的"记账方向"：从标定点 P1 指向 P2。M4 是 10 cm → 16 cm；M5 是 10 cm → 20 cm。
+- **VisionMotion 中的具体作用**：M4 第 46 行原文"两点真实距离：60.0 mm，方向约定 10 cm -> 16 cm"，第 55 行 `U = (0.999976, -0.006894)`（方向为 10 cm → 16 cm）；M5 第 60～62 行 P1（10 cm）/ P2（20 cm）/ 100.0 mm，第 66 行 `U_004 = (0.999992, -0.003913)`（方向 10 cm → 20 cm（正向）），第 133 行自检："U_004 指向 10 cm -> 20 cm（ux > 0，即"ds 增大"为正向）"。把约定反过来会让所有 `s_px` / `ds` 整体反号，且不会报错；M4 与 M5 是两套独立常量，不能混用（L10 已学：M5 第 20～23 行禁止 `import src.displacement`）。
+- **源码位置**：`src\displacement.py` 第 44～46、55 行；`src\dynamic_displacement.py` 第 59～66、133、169 行。
+
+### 4. 参考位置与符号侧（s0 / 正侧 / 负侧）
+
+- **中文名称**：参考位置与符号侧
+- **英文名称**：reference position and side of sign
+- **初学者解释**：`s0` 是参考位置（L10 的窗口内有效帧 `s_px` 平均值），它本身**不带方向**；`ds = s_px - s0` 为正 → 这一帧在参考位置的**正侧**（沿 `U` / `U_004` 指向的一侧）；为负 → **负侧**；为零 → 恰好落在参考位置上。符号只表示"在哪一侧"，不代表好坏、不代表快慢。
+- **VisionMotion 中的具体作用**：源码只写 `ds_px = s_px - s0`（第 339 / 378 行），"正侧 / 负侧"是概念解释用语（源码里没有这两个词）。真实数据（只读核对）：STATIC-002 的 34 个负号帧全部在 frame 1～51；STATIC-003 的 18 个全部在 frame 2～34；EXP-004 的 161 个全部在 frame 0～237。`|ds|` 表示离参考位置多远（沿尺方向的投影距离），不是速度。
+- **源码位置**：`src\displacement.py` 第 317～354、368～369 行；`src\dynamic_displacement.py` 第 378～379 行；真实数据 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
+
+### 5. 符号统计（正 / 负 / 零计数）
+
+- **中文名称**：符号统计
+- **英文名称**：sign counts（positive / negative / zero）
+- **初学者解释**：按 `ds_mm` **非空**（即 valid=True）的行统计"正侧 / 负侧 / 恰好为零"的帧数。它统计的是**符号侧**，不是"有多少帧在向正 / 负方向运动"。
+- **VisionMotion 中的具体作用**：三份真实数据为 1016/34/0（STATIC-002）、1174/18/0（STATIC-003）、1605/161/0（EXP-004）；"零 0 例"只表示这三份文件的 4 位小数里没有恰好写成 `0.0000` 的行，不代表"不可能经过参考位置"。对应 `ds_mm` 范围：−0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663。
+- **源码位置**：`src\displacement.py` 第 368～369 行；`src\dynamic_displacement.py` 第 378～379 行；统计来自 `results\` 下三份 ds CSV（只读）。
+
+### 6. 平台 + 台阶 + 空洞（M4 静态形态）
+
+- **中文名称**：平台 + 台阶 + 空洞
+- **英文名称**：plateau + step + gap（M4 static displacement shape）
+- **初学者解释**：M4 静态位移数据的形态：连续一段 valid 帧的 `ds_mm` 基本停在一个水平附近（**平台**）；相邻平台大约相差 10 mm（**台阶**）；平台之间是长段 `valid=False`（**空洞**——帧还在文件里，只是位移字段留空）。
+- **VisionMotion 中的具体作用**：STATIC-002 / STATIC-003 各有 7 个平台（约 0、10、20、30、40、50、60 mm；平台 frame 区间与 `ds_mm` 范围见笔记第 7.2 节）；最长连续 invalid 段为 180 帧（止于 frame 231）与 147 帧（止于 frame 181）。只读核对：空洞中的帧 `detected` 仍为 True，被 M4 gate 的 area / y 拒绝（STATIC-002：904 帧同时违反、7 帧只违反 y、0 帧只违反 area；STATIC-003：785 / 7 / 0）；"为什么越界"不在本课做因果结论。跨空洞不能硬算 Δds。
+- **源码位置**：`src\displacement.py` 第 175～213、301～303、389～392 行；真实数据 `results\EXP-003-STATIC-002_ds.csv` / `_track.csv`、`results\EXP-003-STATIC-003_ds.csv` / `_track.csv`（只读）。
+
+### 7. 连续往返（M5 动态形态）
+
+- **中文名称**：连续往返
+- **英文名称**：continuous back-and-forth（M5 dynamic displacement shape）
+- **初学者解释**：M5 动态位移数据的形态：`ds` 数值在整段数据里多次上升、下降，而且没有空洞（每一帧都有位移值，Δds 可以逐帧算）。
+- **VisionMotion 中的具体作用**：EXP-004 为 1766/1766 全部 valid、0 invalid；`ds_mm` 从 −0.5283（frame 0）到 66.1663（frame 1701），末帧 frame 1765 = 65.8647；抽样轨迹见笔记第 8.2 节（约 33 → 19 → 40 → 25 → 55 → 35 → 66 mm 的多次升降）。本课不数转向点、不切运动段、不谈周期 / 频率 / FFT（留给 L12 及以后）。
+- **源码位置**：`src\dynamic_displacement.py` 第 367～379 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv` / `_track.csv`（只读）。
+
+### 8. MIN_TURN_TRAVEL_PX（最小反向行程阈值，最小认识）
+
+- **中文名称**：最小反向行程阈值
+- **英文名称**：MIN_TURN_TRAVEL_PX
+- **初学者解释**：只有原始 `x_px` 从当前极值**反向走满 20 px**，这个极值才被确认为转向点（峰 / 谷）；小于 20 px 的反向行程不改变方向认定。它是一条"行程阈值"，不是速度阈值、不是位移阈值。
+- **VisionMotion 中的具体作用**：`src\dynamic_displacement.py` 第 30 行 docstring、第 85～87 行定义（第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`）、第 503～506 行解释：静止段噪声的相邻帧 `|dx|` 中位数约 0.13 px、静止段最大约 1.25 px，远达不到 20 px，所以噪声不会制造假转向。本课只建立最小认识；`detect_turning_points()`（第 491 行起）的完整算法（zigzag、峰谷判定、运动段切分，第 541～623 行）属于 L12。
+- **源码位置**：`src\dynamic_displacement.py` 第 30、82～87、491、503～506、509～510 行。
+
+### 9. 五类材料（L11 版）
+
+- **中文名称**：五类材料
+- **英文名称**：five material classes（project source / real data / teaching example / conceptual explanation / conceptual pseudocode）
+- **初学者解释**：本课的材料分成五类：**项目真实源码**（可给出文件 + 行号）、**真实数据**（`results\` 里已有的数值）、**教学示例**（为讲解临时编的数字，标明"非项目数据"）、**概念解释**（文字 / 表格说明，不宣称是源码或数据）、**概念伪代码**（类 Python 流程示意，不是项目源码）。引用前先分类，避免把解释工具当成项目事实。
+- **VisionMotion 中的具体作用**：本课例子——真实源码：第 46、55、301～303、313～314、367～369、389～392 行与 `src\dynamic_displacement.py` 第 66、83～84、87、111～113、133 行；真实数据：三份 ds CSV 的统计与 M5 f237 / f963 例子；教学示例：笔记第 6.6 节的 `+30.0 → +27.0 mm` 算例；概念解释："三条不等于"、平台 / 台阶 / 空洞、人为约定；概念伪代码：笔记第 6.1、10.2 节的 Δds 流程。与 L09 "六类材料"的关系：L09 把"真实项目常数"单列，L11 按本课要求归为五类。
+- **源码位置**：无（方法论条目）；各材料的定位见 `docs\learning\L11_位移正负与运动方向.md` 第 2 节与文末"代码与事实来源说明"。
 
 ---
 
@@ -1590,7 +1666,7 @@
 - **中文名称**：运动段与边界索引
 - **英文名称**：motion segment / boundary_indexes
 - **初学者解释**：把"起点 → 每个转向点 → 终点"依次连起来，相邻两个边界之间就是一段运动；段数 = 转向点数 + 1。
-- **VisionMotion 中的具体作用**：第 595 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 568–591 行对每对相邻边界生成一个 `segment` 字典（`start_frame` / `start_time_s` / `start_x_px` / `end_frame` / `end_time_s` / `end_x_px` / `direction` / `travel_px` / `below_min_travel`）；第 479 行 docstring"运动段数 = 转向点数量 + 1"；第 793–800 行把段数与 below_min 计数打印出来；第 824–843 行打印每一段。真实数据：EXP-004 的 6 个转向点把整段运动切成 7 段，边界 frame 为 0 → 491 → 602 → 838 → 1063 → 1254 → 1513 → 1765；其中 0 与 1765 是边界而不是转向点。
+- **VisionMotion 中的具体作用**：第 595 行 `boundary_indexes = [0] + [index for index, _ in turn_indexes] + [len(series) - 1]`；第 594–620 行对每对相邻边界生成一个 `segment` 字典（`start_frame` / `start_time_s` / `start_x_px` / `end_frame` / `end_time_s` / `end_x_px` / `direction` / `travel_px` / `below_min_travel`）；第 508 行 docstring"运动段数 = 转向点数量 + 1"；第 793–800 行把段数与 below_min 计数打印出来；第 824–843 行打印每一段。真实数据：EXP-004 的 6 个转向点把整段运动切成 7 段，边界 frame 为 0 → 491 → 602 → 838 → 1063 → 1254 → 1513 → 1765；其中 0 与 1765 是边界而不是转向点。
 - **源码位置**：`src\dynamic_displacement.py` 第 507–508、594–620、793–800、824–843 行。
 
 ### 15. travel_px
@@ -1632,84 +1708,6 @@
 - **初学者解释**：把阈值与流程写成明确常量（如 20.0 px），同一个输入必然得到同一个输出；任何人可以按行号复算。
 - **VisionMotion 中的具体作用**：第 466 行 docstring"口径（已冻结，不得修改；与 M5.1-C 只读审计完全相同）"；第 87 行阈值是常量；第 541 行注释"与 M5.1-C 审计完全相同的实现"；第 20–23 行声明 EXP-004 专属、不得混用 M4 常量；第 30 行固定 MIN_TURN_TRAVEL_PX = 20.0 px。真实验证：M5.2 冻结的 6 个转向点（`demo\run_m53_plot.py` 第 67–74 行）与 `results\EXP-004-DYNAMIC-001_*.csv` 只读复算结果完全一致；该脚本第 15–19 行还明确"不重新运行转向检测（只用 M5.2 冻结的 6 个 frame）"。
 - **源码位置**：`src\dynamic_displacement.py` 第 20–23、30、87、462–466、541 行；`demo\run_m53_plot.py` 第 15–19、67–74 行。
-
----
-
-## L11 位移数据、正负号与运动方向
-
-> 注：本节词条按补录顺序排在本页 L12 小节之后；课程顺序为 L10 → L11 → L12，速查索引中的排列不受影响。
-
-### 1. Δds（位移变化量）
-
-- **中文名称**：位移变化量
-- **英文名称**：Δds / delta ds
-- **初学者解释**：相邻两帧位移读数之差：`Δds = ds[i+1] - ds[i]`。它回答的是"这一段正在往哪边运动"：Δds > 0 向正方向运动，Δds < 0 向负方向运动，Δds = 0 表示该相邻间隔读数不变。Δds 不是速度（速度还要除以 Δt）。
-- **VisionMotion 中的具体作用**：源码里**没有** `Δds` / `delta_ds` 变量或 CSV 字段；与它对应的文字规则写在 `src\dynamic_displacement.py` 第 83～84 行（"正向 = ds 增大（沿 U_004，即尺子 10 cm -> 20 cm 方向）"；"负向 = ds 减小"）与第 509～510 行。用 `ds_px` 或 `ds_mm` 算都同号（第 369 / 379 行除数为正）。两个前提：两帧都 valid（`ds` 非空）才能相减；空洞处 Δds 断开（M4 静态数据的平台之间就是空洞）。真实例子：M5 frame 237 → 313，`ds_mm` 从 −0.0046 增大到 +27.1660（Δds = +27.1706 mm）；M5 frame 963 → 1015，从 +39.7894 减小到 +26.1587（Δds = −13.6307 mm）。
-- **源码位置**：`src\displacement.py` 第 301～303、313～314、368～369、389～392 行；`src\dynamic_displacement.py` 第 83～84、378～379、509～510 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读核对）。
-
-### 2. 运动方向（正向 / 负向）
-
-- **中文名称**：运动方向
-- **英文名称**：motion direction（positive / negative）
-- **初学者解释**：判断"正在往哪个方向运动"只看变化量 Δds 的符号（不是看 ds 的符号）：Δds > 0 = 向正方向；Δds < 0 = 向负方向；Δds = 0 = 该相邻间隔读数不变。
-- **VisionMotion 中的具体作用**：第 83～84 行给出定义；第 111～113 行规定显示文字只允许 `DIRECTION_POSITIVE = "正向"` 与 `DIRECTION_NEGATIVE = "负向"` 两种说法（注释："只允许这两种说法"）；第 509～510 行在 docstring 重复规则，并指出 `U_004` 的 `ux > 0`，所以正向对应原始 `x_px` 增大（`detect_turning_points()` 用的就是原始 `x_px`，第 496、524～526 行；完整算法属于 L12）。真实例子：M5 f237 → f313（负侧、向正方向运动）与 f963 → f1015（正侧、向负方向运动）。
-- **源码位置**：`src\dynamic_displacement.py` 第 82～87、111～113、487～623 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
-
-### 3. 正方向约定（P1 → P2）
-
-- **中文名称**：正方向约定
-- **英文名称**：positive direction convention（P1 → P2）
-- **初学者解释**：正方向不是物理定律，而是实验前人为规定的"记账方向"：从标定点 P1 指向 P2。M4 是 10 cm → 16 cm；M5 是 10 cm → 20 cm。
-- **VisionMotion 中的具体作用**：M4 第 46 行原文"两点真实距离：60.0 mm，方向约定 10 cm -> 16 cm"，第 55 行 `U = (0.999976, -0.006894)`（方向为 10 cm → 16 cm）；M5 第 60～62 行 P1（10 cm）/ P2（20 cm）/ 100.0 mm，第 66 行 `U_004 = (0.999992, -0.003913)`（方向 10 cm → 20 cm（正向）），第 133 行自检："U_004 指向 10 cm -> 20 cm（ux > 0，即"ds 增大"为正向）"。把约定反过来会让所有 `s_px` / `ds` 整体反号，且不会报错；M4 与 M5 是两套独立常量，不能混用（L10 已学：M5 第 20～23 行禁止 `import src.displacement`）。
-- **源码位置**：`src\displacement.py` 第 44～46、55 行；`src\dynamic_displacement.py` 第 59～66、133、169 行。
-
-### 4. 参考位置与符号侧（s0 / 正侧 / 负侧）
-
-- **中文名称**：参考位置与符号侧
-- **英文名称**：reference position and side of sign
-- **初学者解释**：`s0` 是参考位置（L10 的窗口内有效帧 `s_px` 平均值），它本身**不带方向**；`ds = s_px - s0` 为正 → 这一帧在参考位置的**正侧**（沿 `U` / `U_004` 指向的一侧）；为负 → **负侧**；为零 → 恰好落在参考位置上。符号只表示"在哪一侧"，不代表好坏、不代表快慢。
-- **VisionMotion 中的具体作用**：源码只写 `ds_px = s_px - s0`（第 339 / 378 行），"正侧 / 负侧"是概念解释用语（源码里没有这两个词）。真实数据（只读核对）：STATIC-002 的 34 个负号帧全部在 frame 1～51；STATIC-003 的 18 个全部在 frame 2～34；EXP-004 的 161 个全部在 frame 0～237。`|ds|` 表示离参考位置多远（沿尺方向的投影距离），不是速度。
-- **源码位置**：`src\displacement.py` 第 317～354、368～369 行；`src\dynamic_displacement.py` 第 378～379 行；真实数据 `results\EXP-003-STATIC-002_ds.csv`、`results\EXP-003-STATIC-003_ds.csv`、`results\EXP-004-DYNAMIC-001_ds.csv`（只读）。
-
-### 5. 符号统计（正 / 负 / 零计数）
-
-- **中文名称**：符号统计
-- **英文名称**：sign counts（positive / negative / zero）
-- **初学者解释**：按 `ds_mm` **非空**（即 valid=True）的行统计"正侧 / 负侧 / 恰好为零"的帧数。它统计的是**符号侧**，不是"有多少帧在向正 / 负方向运动"。
-- **VisionMotion 中的具体作用**：三份真实数据为 1016/34/0（STATIC-002）、1174/18/0（STATIC-003）、1605/161/0（EXP-004）；"零 0 例"只表示这三份文件的 4 位小数里没有恰好写成 `0.0000` 的行，不代表"不可能经过参考位置"。对应 `ds_mm` 范围：−0.2170～60.8426 / −0.0540～60.1932 / −0.5283～66.1663。
-- **源码位置**：`src\displacement.py` 第 368～369 行；`src\dynamic_displacement.py` 第 378～379 行；统计来自 `results\` 下三份 ds CSV（只读）。
-
-### 6. 平台 + 台阶 + 空洞（M4 静态形态）
-
-- **中文名称**：平台 + 台阶 + 空洞
-- **英文名称**：plateau + step + gap（M4 static displacement shape）
-- **初学者解释**：M4 静态位移数据的形态：连续一段 valid 帧的 `ds_mm` 基本停在一个水平附近（**平台**）；相邻平台大约相差 10 mm（**台阶**）；平台之间是长段 `valid=False`（**空洞**——帧还在文件里，只是位移字段留空）。
-- **VisionMotion 中的具体作用**：STATIC-002 / STATIC-003 各有 7 个平台（约 0、10、20、30、40、50、60 mm；平台 frame 区间与 `ds_mm` 范围见笔记第 7.2 节）；最长连续 invalid 段为 180 帧（止于 frame 231）与 147 帧（止于 frame 181）。只读核对：空洞中的帧 `detected` 仍为 True，被 M4 gate 的 area / y 拒绝（STATIC-002：904 帧同时违反、7 帧只违反 y、0 帧只违反 area；STATIC-003：785 / 7 / 0）；"为什么越界"不在本课做因果结论。跨空洞不能硬算 Δds。
-- **源码位置**：`src\displacement.py` 第 175～213、301～303、389～392 行；真实数据 `results\EXP-003-STATIC-002_ds.csv` / `_track.csv`、`results\EXP-003-STATIC-003_ds.csv` / `_track.csv`（只读）。
-
-### 7. 连续往返（M5 动态形态）
-
-- **中文名称**：连续往返
-- **英文名称**：continuous back-and-forth（M5 dynamic displacement shape）
-- **初学者解释**：M5 动态位移数据的形态：`ds` 数值在整段数据里多次上升、下降，而且没有空洞（每一帧都有位移值，Δds 可以逐帧算）。
-- **VisionMotion 中的具体作用**：EXP-004 为 1766/1766 全部 valid、0 invalid；`ds_mm` 从 −0.5283（frame 0）到 66.1663（frame 1701），末帧 frame 1765 = 65.8647；抽样轨迹见笔记第 8.2 节（约 33 → 19 → 40 → 25 → 55 → 35 → 66 mm 的多次升降）。本课不数转向点、不切运动段、不谈周期 / 频率 / FFT（留给 L12 及以后）。
-- **源码位置**：`src\dynamic_displacement.py` 第 367～379 行；真实数据 `results\EXP-004-DYNAMIC-001_ds.csv` / `_track.csv`（只读）。
-
-### 8. MIN_TURN_TRAVEL_PX（最小反向行程阈值，最小认识）
-
-- **中文名称**：最小反向行程阈值
-- **英文名称**：MIN_TURN_TRAVEL_PX
-- **初学者解释**：只有原始 `x_px` 从当前极值**反向走满 20 px**，这个极值才被确认为转向点（峰 / 谷）；小于 20 px 的反向行程不改变方向认定。它是一条"行程阈值"，不是速度阈值、不是位移阈值。
-- **VisionMotion 中的具体作用**：`src\dynamic_displacement.py` 第 30 行 docstring、第 85～87 行定义（第 87 行 `MIN_TURN_TRAVEL_PX = 20.0`）、第 503～506 行解释：静止段噪声的相邻帧 `|dx|` 中位数约 0.13 px、静止段最大约 1.25 px，远达不到 20 px，所以噪声不会制造假转向。本课只建立最小认识；`detect_turning_points()`（第 491 行起）的完整算法（zigzag、峰谷判定、运动段切分，第 541～623 行）属于 L12。
-- **源码位置**：`src\dynamic_displacement.py` 第 30、82～87、491、503～506、509～510 行。
-
-### 9. 五类材料（L11 版）
-
-- **中文名称**：五类材料
-- **英文名称**：five material classes（project source / real data / teaching example / conceptual explanation / conceptual pseudocode）
-- **初学者解释**：本课的材料分成五类：**项目真实源码**（可给出文件 + 行号）、**真实数据**（`results\` 里已有的数值）、**教学示例**（为讲解临时编的数字，标明"非项目数据"）、**概念解释**（文字 / 表格说明，不宣称是源码或数据）、**概念伪代码**（类 Python 流程示意，不是项目源码）。引用前先分类，避免把解释工具当成项目事实。
-- **VisionMotion 中的具体作用**：本课例子——真实源码：第 46、55、301～303、313～314、367～369、389～392 行与 `src\dynamic_displacement.py` 第 66、83～84、87、111～113、133 行；真实数据：三份 ds CSV 的统计与 M5 f237 / f963 例子；教学示例：笔记第 6.6 节的 `+30.0 → +27.0 mm` 算例；概念解释："三条不等于"、平台 / 台阶 / 空洞、人为约定；概念伪代码：笔记第 6.1、10.2 节的 Δds 流程。与 L09 "六类材料"的关系：L09 把"真实项目常数"单列，L11 按本课要求归为五类。
-- **源码位置**：无（方法论条目）；各材料的定位见 `docs\learning\L11_位移正负与运动方向.md` 第 2 节与文末"代码与事实来源说明"。
 
 ---
 

@@ -64,7 +64,7 @@
    git log --oneline -1                      # 预期：显示当前 HEAD 的最新提交信息
    ```
 
-   > 说明：本录制脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。`--untracked-files=no`
+   > 说明：本录制脚本已归档至 `docs/archive/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。`--untracked-files=no`
    > 只检查**已跟踪文件**，输出为空即代表"仓库零改动"。
 
 6. 备份 `results/`（可选但推荐）：把整个 `results` 目录复制一份到仓库外，录制结束用于比对。
@@ -148,7 +148,7 @@
   - 真实耗时刻度：命令 1 约 **0.4–0.5 s**，命令 2 约 **2.9–3.1 s**，命令 3 约 0.3 s（本机多次实测）。剪辑时若担心冷场，可 2× 加速等待段并加字幕"实际耗时约 3 秒"。
   - 运行命令 1、2 会**重写** `results/` 中的同名成果文件；本机 2026-09-26 实测重写后 SHA-256 与仓库版本**逐字节一致**，已跟踪文件零改动，因此该镜头可以安全重复录制（哈希对照见附录 B）。
   - 命令 1 需要本机的 `data/raw/EXP-001-IMAGE-001.jpg`：它是自采素材，**不在 Git 仓库中**，发布 ZIP 也不包含。本机当前存在该文件；若换机器录制且没有该文件，请只演示命令 2 与命令 3（命令 2 只需要仓库内的封板轨迹 CSV）。
-  - 命令 3 写成 `git status --short --untracked-files=no`：本脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程；该写法只检查已跟踪文件，空白输出即代表仓库零改动。
+  - 命令 3 写成 `git status --short --untracked-files=no`：本脚本已归档至 `docs/archive/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程；该写法只检查已跟踪文件，空白输出即代表仓库零改动。
   - 中文输出若出现乱码，退出录制后重新 `chcp 65001` 再录。
 
 ### S6 测量结果与三方对照｜1:24–1:48（24 s）
@@ -214,7 +214,7 @@ git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 > **不在 Git 仓库中**（`git ls-files data/` 只有 `.gitkeep`），发布 ZIP 也不包含；本机当前存在该文件，可直接运行。
 > 若换机器录制，请先确认文件存在，否则跳过命令 1，只演示命令 2 与命令 3。
 >
-> 关于命令 3：本脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。加 `--untracked-files=no` 后，
+> 关于命令 3：本脚本已归档至 `docs/archive/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。加 `--untracked-files=no` 后，
 > 只有**已跟踪文件**被改动才会有输出，因此空白画面才真正表示"零改动"。
 
 ### 5.3 可选补充命令
@@ -227,7 +227,7 @@ git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 
 ### 5.4 演示脚本的可重复性说明
 
-命令 1、2、4 会重写 `results/` 中同名文件。本机实测（2026-09-26）重写后 SHA-256 与仓库版本**逐字节一致**（六个文件全部比对通过，见附录 B），故已跟踪文件保持干净；若仍不放心，可按第 2 节第 6 步先备份 `results/`。注意检查命令要写成 `git status --short --untracked-files=no`，只检查已跟踪文件；脚本已归档至 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。
+命令 1、2、4 会重写 `results/` 中同名文件。本机实测（2026-09-26）重写后 SHA-256 与仓库版本**逐字节一致**（六个文件全部比对通过，见附录 B），故已跟踪文件保持干净；若仍不放心，可按第 2 节第 6 步先备份 `results/`。注意检查命令要写成 `git status --short --untracked-files=no`，只检查已跟踪文件；脚本已归档至 `docs/archive/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程。
 
 ---
 
@@ -352,7 +352,7 @@ git log --oneline -1          # 预期：显示当前 HEAD 的最新提交信息
 | --- | --- | --- | --- |
 | 1 | README 的 License 章节与根目录 `LICENSE` 一致（MIT） | ✅ 已完成 | README §15、根目录 `LICENSE`（MIT）、`docs/ATTRIBUTION.md` 三处口径一致 |
 | 2 | `docs/ATTRIBUTION.md` 的许可文案已与 README / LICENSE 统一 | ✅ 已完成 | 末条已改为"本项目代码采用 MIT License，详见仓库根目录 `LICENSE` 文件。"，与 README §15、根目录 `LICENSE`（MIT）一致 |
-| 3 | 本录制脚本已归档到 `docs/` | ✅ 已完成 | 脚本位于 `docs/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程 |
+| 3 | 本录制脚本已归档到 `docs/` | ✅ 已完成 | 脚本位于 `docs/archive/DEMO_VIDEO_SCRIPT.md`，可直接复现录制流程 |
 
 - **GitHub 同步状态与本文档无关**：发布前请检查本地 `master` 与 GitHub `origin/master` 是否一致；本演示脚本**不把 GitHub push 状态作为项目运行前提**，也不在此记录某一次推送的具体 ahead / behind 数字。
 - 结论：录制时 S8 镜头可展示 GitHub 页面与 `docs/ATTRIBUTION.md`，前提是录制前已按上一条确认过仓库页面状态。

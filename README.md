@@ -60,20 +60,20 @@ FFT 频率分析
 ### v1.0.0 官方用户流程：一个视频 → 五类结果
 
 ```powershell
-.\.venv\Scripts\python.exe demo\run_user_video_pipeline.py --input data\raw\your_video.mp4 --out-dir results\your_video
+.\.venv\Scripts\python.exe demo\run_user_video_pipeline.py --input data\raw\user_video.mp4 --out-dir results\user_video
 ```
 
 > **注意**：当前 v1.0.0 用户流程默认检测视频中的红色标记目标，建议使用红色物体或红色标记进行测试。
 
-生成（文件名由输入视频名自动派生，下例前缀为 `your_video`）：
+生成（文件名由输入视频名自动派生，下例前缀为 `user_video`）：
 
 | 输出文件 | 内容 |
 | --- | --- |
-| `your_video_track.csv` | 逐帧像素坐标时间序列（轨迹原始数据） |
-| `your_video_overlay.mp4` | 目标检测叠加视频（逐帧核对检出情况） |
-| `your_video_trajectory.png` | 二维运动轨迹图 |
-| `your_video_displacement.png` | 像素位移曲线 |
-| `your_video_fft.png` | FFT 频谱图 |
+| `user_video_track.csv` | 逐帧像素坐标时间序列（轨迹原始数据） |
+| `user_video_overlay.mp4` | 目标检测叠加视频（逐帧核对检出情况） |
+| `user_video_trajectory.png` | 二维运动轨迹图 |
+| `user_video_displacement.png` | 像素位移曲线 |
+| `user_video_fft.png` | FFT 频谱图 |
 
 - **用户只需要提供一个视频即可完成完整分析流程**：检测参数、帧率、QC 自检全部内置于程序中，不需要手工配置；
 - 相对路径一律按**项目根目录**解析；`--out-dir` 目录不存在时自动创建；
@@ -282,7 +282,7 @@ Windows CMD 用户把中间一行换成：
 | 阶段 | 脚本 | 是否需要仓库之外的本地数据 |
 | --- | --- | --- |
 | 图片检测 | **推荐**：`.venv\Scripts\python.exe demo\run_single_image_detection.py --input data\raw\my_image.jpg --out-dir results\my_image`<br>兼容旧流程：不加参数运行 | 是（`--input` 指定的图片；无参数时用 `data/raw/EXP-001-IMAGE-001.jpg`） |
-| 视频追踪 | **推荐**：`.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\my_video.mp4 --out-dir results\my_video`<br>兼容旧流程：不加参数运行 | 是（`--input` 指定的视频；无参数时用 `data/raw/EXP-002-VIDEO-001.mp4`） |
+| 视频追踪 | **推荐**：`.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\user_video.mp4 --out-dir results\user_video`<br>兼容旧流程：不加参数运行 | 是（`--input` 指定的视频；无参数时用 `data/raw/EXP-002-VIDEO-001.mp4`） |
 | 静态标定与位移 | `.venv\Scripts\python.exe demo\pick_calibration_points.py`（交互式取点）<br>`.venv\Scripts\python.exe demo\run_m43_displacement.py` | 是（`data/raw/EXP-003-*.mp4`） |
 | 动态位移 | `.venv\Scripts\python.exe demo\run_m52_dynamic_displacement.py`<br>`.venv\Scripts\python.exe demo\run_m53_plot.py` | 前者需要 `data/raw/EXP-004-DYNAMIC-001.mp4`；后者只需仓库内已有的 `results/EXP-004-DYNAMIC-001_ds.csv` |
 | 外部公开视频追踪 | `.venv\Scripts\python.exe demo\run_m62_external_tracking.py` | 是（`_external/_candidates/candidate_comPADRE_Lab67_01_Video1_51p5g.mp4`） |
@@ -333,13 +333,13 @@ results\my_image\my_image_mask.png
 
 ```powershell
 .\.venv\Scripts\python.exe demo\run_video_tracking.py `
-  --input data\raw\my_video.mp4 `
-  --out-dir results\my_video
+  --input data\raw\user_video.mp4 `
+  --out-dir results\user_video
 ```
 
 ```text
-results\my_video\my_video_track.csv
-results\my_video\my_video_overlay.mp4
+results\user_video\user_video_track.csv
+results\user_video\user_video_overlay.mp4
 ```
 
 两者共同的规则：
@@ -390,8 +390,10 @@ results\my_video\my_video_overlay.mp4
 
 把素材放进**项目根目录**下的 `data/raw/`（该目录不随仓库分发，需要你自己准备）：
 
+> 为了保证文档中的命令可以直接复制运行，请将待分析视频统一命名为 `user_video.mp4`，并放入 `data/raw/` 目录。
+
 ```powershell
-Copy-Item ".\your_video.mp4" ".\data\raw\"
+Copy-Item ".\user_video.mp4" ".\data\raw\"
 Copy-Item ".\your_image.jpg" ".\data\raw\"
 ```
 
@@ -400,17 +402,17 @@ Copy-Item ".\your_image.jpg" ".\data\raw\"
 **推荐先用 v1.0.0 用户流程跑通一次（一条命令得到全部结果）：**
 
 ```powershell
-.\.venv\Scripts\python.exe demo\run_user_video_pipeline.py --input data\raw\your_video.mp4 --out-dir results\your_video
+.\.venv\Scripts\python.exe demo\run_user_video_pipeline.py --input data\raw\user_video.mp4 --out-dir results\user_video
 ```
 
 视频追踪与图片检测也支持直接指定输入，不需要改名成历史实验名：
 
 ```powershell
-.\.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\your_video.mp4 --out-dir results\your_video
+.\.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\user_video.mp4 --out-dir results\user_video
 .\.venv\Scripts\python.exe demo\run_single_image_detection.py --input data\raw\your_image.jpg --out-dir results\your_image
 ```
 
-输出文件名自动跟随输入文件名：`results\your_video\your_video_track.csv`、`your_video_overlay.mp4`、`your_video_trajectory.png`、`your_video_displacement.png`、`your_video_fft.png`；`results\your_image\your_image_overlay.png`、`your_image_mask.png`。
+输出文件名自动跟随输入文件名：`results\user_video\user_video_track.csv`、`user_video_overlay.mp4`、`user_video_trajectory.png`、`user_video_displacement.png`、`user_video_fft.png`；`results\your_image\your_image_overlay.png`、`your_image_mask.png`。
 
 其余历史实验脚本（静态标定、动态位移、外部视频追踪、最终成果图、汇报材料）的输入路径写在脚本内部；要换成自己的数据，请把文件按脚本期望的路径与文件名放好，或直接修改脚本内的路径常量（例如交互式标定工具固定读 `data/raw/EXP-003-STATIC-002.mp4`）。
 
@@ -465,7 +467,7 @@ cd <项目根目录>
 
 ### 5. 叠加视频失败、输出回退为代表性 PNG（`demo/run_video_tracking.py`）
 
-> 下文的 `EXP-002-VIDEO-001_*` 指**无参数默认运行**的输出名。若用 `--input` 指定了别的视频，输出名会随输入视频的文件名变化（例如 `my_video_track.csv`）。
+> 下文的 `EXP-002-VIDEO-001_*` 指**无参数默认运行**的输出名。若用 `--input` 指定了别的视频，输出名会随输入视频的文件名变化（例如 `user_video_track.csv`）。
 
 - 正常情况下，视频追踪会生成叠加视频 `results/EXP-002-VIDEO-001_overlay.mp4`（默认运行；`--input` 运行时对应 `<输入文件名>_overlay.mp4`）。
 - 若所有候选编码器（`mp4v`、`avc1`）都无法打开 VideoWriter，程序会**回退**为保存最多 5 张代表性 PNG，命名形如 `results/EXP-002-VIDEO-001_overlay_frame%04d_<tag>.png`（`tag` 为 `start` / `middle` / `end` / `fastest_motion` / `blurriest`）。

@@ -436,11 +436,13 @@ Test-Path ".\data\raw\my_red_object.jpg"
 
 和图片同理，推荐放到 `data\raw\`：
 
+> 为了保证文档中的命令可以直接复制运行，请将待分析视频统一命名为 `user_video.mp4`，并放入 `data/raw/` 目录。
+
 ```text
-data\raw\my_motion.mp4
+data\raw\user_video.mp4
 ```
 
-- 文件名可以自己取；
+- 示例统一使用 `user_video.mp4`；文档中的命令可直接复制运行（如用其他文件名，请同步修改命令里的 `--input`）；
 - **不需要**改源码，也不需要放到 `src\` / `demo\` / `.venv\`，**不要**使用 `.data`；
 - **推荐**视频里的目标也是**红色**，且整段视频目标都比较清晰（判断标准同 §10）。
 
@@ -449,13 +451,13 @@ data\raw\my_motion.mp4
 在项目根目录执行：
 
 ```powershell
-.\.venv\Scripts\python.exe demo\run_video_tracking.py --input ".\data\raw\my_motion.mp4" --out-dir ".\results\my_video_test"
+.\.venv\Scripts\python.exe demo\run_video_tracking.py --input ".\data\raw\user_video.mp4" --out-dir ".\results\user_video"
 ```
 
 参数含义与 M2 一致：
 
 - `--input`：输入视频；`--out-dir`：输出目录（不存在会自动创建）；
-- 输出名自动跟随视频名：`my_motion.mp4` → `my_motion_track.csv`、`my_motion_overlay.mp4`；
+- 输出名自动跟随视频名：`user_video.mp4` → `user_video_track.csv`、`user_video_overlay.mp4`；
 - 已存在同名输出且未加 `--overwrite` 时，会像 M2 一样停下（退出码 `2`）。
 
 **运行过程中会看到什么：**
@@ -491,7 +493,7 @@ $LASTEXITCODE
 
 #### `0`（最理想）
 
-视频正常处理完，轨迹完整，检出过目标，CSV 自检通过。去 `results\my_video_test\` 看 `my_motion_track.csv` 与 `my_motion_overlay.mp4`。
+视频正常处理完，轨迹完整，检出过目标，CSV 自检通过。去 `results\user_video\` 看 `user_video_track.csv` 与 `user_video_overlay.mp4`。
 
 #### `3`（正常跑完，但全程没检测到目标）
 
@@ -514,7 +516,7 @@ $LASTEXITCODE
 多为输入视频不存在、视频无法打开 / 处理，或 CSV 自检没通过。先核对：
 
 ```powershell
-Test-Path ".\data\raw\my_motion.mp4"
+Test-Path ".\data\raw\user_video.mp4"
 ```
 
 `False` 说明路径不对；`True` 则看终端最后打印的错误信息。
@@ -531,7 +533,7 @@ Test-Path ".\data\raw\my_motion.mp4"
 
 ### 17. 输出文件在哪里
 
-都在你指定的 `--out-dir` 下（本文示例是 `results\my_image_test\` 与 `results\my_video_test\`）。
+都在你指定的 `--out-dir` 下（本文示例是 `results\my_image_test\` 与 `results\user_video\`）。
 
 - M2（图片）：`<名字>_overlay.png`、`<名字>_mask.png`；
 - M3（视频）：`<名字>_track.csv`、`<名字>_overlay.mp4`（或回退的若干 `<名字>_overlay_frameXXXX_*.png`）。

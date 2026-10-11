@@ -88,20 +88,20 @@ M6.3 展示 / 冻结结果
 v1.0.0 提供的"一键流程"：**一个视频 → 五类结果**。入口是 `demo/run_user_video_pipeline.py`，它只做串联与提示，不重新实现任何算法——检测、帧率、标定、QC 全部留在 `src/` 内。
 
 ```powershell
-.\.venv\Scripts\python.exe demo\run_user_video_pipeline.py --input data\raw\your_video.mp4 --out-dir results\your_video
+.\.venv\Scripts\python.exe demo\run_user_video_pipeline.py --input data\raw\user_video.mp4 --out-dir results\user_video
 ```
 
 **输入**：一个视频（默认检测画面中的**红色标记**目标）。
 
-**输出**：五类结果，文件名由输入视频名自动派生（下例前缀为 `your_video`）：
+**输出**：五类结果，文件名由输入视频名自动派生（下例前缀为 `user_video`）：
 
 | 输出文件 | 内容 |
 | --- | --- |
-| `your_video_track.csv` | 逐帧像素坐标时间序列（轨迹原始数据） |
-| `your_video_overlay.mp4` | 目标检测叠加视频（逐帧核对检出情况） |
-| `your_video_trajectory.png` | 二维运动轨迹图 |
-| `your_video_displacement.png` | 像素位移曲线 |
-| `your_video_fft.png` | FFT 频谱图 |
+| `user_video_track.csv` | 逐帧像素坐标时间序列（轨迹原始数据） |
+| `user_video_overlay.mp4` | 目标检测叠加视频（逐帧核对检出情况） |
+| `user_video_trajectory.png` | 二维运动轨迹图 |
+| `user_video_displacement.png` | 像素位移曲线 |
+| `user_video_fft.png` | FFT 频谱图 |
 
 - 相对路径按**项目根目录**解析；`--out-dir` 目录不存在时自动创建；
 - 默认**不覆盖**已有结果，确认覆盖请显式加 `--overwrite`；
@@ -118,11 +118,11 @@ v1.0.0 提供的"一键流程"：**一个视频 → 五类结果**。入口是 `
 .\.venv\Scripts\python.exe demo\run_single_image_detection.py --input data\raw\my_image.jpg --out-dir results\my_image
 
 # 视频（M3）
-.\.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\my_video.mp4 --out-dir results\my_video
+.\.venv\Scripts\python.exe demo\run_video_tracking.py --input data\raw\user_video.mp4 --out-dir results\user_video
 ```
 
 - `--input` / `--out-dir` / `--overwrite` 三个参数的**完整语义、退出码与排错**见 [用户使用指南](USER_GUIDE.md)；
-- 输出名由输入文件名派生（`my_video.mp4 → my_video_track.csv` + `my_video_overlay.mp4`），不会沿用历史实验名；
+- 输出名由输入文件名派生（`user_video.mp4 → user_video_track.csv` + `user_video_overlay.mp4`），不会沿用历史实验名；
 - **检测参数（HSV 阈值、最小面积等）不是命令行参数**，它们固定在检测模块中。只有当目标**不是红色**、或需要换一套检测方案时，才需要修改源码——那属于"换实验方案"，不是"换一张图片"。
 
 > **关键边界**：M3 的输出 `_track.csv` 是**像素坐标**（`x_px / y_px`），**不是毫米位移**。要得到毫米，必须经过第 6 章的标定。
